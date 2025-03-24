@@ -1,33 +1,36 @@
 * {
-    padding :0;
+    
     margin :0;
+    box-sizing: border-box;
 }
 header{
     background-color :rgba(35, 28, 26, 0.8);
     height:80px;
     width:100%;
     position: fixed;
+    z-index: 100;
+    will-change: transform;
 }
-h1{
-    color:white;
-}
-header ul{
-    position:absolute;
-    right:1vw;
-    top:0;
-    line-height:80px;
-}
-h1{
-    position:relative;
-    left:0;
-    top:0;
-    line-height:80px;
+
+h1 {
+    position: fixed; /* 改用固定定位 */
+    left: 0rem;
+    top: 0rem;      /* 控制垂直位置 */
+    margin: 0;
+    padding: 0;
+    width: 120px;   /* 根據需要調整寬度 */
+    height: 80px;   /* 固定高度保持比例 */
+    z-index: 100;  /* 確保在導航列上方 */
     background-image: url(images/sipandsavor.webp);
-    background-size:contain;
-    width: 75px;
+    background-size: contain;  /* 按比例縮放 */
+    background-repeat: no-repeat;
+    background-position: left 5px center; /* 左對齊 */
     text-indent: -9999px;
-    opacity: 0.7;
+    opacity: 0.9;
+    transition: opacity 0.3s ease; /* 添加漸變效果 */
 }
+
+
 header li{
     display:inline;
     margin-right:4vw;
@@ -39,6 +42,7 @@ header a{
 header a:hover{
     text-decoration: underline;
 }
+
 .news {
     background-color: antiquewhite;
     color: white;
@@ -138,31 +142,239 @@ footer{
     font-size: 14px;
     line-height: 1.6em;
 }
-.menu{
-    display: none;
+.newsletter {
+    background-color: #485652;
+    color: white;
+    padding: 100px 20px;  /* 增加垂直內距 */
+    width: 100vw;         /* 填滿視窗寬度 */
+    margin-left: calc(-50vw + 50%); /* 水平置中對齊技巧 */
+    box-shadow: 0 0 30px rgba(0,0,0,0.2) inset; /* 添加內陰影增加層次 */
+    position: relative;   /* 為子元素定位做準備 */
+    min-height: 400px;    /* 設定最小高度 */
+    display: flex;        /* 啟用flex布局 */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
+.newsletter p {
+    font-size: 24px; /* 放大标题 */
+    margin-bottom: 30px;
+    text-align: center;
+    width: 100%;
+}
+.newsletter form {
+    display: flex;
+    justify-content: center;
+    gap: 20px; /* 增加元素间距 */
+    width: 100%;
+    max-width: 600px; /* 限制表单最大宽度 */
+    margin: 0 auto;
+}
+.newsletter input, .newsletter button {
+    background-color: transparent;
+    color: white;
+    border: 1px solid #949d9a;
+    padding: 10px;
+    border-radius: 5px;
+}
+.newsletter input {
+    flex: 1; /* 输入框填满剩余空间 */
+    max-width: 400px; /* 限制输入框最大宽度 */
+    padding: 15px;
+    font-size: 16px;
+}
+.newsletter button {
+    width: 120px; /* 加宽按钮 */
+    padding: 15px;
+    font-size: 16px;
+    background: rgba(255,255,255,0.1);
+    transition: background 0.3s;
+}
+.newsletter button:hover {
+    background: rgba(255,255,255,0.2);
+}
+input::placeholder{
+    color: #DDDDDD;
+}
+input:focus{
+    outline: none;
+    border-color: #E0E9A3;
+}
+
+/* 新增桌面版导航样式 */
+.desktop-nav {
+    position: fixed;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%); /* 垂直居中 */
+    z-index: 1002;
+    margin: 0;
+    padding: 0;
+}
+
+
+
+.desktop-nav ul {
+    display: flex;
+    gap: 2rem;       /* 间距控制 */
+    margin: 0;
+    padding: 0;
+}
+.desktop-nav li {
+    list-style: none;
+}
+
+.desktop-nav a {
+    color: white;
+    font-size: 1.1rem;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    position: relative;
+
+}
+.desktop-nav a::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: white;
+    transition: width 0.3s;
+}
+
+.desktop-nav a:hover::after {
+    width: 100%;
+}
+.desktop-nav a:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+header h1 {
+    z-index: 999;  /* 低于导航层级 */
+}
+
+/* 手機版菜單樣式修正 */
+#mobileMenu {
+    position: fixed;
+    top: 80px;
+    left: -100%;
+    width: 70%;
+    height: calc(100vh - 80px);
+    background: rgba(35, 28, 26, 0.95);
+    transition: left 0.3s ease;
+    z-index: 300;
+    overflow-y: auto;
+    display: none; /* 初始隱藏，在媒體查詢中才顯示 */
+}
+
+#mobileMenu.active {
+    left: 0;
+}
+#mobileMenu ul {
+    list-style: none;
+    padding: 20px;
+    margin: 0;
+}
+#mobileMenu li {
+    display: block !important; /* 強制設置為塊級元素 */
+    margin-bottom: 25px;
+  }
+#mobileMenu a {
+    color: white;
+    font-size: 18px;
+    text-decoration: none;
+    display: block;
+    padding: 10px;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+#mobileMenu a:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* 漢堡按鈕樣式修正 */
+.menu {
+    display: none;
+    z-index: 400;
+    background-color: transparent;
+    color: white;
+    font-size: 35px;
+    position: fixed;
+    top: 15px;
+    left: 20px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+.menu.active {
+    transform: rotate(90deg);
+}
+.hamburger {
+    z-index: 300; /* 按鈕在最頂層 */
+}
+
 /* 響應式語法 */
 @media screen and (max-width: 768px) {
+    .newsletter form {
+        flex-direction: column;
+        align-items: center;
+        max-width: 300px;
+    }
+    .newsletter input {
+        width: 100%;
+        max-width: none;
+    }
+    .newsletter button {
+        width: 100%;
+    }
+    .desktop-nav {
+        display: none !important;
+    }
+      /* 顯示手機菜單（但初始位置在畫面外） */
+  #mobileMenu {
+    display: block !important;
+    left: -100%;
+  }
+    /* 活動狀態顯示菜單 */
+  #mobileMenu.active {
+    left: 0 !important;
+  }
+  #mobileMenu ul {
+    display: block !important;
+  }
+  header ul:not(#mobileMenu ul) {
+    display: none !important;
+  }
+    #mobileMenu li {
+        margin-bottom: 1.5rem;
+    }
     header ul{
         display: none;
     }
     header h1{
-        left 50%;
+        left :50%;
         transform:translatex(-50%);
+        width: 120px;     /* 限制宽度避免挤压按钮 */
+    }
+    header li {
+        display: block !important;
     }
     .news h2{
         font-size: 40px;
     }
     .menu{
-        display: block;
+        display: block !important;
         background-color: transparent;
         color: white;
         font-size: 35px;
-        position: absolute;
+        position: fixed;
         top: 15px;
         left: 20px;
         border: none;
         cursor:pointer;
+        transition: transform 0.3s ease;
     }
     .shop{
         flex-direction: column;
@@ -184,4 +396,56 @@ footer{
     .product div{
         margin-bottom: 30px;
     }
+
+    .menu.active {
+        transform: rotate(90deg);
+    }
+
+    #mobileMenu {
+        display: block;
+    }
+    .swiper-slide {
+        width: 70%;
+        margin: 0 10px;
+    }
+    
+   
 }
+/* 新增在现有CSS底部 */
+.swiper-container {
+    width: 100%;
+    padding: 40px 0 80px;
+}
+
+.swiper-wrapper {
+    padding: 20px 0;
+}
+
+.swiper-slide {
+    width: 300px;
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+    margin: 0 15px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 15px;
+}
+
+.swiper-slide img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover; /* 智能裁剪 */
+    object-position: center;
+    display: block;
+    transition: transform 0.3s;
+}
+
+/* 移除可能的覆盖层 */
+.swiper-slide::after {
+    content: none; /* 禁用之前可能添加的覆盖层 */
+}
+
+
