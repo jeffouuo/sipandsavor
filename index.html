@@ -8,19 +8,29 @@
 </head>
 <body>
     <header>
-    <button class="menu">&#9776;</button>       
-    <h1>飲茶趣</h1>
-    <div class="triangle" style="background: red;"></div>
-    <nav>
-    <ul>
-        <li><a href="#">最新消息</a></li>
-        <li><a href="#">關於我們</a></li>
-        <li><a href="#">門市據點</a></li>
-       
-    </ul>
-    </nav>
-    </header>
+        <!-- 桌面導航 -->
+        <nav class="desktop-nav">
+            <ul>
+                <li><a href="#">最新消息</a></li>
+                <li><a href="#">關於我們</a></li>
+                <li><a href="#">門市據點</a></li>
+            </ul>
+        </nav>
     
+        <!-- 手機元件 -->
+        <button class="menu" id="hamburgerBtn">&#9776;</button>
+        
+        <h1>飲茶趣</h1>
+    
+        <!-- 手機菜單 -->
+        <nav id="mobileMenu">
+            <ul>
+                <li><a href="#">最新消息</a></li>
+                <li><a href="#">關於我們</a></li>
+                <li><a href="#">門市據點</a></li>
+            </ul>
+        </nav>
+    </header>
     
     <main>  
         <section class="news">   
@@ -41,26 +51,53 @@
                 </div>       
         </section>
         <section class="product">
-            <div>
-                <img src="images/milk tea.webp" alt="星辰奶茶">
-                <h3>星辰奶茶</h3>
-                <p>每一口<br>都是一場星辰之旅。</p>
-            </div>
-            <div>
-                <img src="images/lemon black tea.webp" alt="夢幻檸茶">
-                <h3>夢幻檸茶</h3>
-                <p>夢幻檸茶<br>釋放內心的清新力量。</p>
-            </div>
-            <div>
-                <img src="images/milkgreen.webp" alt="綠霧奶綠">
-                <h3>綠霧奶綠</h3>
-                <p>綠霧奶綠<br>帶來一抹清新。</p>
-            </div>
+            <!-- 新增轮播容器 -->
+            <div class="swiper-container">
+                <div class="swiper-wrapper">
+                    <!-- 原始产品 -->
+                    <div class="swiper-slide">
+                        <img src="images/milk tea.webp" alt="星辰奶茶">
+                        <h3>星辰奶茶</h3>
+                        <p>每一口<br>都是一場星辰之旅。</p>
+                    </div>
+                    <div class="swiper-slide">
+                        <img src="images/lemon black tea.webp" alt="夢幻檸茶">
+                        <h3>夢幻檸茶</h3>
+                        <p>釋放內心的清新力量</p>
+                    </div>
+                    <div class="swiper-slide"> 
+                        <img src="images/milkgreen.webp" alt="綠霧奶綠">
+                        <h3>綠霧奶綠</h3>
+                        <p>帶來一抹清新</p>
+                    </div>
 
+                            <!-- 扩展新品 -->
+                    <div class="swiper-slide">
+                        <img src="images/coldtea.webp" alt="冷萃烏龍">
+                        <h3>冷萃烏龍</h3>
+                        <p>經過12小時低溫慢釀</p>
+                    </div>
+                </div>    
+                    
+            </div>
         </section>
+                    <section class="newsletter">
+                        <p>歡迎訂閱電子報，可不定期收到優惠</p>
+                        <form>
+                            <input type="email" placeholder="請輸入您的 Email" required>
+                            <button type="summit">送出</button>
+                        </form>
+                    </section>
+
     </main>
     <footer>
         <p>Copyright ◎ 2025 飲茶趣 All Rights Reserved.</p>
     </footer>
+
+    <script src="script.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+
 </body>
 </html>
