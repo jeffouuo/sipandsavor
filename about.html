@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>關於我們 - 飲茶趣</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .about-page {
+            padding-top: 100px;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        .about-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .about-title {
+            text-align: center;
+            color: #333;
+            font-size: 36px;
+            margin-bottom: 40px;
+        }
+
+        .about-section {
+            background: white;
+            border-radius: 10px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .about-section h2 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .about-section p {
+            color: #666;
+            line-height: 1.8;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .about-card {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .about-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .about-card h3 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .about-card p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media screen and (max-width: 768px) {
+            .about-section {
+                padding: 20px;
+            }
+            
+            .about-title {
+                font-size: 28px;
+            }
+            
+            .about-section h2 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <!-- 桌面導航 -->
+        <nav class="desktop-nav">
+            <ul>
+                <li><a href="news.html">最新消息</a></li>
+                <li><a href="about.html">關於我們</a></li>
+                <li><a href="stores.html">門市據點</a></li>
+            </ul>
+        </nav>
+    
+        <!-- 手機元件 -->
+        <button class="menu" id="hamburgerBtn">&#9776;</button>
+        
+        <a href="index.html"><h1>飲茶趣</h1></a>
+    
+        <!-- 購物車圖標 -->
+        <div class="cart-icon" id="cartIcon">
+            <span class="material-icons">shopping_cart</span>
+            <span class="cart-count">0</span>
+        </div>
+
+        <!-- 購物車側邊欄 -->
+        <div class="cart-sidebar" id="cartSidebar">
+            <div class="cart-header">
+                <h3>購物車</h3>
+                <button class="close-cart" id="closeCart">&times;</button>
+            </div>
+            <div class="cart-items">
+                <!-- 購物車項目將通過 JavaScript 動態添加 -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>總計：</span>
+                    <span class="total-amount">NT$ 0</span>
+                </div>
+                <button class="checkout-btn">結帳</button>
+            </div>
+        </div>
+    
+        <!-- 手機菜單 -->
+        <nav id="mobileMenu">
+            <ul>
+                <li><a href="news.html">最新消息</a></li>
+                <li><a href="about.html">關於我們</a></li>
+                <li><a href="stores.html">門市據點</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="about-page">
+        <div class="about-container">
+            <h1 class="about-title">關於我們</h1>
+
+            <!-- 品牌故事 -->
+            <section class="about-section">
+                <h2>品牌故事</h2>
+                <p>飲茶趣創立於2020年，源自對茶文化的熱愛與堅持。我們相信，每一杯茶都承載著獨特的故事，每一次品嚐都是一次心靈的旅程。</p>
+                <p>從最初的街角小店，到現在的多家連鎖門市，我們始終秉持著「用心泡製，讓每一口都值得品味」的理念，為每一位顧客帶來最優質的茶飲體驗。</p>
+            </section>
+
+            <!-- 特色介紹 -->
+            <section class="about-section">
+                <h2>我們的特色</h2>
+                <div class="about-grid">
+                    <div class="about-card">
+                        <img src="images/tea-quality.webp" alt="茶葉品質" loading="lazy">
+                        <h3>嚴選茶葉</h3>
+                        <p>精選來自台灣各地優質茶園的茶葉，確保每一片茶葉都經過嚴格把關。</p>
+                    </div>
+                    <div class="about-card">
+                        <img src="images/tea-making.webp" alt="專業製茶" loading="lazy">
+                        <h3>專業製茶</h3>
+                        <p>擁有專業的製茶團隊，堅持傳統工藝，創新配方，為您帶來獨特的茶飲體驗。</p>
+                    </div>
+                    <div class="about-card">
+                        <img src="images/tea-service.webp" alt="貼心服務" loading="lazy">
+                        <h3>貼心服務</h3>
+                        <p>提供客製化服務，讓每一位顧客都能找到最適合自己的茶飲。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 企業文化 -->
+            <section class="about-section">
+                <h2>企業文化</h2>
+                <p>我們的核心價值是「品質、創新、永續」：</p>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="margin-bottom: 15px;">• 品質：堅持使用最優質的原料，確保每一杯茶飲的品質</li>
+                    <li style="margin-bottom: 15px;">• 創新：不斷研發新口味，為傳統茶飲注入新活力</li>
+                    <li style="margin-bottom: 15px;">• 永續：重視環保，使用環保包裝，推動永續發展</li>
+                </ul>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <p>Copyright ◎ 2025 飲茶趣 All Rights Reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html> 

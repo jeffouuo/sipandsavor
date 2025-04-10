@@ -28,16 +28,28 @@ h1 {
     text-indent: -9999px;
     opacity: 0.9;
     transition: opacity 0.3s ease; /* 添加漸變效果 */
+    will-change: transform; /* 優化性能 */
 }
 
+/* 添加 logo 連結樣式 */
+header a {
+    display: block;
+    width: 120px;
+    height: 80px;
+    position: fixed;
+    left: 0rem;
+    top: 0rem;
+    z-index: 100;
+    cursor: pointer;
+}
+
+header a:hover h1 {
+    opacity: 1;
+}
 
 header li{
     display:inline;
     margin-right:4vw;
-}
-header a{
-    color:white;
-    text-decoration:none;
 }
 header a:hover{
     text-decoration: underline;
@@ -47,30 +59,47 @@ header a:hover{
     background-color: antiquewhite;
     color: white;
     height: 100vh;
-    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(images/sip.jpg);
+    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(images/sip.webp);
     background-size: cover;
     background-position: center;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-}
-.news h2{
-    font-size: 60px;
-    margin-top: 60px;
-}
-.news p{
-    color: #FEF7E6;
-    font-size: 18px;
-    margin: 25px 0;
+    will-change: transform;
+    text-align: center;
+    padding: 0 20px;
 }
 
-.news a{
+.news h2 {
+    font-size: 48px;
+    margin-bottom: 30px;
+    line-height: 1.2;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.news p {
+    color: #FEF7E6;
+    font-size: 20px;
+    margin: 15px 0;
+    line-height: 1.6;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.news a {
     color: white;
     text-decoration: none;
-    border: 1px solid #ACACAC;
-    padding: 10px 20px;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    padding: 12px 30px;
     border-radius: 5px;
+    margin-top: 20px;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+.news a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
 }
 
 .slogan {
@@ -119,29 +148,273 @@ footer{
     text-align: center;
     line-height: 2em;
 }
-.product{
-    display: flex;
+.product {
     background-color: #ede9db;
-    justify-content:space-between;
-    align-items: center;
-    padding: 100px 180px 80px;
+    padding: 20px 0;
+    overflow: hidden;
 }
-.product div{
-    width: 300px;
+
+.swiper-container {
+    width: 100%;
+    padding: 10px 0;
+    position: relative;
+}
+
+.swiper-wrapper {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.swiper-slide {
+    width: 140px;
+    background: white;
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+    margin: 0 5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.swiper-slide img {
+    width: 100%;
+    height: 124px;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    transition: transform 0.3s;
+    aspect-ratio: 1/1;  /* 確保圖片保持正方形 */
+    will-change: transform; /* 優化性能 */
+    backface-visibility: hidden; /* 優化性能 */
+    -webkit-backface-visibility: hidden; /* Safari 支援 */
+    cursor: pointer; /* 添加指針樣式 */
+}
+
+.swiper-slide h3 {
+    font-size: 15px;
+    margin: 4px 0;
+    color: #333;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.price {
+    color: #000000;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.swiper-slide p {
+    font-size: 12px;
+    line-height: 1.3em;
+    color: #666;
     text-align: center;
 }
-.product img{
-    width: 100%;
-    border-radius: 10px;
+
+/* 導航按鈕樣式 */
+.swiper-button-next,
+.swiper-button-prev {
+    width: 30px;
+    height: 30px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    color: #333;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
 }
-.product h3{
-    font-size: 20px;
-    margin: 20px 0;
+
+.swiper-button-next:after,
+.swiper-button-prev:after {
+    font-size: 12px !important;  /* 使用 !important 覆蓋 Swiper 默認樣式 */
+    font-weight: bold;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
-.product p{
-    font-size: 14px;
-    line-height: 1.6em;
+
+.swiper-button-next {
+    right: 10px;
 }
+
+.swiper-button-prev {
+    left: 10px;
+}
+
+/* 分頁器樣式 */
+.swiper-pagination-bullet {
+    width: 8px;
+    height: 8px;
+    background: #333;
+}
+
+/* 響應式調整 */
+@media screen and (max-width: 768px) {
+    .newsletter form {
+        flex-direction: column;
+        align-items: center;
+        max-width: 300px;
+    }
+    .newsletter input {
+        width: 100%;
+        max-width: none;
+    }
+    .newsletter button {
+        width: 100%;
+    }
+    .desktop-nav {
+        display: none;
+    }
+    .menu {
+        display: block;
+        background-color: transparent;
+        color: white;
+        font-size: 35px;
+        position: fixed;
+        top: 15px;
+        left: 20px;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+        z-index: 1003;
+    }
+    #mobileMenu {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 80%;
+        height: 100vh;
+        background: rgba(35, 28, 26, 0.95);
+        transition: left 0.3s ease;
+        z-index: 1002;
+        overflow-y: auto;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+    }
+    #mobileMenu.active {
+        left: 0;
+    }
+    #mobileMenu ul {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+        gap: 5rem;
+        margin-top: 1000px;
+        padding-left: 30px;
+        padding-right: 30px;
+    }
+    #mobileMenu li {
+        display: block !important;
+        opacity: 0;
+        transform: translateX(-20px);
+        transition: all 0.3s ease;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+    }
+    #mobileMenu.active li {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    #mobileMenu li:nth-child(1) { transition-delay: 0.1s; }
+    #mobileMenu li:nth-child(2) { transition-delay: 0.2s; }
+    #mobileMenu li:nth-child(3) { transition-delay: 0.3s; }
+    #mobileMenu a {
+        color: white;
+        font-size: 1.8rem;
+        text-decoration: none;
+        display: block;
+        padding: 1.2rem 2rem;
+        border-radius: 8px;
+        text-align: left;
+        transition: all 0.3s ease;
+        line-height: 1.5;
+        letter-spacing: 2px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    #mobileMenu a:hover {
+        background: rgba(255,255,255,0.1);
+        transform: translateX(10px);
+    }
+    /* 當選單打開時，防止背景滾動 */
+    body.menu-open {
+        overflow: hidden;
+    }
+    header ul {
+        display: none;
+    }
+    header h1 {
+        left: 50%;
+        transform: translatex(-50%);
+        width: 120px;
+        z-index: 1001;
+    }
+    .news h2 {
+        font-size: 36px;
+    }
+    .news p {
+        font-size: 16px;
+    }
+    .news a {
+        padding: 10px 25px;
+        font-size: 16px;
+    }
+    .shop {
+        flex-direction: column;
+    }
+    .shop img {
+        width: 100%;
+    }
+    .info {
+        width: 100%;
+        padding: 40px 0;
+    }
+    .info h2 {
+        font-size: 30px;
+    }
+    .swiper-slide {
+        width: 120px;
+        margin: 0 3px;
+    }
+    
+    .swiper-slide img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        object-position: center;
+    }
+    
+    .swiper-slide h3 {
+        font-size: 13px;
+    }
+    
+    .swiper-slide p {
+        font-size: 11px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .swiper-slide {
+        width: 100px;
+        margin: 0 2px;
+    }
+    
+    .swiper-slide img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+        object-position: center;
+    }
+}
+
 .newsletter {
     background-color: #485652;
     color: white;
@@ -205,21 +478,20 @@ input:focus{
 .desktop-nav {
     position: fixed;
     right: 2rem;
-    top: 50%;
-    transform: translateY(-50%); /* 垂直居中 */
+    top: 70%;
+    transform: translateY(-50%);
     z-index: 1002;
     margin: 0;
     padding: 0;
 }
 
-
-
 .desktop-nav ul {
     display: flex;
-    gap: 2rem;       /* 间距控制 */
+    gap: 1.2rem;
     margin: 0;
     padding: 0;
 }
+
 .desktop-nav li {
     list-style: none;
 }
@@ -227,145 +499,139 @@ input:focus{
 .desktop-nav a {
     color: white;
     font-size: 1.1rem;
-    padding: 0.5rem 1rem;
+    padding: 0.3rem 0.8rem;
     text-decoration: none;
     position: relative;
-
-}
-.desktop-nav a::after {
-    content: '';
-    position: absolute;
-    bottom: -3px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: white;
-    transition: width 0.3s;
+    display: inline-block;
+    min-width: 70px;
+    text-align: center;
 }
 
-.desktop-nav a:hover::after {
-    width: 100%;
-}
 .desktop-nav a:hover {
-    background: rgba(255,255,255,0.15);
+    background: none;
 }
 
+/* 確保 logo 在按鈕上方 */
 header h1 {
-    z-index: 999;  /* 低于导航层级 */
+    z-index: 1000;
 }
 
 /* 手機版菜單樣式修正 */
 #mobileMenu {
     position: fixed;
-    top: 80px;
+    top: 0;
     left: -100%;
-    width: 70%;
-    height: calc(100vh - 80px);
+    width: 80%;
+    height: 100vh;
     background: rgba(35, 28, 26, 0.95);
     transition: left 0.3s ease;
-    z-index: 300;
+    z-index: 1002;
     overflow-y: auto;
-    display: none; /* 初始隱藏，在媒體查詢中才顯示 */
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
 }
 
 #mobileMenu.active {
     left: 0;
 }
+
 #mobileMenu ul {
-    list-style: none;
-    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
     margin: 0;
+    gap: 5rem;
+    margin-top: 100px;
+    padding-left: 30px;
+    padding-right: 30px;
 }
+
 #mobileMenu li {
-    display: block !important; /* 強制設置為塊級元素 */
-    margin-bottom: 25px;
-  }
+    display: block !important;
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: all 0.3s ease;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+#mobileMenu.active li {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+#mobileMenu li:nth-child(1) { transition-delay: 0.1s; }
+#mobileMenu li:nth-child(2) { transition-delay: 0.2s; }
+#mobileMenu li:nth-child(3) { transition-delay: 0.3s; }
+
 #mobileMenu a {
     color: white;
-    font-size: 18px;
+    font-size: 1.8rem;
     text-decoration: none;
     display: block;
-    padding: 10px;
-    border-radius: 4px;
-    transition: background 0.3s;
+    padding: 1.2rem 2rem;
+    border-radius: 8px;
+    text-align: left;
+    transition: all 0.3s ease;
+    line-height: 1.5;
+    letter-spacing: 2px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 #mobileMenu a:hover {
     background: rgba(255,255,255,0.1);
+    transform: translateX(10px);
 }
 
-/* 漢堡按鈕樣式修正 */
+/* 添加圖片載入動畫 */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.swiper-slide img {
+    animation: fadeIn 0.5s ease-in;
+}
+
+/* 優化圖片載入 */
+.swiper-slide img[loading="lazy"] {
+    opacity: 0;
+    transition: opacity 0.3s ease-in;
+}
+
+.swiper-slide img[loading="lazy"].loaded {
+    opacity: 1;
+}
+
+/* 添加圖片載入錯誤處理 */
+.swiper-slide img.error {
+    background-color: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.swiper-slide img.error::before {
+    content: "圖片載入失敗";
+    font-size: 12px;
+    color: #999;
+}
+
+/* 確保 header 的 z-index 正確 */
+header {
+    z-index: 1000;
+}
+
+/* 漢堡選單按鈕預設隱藏 */
 .menu {
     display: none;
-    z-index: 400;
-    background-color: transparent;
-    color: white;
-    font-size: 35px;
-    position: fixed;
-    top: 15px;
-    left: 20px;
-    border: none;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-}
-.menu.active {
-    transform: rotate(90deg);
-}
-.hamburger {
-    z-index: 300; /* 按鈕在最頂層 */
 }
 
-/* 響應式語法 */
+/* 手機版時顯示漢堡選單按鈕 */
 @media screen and (max-width: 768px) {
-    .newsletter form {
-        flex-direction: column;
-        align-items: center;
-        max-width: 300px;
-    }
-    .newsletter input {
-        width: 100%;
-        max-width: none;
-    }
-    .newsletter button {
-        width: 100%;
-    }
-    .desktop-nav {
-        display: none !important;
-    }
-      /* 顯示手機菜單（但初始位置在畫面外） */
-  #mobileMenu {
-    display: block !important;
-    left: -100%;
-  }
-    /* 活動狀態顯示菜單 */
-  #mobileMenu.active {
-    left: 0 !important;
-  }
-  #mobileMenu ul {
-    display: block !important;
-  }
-  header ul:not(#mobileMenu ul) {
-    display: none !important;
-  }
-    #mobileMenu li {
-        margin-bottom: 1.5rem;
-    }
-    header ul{
-        display: none;
-    }
-    header h1{
-        left :50%;
-        transform:translatex(-50%);
-        width: 120px;     /* 限制宽度避免挤压按钮 */
-    }
-    header li {
-        display: block !important;
-    }
-    .news h2{
-        font-size: 40px;
-    }
-    .menu{
-        display: block !important;
+    .menu {
+        display: block;
         background-color: transparent;
         color: white;
         font-size: 35px;
@@ -373,79 +639,198 @@ header h1 {
         top: 15px;
         left: 20px;
         border: none;
-        cursor:pointer;
+        cursor: pointer;
         transition: transform 0.3s ease;
+        z-index: 1003;
     }
-    .shop{
-        flex-direction: column;
-    }
-    .shop img{
-        width: 100%;
-    }
-    .info{
-        width: 100%;
-        padding: 40px 0;
-    }
-    .info h2{
-        font-size: 30px;
-    }
-    .product{
-        flex-direction: column;
-        padding: 60px 0;
-    }
-    .product div{
-        margin-bottom: 30px;
-    }
+}
 
-    .menu.active {
-        transform: rotate(90deg);
-    }
+/* 購物車圖標樣式 */
+.cart-icon {
+    position: fixed;
+    right: 2rem;
+    top: 1.5rem;
+    cursor: pointer;
+    z-index: 1002;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
 
-    #mobileMenu {
-        display: block;
-    }
-    .swiper-slide {
-        width: 70%;
-        margin: 0 10px;
+.cart-icon:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.cart-icon .material-icons {
+    color: white;
+    font-size: 24px;
+}
+
+.cart-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #E0E9A3;
+    color: #231C1A;
+    font-size: 12px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 購物車側邊欄樣式 */
+.cart-sidebar {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100vh;
+    background: white;
+    z-index: 1003;
+    transition: right 0.3s ease;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.cart-sidebar.active {
+    right: 0;
+}
+
+.cart-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cart-header h3 {
+    margin: 0;
+    color: #231C1A;
+    font-size: 1.2rem;
+}
+
+.close-cart {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+}
+
+.cart-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.cart-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.cart-item img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 1rem;
+}
+
+.cart-item-info {
+    flex: 1;
+}
+
+.cart-item-title {
+    font-size: 1rem;
+    color: #231C1A;
+    margin-bottom: 0.5rem;
+}
+
+.cart-item-price {
+    color: #000000;
+    font-size: 0.9rem;
+}
+
+.cart-item-quantity {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: 1rem;
+}
+
+.quantity-btn {
+    background: #f5f5f5;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+}
+
+.quantity-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.cart-footer {
+    padding: 1.5rem;
+    border-top: 1px solid #eee;
+}
+
+.cart-total {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    color: #000000;
+}
+
+.checkout-btn {
+    width: 100%;
+    padding: 1rem;
+    background: #E0E9A3;
+    color: #231C1A;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.3s ease;
+}
+
+.checkout-btn:hover {
+    background: #d1d992;
+}
+
+/* 手機版樣式調整 */
+@media screen and (max-width: 768px) {
+    .cart-sidebar {
+        width: 100%;
+        right: -100%;
     }
     
-   
-}
-/* 新增在现有CSS底部 */
-.swiper-container {
-    width: 100%;
-    padding: 40px 0 80px;
+    .cart-icon {
+        right: 1rem;
+        top: 1rem;
+    }
 }
 
-.swiper-wrapper {
-    padding: 20px 0;
-}
-
-.swiper-slide {
-    width: 300px;
-    background: white;
-    border-radius: 15px;
-    padding: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transition: transform 0.3s;
-    margin: 0 15px;
-    position: relative;
-    overflow: hidden;
-    border-radius: 15px;
-}
-
-.swiper-slide img {
-    width: 100%;
-    height: 300px;
-    object-fit: cover; /* 智能裁剪 */
-    object-position: center;
-    display: block;
-    transition: transform 0.3s;
-}
-
-/* 移除可能的覆盖层 */
-.swiper-slide::after {
-    content: none; /* 禁用之前可能添加的覆盖层 */
+.swiper-slide img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 
