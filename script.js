@@ -109,6 +109,55 @@ const initImageLoading = () => {
     });
 };
 
+// 初始化隱藏管理入口
+const initHiddenAdminEntry = () => {
+    const adminEntryTrigger = document.getElementById('adminEntryTrigger');
+    const adminEntryModal = document.getElementById('adminEntryModal');
+    const adminLoginBtn = document.getElementById('adminLoginBtn');
+    const adminCancelBtn = document.getElementById('adminCancelBtn');
+    
+    if (!adminEntryTrigger || !adminEntryModal) return;
+    
+    let clickCount = 0;
+    let clickTimer = null;
+    
+    // 雙擊觸發管理入口
+    adminEntryTrigger.addEventListener('click', () => {
+        clickCount++;
+        
+        if (clickCount === 1) {
+            clickTimer = setTimeout(() => {
+                clickCount = 0;
+            }, 500);
+        } else if (clickCount === 2) {
+            clearTimeout(clickTimer);
+            clickCount = 0;
+            adminEntryModal.style.display = 'flex';
+        }
+    });
+    
+    // 進入後台
+    if (adminLoginBtn) {
+        adminLoginBtn.addEventListener('click', () => {
+            window.location.href = '/admin.html';
+        });
+    }
+    
+    // 取消
+    if (adminCancelBtn) {
+        adminCancelBtn.addEventListener('click', () => {
+            adminEntryModal.style.display = 'none';
+        });
+    }
+    
+    // 點擊外部關閉
+    adminEntryModal.addEventListener('click', (e) => {
+        if (e.target === adminEntryModal) {
+            adminEntryModal.style.display = 'none';
+        }
+    });
+};
+
 // 購物車功能變數
 let cart = [];
 let cartIcon, cartSidebar, closeCart, cartItems, cartTotal, cartCount, checkoutBtn;
@@ -319,6 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initHamburgerMenu();
     initSwiper();
     initImageLoading();
+    initHiddenAdminEntry();
     
     // 同步購物車狀態
     syncCartState();
