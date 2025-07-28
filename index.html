@@ -130,11 +130,21 @@
             window.location.href = orderUrl;
         }
         
-        // 頁面載入完成後載入主腳本
+        // 確保 Swiper 載入後再載入主腳本
         window.addEventListener('load', function() {
-            const script = document.createElement('script');
-            script.src = '/script.js';
-            document.head.appendChild(script);
+            // 檢查 Swiper 是否已載入
+            if (typeof Swiper !== 'undefined') {
+                const script = document.createElement('script');
+                script.src = '/script.js';
+                document.head.appendChild(script);
+            } else {
+                // 如果 Swiper 還沒載入，等待一下再載入主腳本
+                setTimeout(function() {
+                    const script = document.createElement('script');
+                    script.src = '/script.js';
+                    document.head.appendChild(script);
+                }, 1000);
+            }
         });
     </script>
 
