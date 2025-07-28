@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR碼測試頁面</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c5530;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .url-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .generate-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        .generate-btn:hover {
+            background: #45a049;
+        }
+        .qr-result {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .instructions {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 QR碼測試工具</h1>
+        
+        <div class="warning">
+            <strong>⚠️ 重要提醒：</strong><br>
+            本地開發時，手機無法直接訪問 localhost。請使用 ngrok 或其他工具創建公開網址。
+        </div>
+
+        <div class="test-section">
+            <h3>📱 快速測試</h3>
+            <p>輸入您的網址，生成QR碼進行測試：</p>
+            
+            <input type="url" id="testUrl" class="url-input" 
+                   placeholder="例如：https://abc123.ngrok.io/dine-in-order.html" 
+                   value="https://abc123.ngrok.io/dine-in-order.html">
+            
+            <button class="generate-btn" onclick="generateTestQR()">生成測試QR碼</button>
+            
+            <div id="testQRResult" class="qr-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 常用測試網址</h3>
+            <button class="generate-btn" onclick="setUrl('https://abc123.ngrok.io/dine-in-order.html')">內用點餐</button>
+            <button class="generate-btn" onclick="setUrl('https://abc123.ngrok.io/menu.html')">飲料菜單</button>
+            <button class="generate-btn" onclick="setUrl('https://abc123.ngrok.io/')">首頁</button>
+        </div>
+
+        <div class="instructions">
+            <h3>📋 使用步驟</h3>
+            <ol>
+                <li><strong>啟動伺服器</strong>：<code>npm start</code></li>
+                <li><strong>啟動 ngrok</strong>：<code>ngrok http 3000</code></li>
+                <li><strong>複製 ngrok 網址</strong>（例如：https://abc123.ngrok.io）</li>
+                <li><strong>生成QR碼</strong>：在上方輸入完整網址</li>
+                <li><strong>手機測試</strong>：用手機掃描QR碼</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 故障排除</h3>
+            <ul>
+                <li><strong>QR碼無法掃描</strong>：檢查網址是否正確</li>
+                <li><strong>頁面無法載入</strong>：確認 ngrok 是否正常運行</li>
+                <li><strong>手機無法連接</strong>：檢查網路設定</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        function setUrl(url) {
+            document.getElementById('testUrl').value = url;
+        }
+
+        function generateTestQR() {
+            const url = document.getElementById('testUrl').value;
+            if (!url) {
+                alert('請輸入網址！');
+                return;
+            }
+
+            const resultDiv = document.getElementById('testQRResult');
+            resultDiv.innerHTML = '';
+
+            QRCode.toCanvas(resultDiv, url, {
+                width: 250,
+                margin: 2,
+                color: {
+                    dark: '#2c5530',
+                    light: '#ffffff'
+                }
+            }, function (error) {
+                if (error) {
+                    resultDiv.innerHTML = '<p style="color: red;">QR碼生成失敗</p>';
+                } else {
+                    resultDiv.innerHTML += '<p style="color: green; margin-top: 10px;">✅ QR碼生成成功！</p>';
+                }
+            });
+        }
+
+        // 頁面載入時自動生成一個測試QR碼
+        window.addEventListener('load', function() {
+            setTimeout(generateTestQR, 1000);
+        });
+    </script>
+</body>
+</html> 

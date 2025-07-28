@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 * {
     
     margin :0;
@@ -936,3 +937,2029 @@ header {
 }
 
 
+=======
+* {
+    
+    margin :0;
+    box-sizing: border-box;
+}
+header{
+    background-color :rgba(35, 28, 26, 0.8);
+    height:80px;
+    width:100%;
+    position: fixed;
+    z-index: 100;
+    will-change: transform;
+}
+
+h1 {
+    position: fixed; /* 改用固定定位 */
+    left: 0rem;
+    top: 0rem;      /* 控制垂直位置 */
+    margin: 0;
+    padding: 0;
+    width: 120px;   /* 根據需要調整寬度 */
+    height: 80px;   /* 固定高度保持比例 */
+    z-index: 100;  /* 確保在導航列上方 */
+    background-image: url(images/sipandsavor.webp);
+    background-size: contain;  /* 按比例縮放 */
+    background-repeat: no-repeat;
+    background-position: left 5px center; /* 左對齊 */
+    text-indent: -9999px;
+    opacity: 0.9;
+    transition: opacity 0.3s ease; /* 添加漸變效果 */
+    will-change: transform; /* 優化性能 */
+}
+
+/* 添加 logo 連結樣式 */
+header a {
+    display: block;
+    width: 120px;
+    height: 80px;
+    position: fixed;
+    left: 0rem;
+    top: 0rem;
+    z-index: 100;
+    cursor: pointer;
+}
+
+header a:hover h1 {
+    opacity: 1;
+}
+
+header li{
+    display:inline;
+    margin-right:4vw;
+}
+header a:hover{
+    text-decoration: underline;
+}
+
+.news {
+    background-color: antiquewhite;
+    color: white;
+    height: 100vh;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(images/sip.webp);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    will-change: transform;
+    text-align: center;
+    padding: 0 20px;
+}
+
+.news h2 {
+    font-size: 48px;
+    margin-bottom: 30px;
+    line-height: 1.2;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.news p {
+    color: #FEF7E6;
+    font-size: 20px;
+    margin: 15px 0;
+    line-height: 1.6;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.news a {
+    color: white;
+    text-decoration: none;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    padding: 12px 30px;
+    border-radius: 5px;
+    margin-top: 20px;
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+.news a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.slogan {
+   background-color: #485652;
+   color: white;
+   height: 250px;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   font-size: 20px;
+   line-height: 1.8em;
+    word-spacing: 5px;
+}
+
+
+
+footer{
+    background-color: black;
+    color: #B7B7B7;
+    height: 60px;
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    font-size:20px;
+   
+}
+.shop{
+    display: flex;
+}
+.shop img{
+    width: 50%;
+}
+.info{
+    width: 50%;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.info h2{
+    font-size: 40px;
+    margin-bottom: 30px;
+}
+.info p{
+    text-align: center;
+    line-height: 2em;
+}
+.product {
+    background-color: #ede9db;
+    padding: 20px 0;
+    overflow: hidden;
+}
+
+.swiper-container {
+    width: 100%;
+    padding: 10px 0;
+    position: relative;
+}
+
+.swiper-wrapper {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.swiper-slide {
+    width: 140px;
+    background: white;
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+    margin: 0 5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.swiper-slide img {
+    width: 100%;
+    height: 124px;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    transition: transform 0.3s;
+    aspect-ratio: 1/1;  /* 確保圖片保持正方形 */
+    will-change: transform; /* 優化性能 */
+    backface-visibility: hidden; /* 優化性能 */
+    -webkit-backface-visibility: hidden; /* Safari 支援 */
+    cursor: pointer; /* 添加指針樣式 */
+}
+
+.swiper-slide h3 {
+    font-size: 15px;
+    margin: 4px 0;
+    color: #333;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.price {
+    color: #000000;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.swiper-slide p {
+    font-size: 12px;
+    line-height: 1.3em;
+    color: #666;
+    text-align: center;
+}
+
+/* 導航按鈕樣式 */
+.swiper-button-next,
+.swiper-button-prev {
+    width: 30px;
+    height: 30px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    color: #333;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+}
+
+.swiper-button-next:after,
+.swiper-button-prev:after {
+    font-size: 12px !important;  /* 使用 !important 覆蓋 Swiper 默認樣式 */
+    font-weight: bold;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.swiper-button-next {
+    right: 10px;
+}
+
+.swiper-button-prev {
+    left: 10px;
+}
+
+/* 分頁器樣式 */
+.swiper-pagination-bullet {
+    width: 8px;
+    height: 8px;
+    background: #333;
+}
+
+/* 響應式調整 */
+@media screen and (max-width: 768px) {
+    .newsletter form {
+        flex-direction: column;
+        align-items: center;
+        max-width: 300px;
+    }
+    .newsletter input {
+        width: 100%;
+        max-width: none;
+    }
+    .newsletter button {
+        width: 100%;
+    }
+    .desktop-nav {
+        display: none !important;
+    }
+    .menu {
+        display: block;
+        background-color: transparent;
+        color: white;
+        font-size: 35px;
+        position: fixed;
+        top: 15px;
+        left: 20px;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+        z-index: 1003;
+    }
+    #mobileMenu {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 80%;
+        height: 100vh;
+        background: rgba(35, 28, 26, 0.95);
+        transition: left 0.3s ease;
+        z-index: 1002;
+        overflow-y: auto;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+    }
+    #mobileMenu.active {
+        left: 0;
+    }
+    #mobileMenu ul {
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        margin: 0;
+        gap: 5rem;
+        margin-top: 1000px;
+        padding-left: 30px;
+        padding-right: 30px;
+    }
+    #mobileMenu li {
+        display: block !important;
+        opacity: 0;
+        transform: translateX(-20px);
+        transition: all 0.3s ease;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+    }
+    #mobileMenu.active li {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    #mobileMenu li:nth-child(1) { transition-delay: 0.1s; }
+    #mobileMenu li:nth-child(2) { transition-delay: 0.2s; }
+    #mobileMenu li:nth-child(3) { transition-delay: 0.3s; }
+    #mobileMenu a {
+        color: white;
+        font-size: 1.8rem;
+        text-decoration: none;
+        display: block;
+        padding: 1.2rem 2rem;
+        border-radius: 8px;
+        text-align: left;
+        transition: all 0.3s ease;
+        line-height: 1.5;
+        letter-spacing: 2px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    #mobileMenu a:hover {
+        background: rgba(255,255,255,0.1);
+        transform: translateX(10px);
+    }
+    /* 當選單打開時，防止背景滾動 */
+    body.menu-open {
+        overflow: hidden;
+    }
+    header ul {
+        display: none;
+    }
+    header h1 {
+        left: 50%;
+        transform: translatex(-50%);
+        width: 120px;
+        z-index: 1001;
+    }
+    .news h2 {
+        font-size: 36px;
+    }
+    .news p {
+        font-size: 16px;
+    }
+    .news a {
+        padding: 10px 25px;
+        font-size: 16px;
+    }
+    .shop {
+        flex-direction: column;
+    }
+    .shop img {
+        width: 100%;
+    }
+    .info {
+        width: 100%;
+        padding: 40px 0;
+    }
+    .info h2 {
+        font-size: 30px;
+    }
+    .swiper-slide {
+        width: 120px;
+        margin: 0 3px;
+    }
+    
+    .swiper-slide img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        object-position: center;
+    }
+    
+    .swiper-slide h3 {
+        font-size: 13px;
+    }
+    
+    .swiper-slide p {
+        font-size: 11px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .swiper-slide {
+        width: 100px;
+        margin: 0 2px;
+    }
+    
+    .swiper-slide img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+        object-position: center;
+    }
+}
+
+.newsletter {
+    background-color: #485652;
+    color: white;
+    padding: 100px 20px;  /* 增加垂直內距 */
+    width: 100vw;         /* 填滿視窗寬度 */
+    margin-left: calc(-50vw + 50%); /* 水平置中對齊技巧 */
+    box-shadow: 0 0 30px rgba(0,0,0,0.2) inset; /* 添加內陰影增加層次 */
+    position: relative;   /* 為子元素定位做準備 */
+    min-height: 400px;    /* 設定最小高度 */
+    display: flex;        /* 啟用flex布局 */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.newsletter p {
+    font-size: 24px; /* 放大标题 */
+    margin-bottom: 30px;
+    text-align: center;
+    width: 100%;
+}
+.newsletter form {
+    display: flex;
+    justify-content: center;
+    gap: 20px; /* 增加元素间距 */
+    width: 100%;
+    max-width: 600px; /* 限制表单最大宽度 */
+    margin: 0 auto;
+}
+.newsletter input, .newsletter button {
+    background-color: transparent;
+    color: white;
+    border: 1px solid #949d9a;
+    padding: 10px;
+    border-radius: 5px;
+}
+.newsletter input {
+    flex: 1; /* 输入框填满剩余空间 */
+    max-width: 400px; /* 限制输入框最大宽度 */
+    padding: 15px;
+    font-size: 16px;
+}
+.newsletter button {
+    width: 120px; /* 加宽按钮 */
+    padding: 15px;
+    font-size: 16px;
+    background: rgba(255,255,255,0.1);
+    transition: background 0.3s;
+}
+.newsletter button:hover {
+    background: rgba(255,255,255,0.2);
+}
+input::placeholder{
+    color: #DDDDDD;
+}
+input:focus{
+    outline: none;
+    border-color: #E0E9A3;
+}
+
+/* 新增桌面版导航样式 */
+.desktop-nav {
+    position: fixed;
+    right: 2rem;
+    top: 60%;
+    transform: translateY(-50%);
+    z-index: 1002;
+    margin: 0;
+    padding: 0;
+}
+
+.desktop-nav ul {
+    display: flex;
+    gap: 1.2rem;
+    margin: 0;
+    padding: 0;
+    /* 確保下拉菜單不受flex影響 */
+    align-items: flex-start;
+}
+
+.desktop-nav li {
+    list-style: none;
+    /* 確保下拉菜單容器不受flex影響 */
+    position: relative;
+}
+
+.desktop-nav a {
+    color: white;
+    font-size: 1.1rem;
+    text-decoration: none;
+    position: relative;
+    display: inline;
+    padding: 5px;
+    transition: all 0.3s ease;
+}
+
+.desktop-nav a:hover {
+    text-decoration: underline;
+}
+
+/* 確保 logo 在按鈕上方 */
+header h1 {
+    z-index: 1000;
+}
+
+/* 手機版菜單樣式修正 */
+#mobileMenu {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 80%;
+    height: 100vh;
+    background: rgba(35, 28, 26, 0.95);
+    transition: left 0.3s ease;
+    z-index: 1002;
+    overflow-y: auto;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+}
+
+#mobileMenu.active {
+    left: 0;
+}
+
+#mobileMenu ul {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    gap: 5rem;
+    margin-top: 100px;
+    padding-left: 30px;
+    padding-right: 30px;
+}
+
+#mobileMenu li {
+    display: block !important;
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: all 0.3s ease;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+#mobileMenu.active li {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+#mobileMenu li:nth-child(1) { transition-delay: 0.1s; }
+#mobileMenu li:nth-child(2) { transition-delay: 0.2s; }
+#mobileMenu li:nth-child(3) { transition-delay: 0.3s; }
+
+#mobileMenu a {
+    color: white;
+    font-size: 1.8rem;
+    text-decoration: none;
+    display: block;
+    padding: 1.2rem 2rem;
+    border-radius: 8px;
+    text-align: left;
+    transition: all 0.3s ease;
+    line-height: 1.5;
+    letter-spacing: 2px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#mobileMenu a:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateX(10px);
+}
+
+/* 添加圖片載入動畫 */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.swiper-slide img {
+    animation: fadeIn 0.5s ease-in;
+}
+
+/* 優化圖片載入 */
+.swiper-slide img[loading="lazy"] {
+    opacity: 0;
+    transition: opacity 0.3s ease-in;
+}
+
+.swiper-slide img[loading="lazy"].loaded {
+    opacity: 1;
+}
+
+/* 添加圖片載入錯誤處理 */
+.swiper-slide img.error {
+    background-color: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.swiper-slide img.error::before {
+    content: "圖片載入失敗";
+    font-size: 12px;
+    color: #999;
+}
+
+/* 確保 header 的 z-index 正確 */
+header {
+    z-index: 1000;
+}
+
+/* 漢堡選單按鈕預設隱藏 */
+.menu {
+    display: none;
+}
+
+/* 手機版時顯示漢堡選單按鈕 */
+@media screen and (max-width: 768px) {
+    .menu {
+        display: block;
+        background-color: transparent;
+        color: white;
+        font-size: 35px;
+        position: fixed;
+        top: 15px;
+        left: 20px;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+        z-index: 1003;
+    }
+}
+
+/* 購物車圖標 */
+.cart-icon {
+    position: fixed;
+    right: 20px;
+    top: 20px;
+    z-index: 1000;
+    cursor: pointer;
+    padding: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: transparent;
+    transition: background-color 0.3s ease;
+    width: 40px;
+    height: 40px;
+}
+
+.cart-icon:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.cart-icon .material-icons {
+    color: white;
+    font-size: 24px;
+    padding: 0;
+    margin: 0;
+}
+
+.cart-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 2px;
+}
+
+.cart-count.updated {
+    animation: cartCountPulse 0.5s ease;
+}
+
+/* 購物車側邊欄 */
+.cart-sidebar {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100vh;
+    background-color: white;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 1003;
+    transition: right 0.3s ease;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.cart-sidebar.active {
+    right: 0;
+}
+
+.cart-sidebar.closing {
+    right: -400px;
+}
+
+/* 購物車標題 */
+.cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    position: relative;
+    z-index: 1004;
+}
+
+.cart-header h3 {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+    position: relative;
+    z-index: 1004;
+}
+
+.close-cart {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.3s ease;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    padding: 0;
+}
+
+.close-cart:hover {
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+/* 購物車商品列表 */
+.cart-items {
+    margin-bottom: 20px;
+}
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+    animation: cartItemAdd 0.3s ease;
+}
+
+.cart-item-info {
+    flex: 1;
+}
+
+.cart-item-title {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.cart-item-price {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.cart-item-customized {
+    color: #4CAF50;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.cart-item-quantity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.quantity-btn {
+    background: none;
+    border: 1px solid #ddd;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+}
+
+.quantity-btn:hover {
+    background-color: #f5f5f5;
+    border-color: #999;
+}
+
+/* 購物車總金額 */
+.cart-total {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #eee;
+    text-align: right;
+    font-size: 18px;
+    color: #000000;
+    font-weight: bold;
+}
+
+/* 結帳按鈕 */
+.checkout-btn {
+    width: 100%;
+    padding: 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 20px;
+}
+
+.checkout-btn:hover {
+    background-color: #45a049;
+}
+
+/* 空購物車提示 */
+.empty-cart {
+    text-align: center;
+    color: #666;
+    padding: 40px 0;
+    font-size: 16px;
+}
+
+/* 通知提示 */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #4CAF50;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 3000;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    max-width: 400px;
+    word-wrap: break-word;
+    line-height: 1.4;
+    font-size: 0.95rem;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.hide {
+    transform: translateX(100%);
+}
+
+/* 動畫效果 */
+@keyframes cartCountPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+@keyframes cartItemAdd {
+    0% { opacity: 0; transform: translateX(20px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .cart-sidebar {
+        width: 100%;
+        right: -100%;
+    }
+    
+    .cart-sidebar.active {
+        right: 0;
+    }
+    
+    .cart-sidebar.closing {
+        right: -100%;
+    }
+}
+
+/* 商品圖片互動效果 */
+.product-image {
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 8px;
+}
+
+.product-image:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.product-image:active {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 通知圖標樣式 */
+.notification-icon {
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.notification.success .notification-icon {
+    color: #4CAF50;
+}
+
+.notification.error .notification-icon {
+    color: #f44336;
+}
+
+.notification-message {
+    font-size: 14px;
+}
+
+/* 隱藏管理入口樣式 */
+.hidden-admin-entry {
+    position: relative;
+}
+
+.admin-entry-trigger {
+    position: absolute;
+    bottom: 10px;
+    right: 20px;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    opacity: 0.3;
+    transition: opacity 0.3s ease;
+    user-select: none;
+}
+
+.admin-entry-trigger:hover {
+    opacity: 0.6;
+}
+
+.admin-hint {
+    font-size: 20px;
+    color: #666;
+}
+
+.admin-entry-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+}
+
+.admin-entry-content {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+}
+
+.admin-entry-content h3 {
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.admin-entry-content p {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.admin-entry-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.admin-entry-buttons button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s ease;
+}
+
+#adminLoginBtn {
+    background: #4CAF50;
+    color: white;
+}
+
+#adminLoginBtn:hover {
+    background: #45a049;
+}
+
+#adminCancelBtn {
+    background: #f44336;
+    color: white;
+}
+
+#adminCancelBtn:hover {
+    background: #da190b;
+}
+
+/* 雙擊動畫效果 */
+.admin-entry-trigger.double-clicked {
+    animation: pulse 0.5s ease;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* 菜單頁面專用樣式 */
+.menu-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+    padding: 80px 20px 60px;
+    margin-bottom: 40px;
+}
+
+.menu-hero h1 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.menu-hero p {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* 菜單網格布局 */
+.menu-grid {
+    padding: 40px 20px 60px;
+}
+
+.menu-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    padding: 20px 0;
+}
+
+.menu-item {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    /* 移除 cursor: pointer; 讓菜單項目不可點擊 */
+    pointer-events: none; /* 完全禁用點擊事件 */
+}
+
+/* 重新啟用客製化按鈕的點擊功能 */
+.menu-item .customize-btn {
+    pointer-events: auto;
+}
+
+/* 移除菜單項目的 hover 效果，讓它們看起來不可點擊 */
+/* .menu-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+} */
+
+.menu-image {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    pointer-events: none !important;
+}
+
+/* 移除菜單圖片的 hover 效果 */
+/* .menu-item:hover .menu-image {
+    transform: scale(1.05);
+} */
+
+.menu-info {
+    padding: 20px;
+    text-align: center;
+}
+
+.menu-info h3 {
+    color: #333;
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.menu-description {
+    color: #666;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 15px;
+    min-height: 40px;
+}
+
+.menu-price {
+    color: #4CAF50;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+@media screen and (max-width: 768px) {
+    .menu-hero h1 {
+        font-size: 2rem;
+    }
+    
+    .menu-hero p {
+        font-size: 1rem;
+    }
+    
+    .menu-container {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        padding: 10px 0;
+    }
+    
+    .menu-image {
+        height: 200px;
+    }
+    
+    .menu-info {
+        padding: 15px;
+    }
+    
+    .menu-info h3 {
+        font-size: 1.2rem;
+    }
+    
+    .menu-description {
+        font-size: 0.9rem;
+        min-height: 35px;
+    }
+    
+    .menu-price {
+        font-size: 1.1rem;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .menu-container {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .menu-image {
+        height: 180px;
+    }
+}
+
+/* 下拉選單樣式 */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    min-width: 150px;
+    z-index: 1000;
+    padding: 8px 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 0;
+    transform: translateY(-10px);
+    /* 確保下拉菜單是垂直排列 */
+    flex-direction: column;
+    /* 確保初始狀態完全隱藏 */
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.dropdown:hover .dropdown-menu {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    /* 懸停時顯示並啟用交互 */
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.dropdown-menu li {
+    list-style: none;
+    /* 確保每個項目都是塊級元素，垂直排列 */
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 10px 20px;
+    color: #333;
+    text-decoration: none;
+    transition: background 0.3s ease, color 0.3s ease;
+    /* 確保連結佔滿整個寬度 */
+    width: 100%;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.dropdown-menu a:hover {
+    background: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
+}
+
+/* 分類篩選按鈕樣式 */
+.category-filter {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 0 0 40px 0;
+    padding: 0 20px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #4CAF50;
+    color: #4CAF50;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    min-width: 100px;
+}
+
+.filter-btn:hover {
+    background: #4CAF50;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+.filter-btn.active {
+    background: #4CAF50;
+    color: white;
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+}
+
+/* 移動設備響應式設計 */
+@media screen and (max-width: 768px) {
+    .category-filter {
+        gap: 15px;
+        margin: 15px 0 30px 0;
+        padding: 0 15px;
+    }
+    
+    .filter-btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+        min-width: 80px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .category-filter {
+        gap: 10px;
+        margin: 10px 0 20px 0;
+        padding: 0 10px;
+    }
+    
+    .filter-btn {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        min-width: 70px;
+    }
+}
+
+/* 篩選功能支持 */
+.menu-category {
+    margin-bottom: 60px;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.menu-category.hidden {
+    display: none;
+}
+
+.menu-category.fade-out {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+/* 菜單分類樣式 */
+.menu-category {
+    margin-bottom: 60px;
+}
+
+.category-title {
+    color: #333;
+    font-size: 2rem;
+    margin-bottom: 50px;
+    text-align: center;
+    position: relative;
+    padding-bottom: 15px;
+}
+
+.category-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: #4CAF50;
+    border-radius: 2px;
+}
+
+.category-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+@media screen and (max-width: 768px) {
+    .category-title {
+        font-size: 1.5rem;
+        margin-bottom: 35px;
+    }
+    
+    .menu-category:target {
+        scroll-margin-top: 100px;
+    }
+    
+    .menu-category:target .category-title {
+        margin-top: 60px;
+    }
+    
+    .category-items {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .category-items {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+}
+
+/* 錨點跳轉時的頂部間距 */
+.menu-category:target {
+    scroll-margin-top: 120px;
+}
+
+.menu-category:target .category-title {
+    margin-top: 80px;
+}
+
+/* 客製化按鈕樣式 */
+.customize-btn {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.customize-btn:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+/* 客製化彈出面板樣式 */
+.customize-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    backdrop-filter: blur(5px);
+}
+
+.customize-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.customize-content {
+    background: white;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.customize-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #eee;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    border-radius: 15px 15px 0 0;
+}
+
+.customize-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.close-customize {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.3s ease;
+}
+
+.close-customize:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.customize-body {
+    padding: 25px;
+}
+
+.customize-section {
+    margin-bottom: 25px;
+}
+
+.customize-section h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.option-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 10px;
+}
+
+.option-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.option-item:hover {
+    border-color: #4CAF50;
+    background: #f8fff8;
+}
+
+.option-item input[type="radio"],
+.option-item input[type="checkbox"] {
+    margin-right: 8px;
+    accent-color: #4CAF50;
+}
+
+.option-item input[type="radio"]:checked + .option-text,
+.option-item input[type="checkbox"]:checked + .option-text {
+    color: #4CAF50;
+    font-weight: 600;
+}
+
+.option-item input[type="radio"]:checked,
+.option-item input[type="checkbox"]:checked {
+    border-color: #4CAF50;
+    background: #f8fff8;
+}
+
+.option-text {
+    font-size: 0.9rem;
+    color: #555;
+}
+
+#specialRequest {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+}
+
+#specialRequest:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+
+
+.customize-price {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-top: 2px solid #eee;
+    margin-top: 20px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.customize-footer {
+    display: flex;
+    gap: 15px;
+    padding: 20px 25px;
+    border-top: 1px solid #eee;
+    background: #f9f9f9;
+    border-radius: 0 0 15px 15px;
+}
+
+.add-to-cart-btn,
+.cancel-customize-btn {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.add-to-cart-btn {
+    background: #4CAF50;
+    color: white;
+}
+
+.add-to-cart-btn:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.cancel-customize-btn {
+    background: #f0f0f0;
+    color: #666;
+}
+
+.cancel-customize-btn:hover {
+    background: #e0e0e0;
+    color: #333;
+}
+
+/* 移動設備響應式設計 */
+@media screen and (max-width: 768px) {
+    .customize-content {
+        width: 95%;
+        margin: 10px;
+    }
+    
+    .customize-header {
+        padding: 15px 20px;
+    }
+    
+    .customize-body {
+        padding: 20px;
+    }
+    
+    .option-group {
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+        gap: 8px;
+    }
+    
+    .option-item {
+        padding: 8px;
+    }
+    
+    .customize-footer {
+        padding: 15px 20px;
+        flex-direction: column;
+    }
+    
+    .add-to-cart-btn,
+    .cancel-customize-btn {
+        width: 100%;
+    }
+    
+    .notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        font-size: 0.9rem;
+        padding: 12px 16px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .option-group {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .customize-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .customize-section h4 {
+        font-size: 1rem;
+    }
+}
+
+/* 禁止所有頁面菜單圖片被點擊 */
+.menu-image {
+  pointer-events: none !important;
+}
+
+/* 管理後台統計卡片樣式 */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+.stat-number {
+    font-size: 36px;
+    font-weight: bold;
+    color: #4CAF50;
+    margin-bottom: 10px;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+@media screen and (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-number {
+        font-size: 28px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 管理後台按鈕樣式 */
+.action-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    margin: 2px;
+}
+
+.action-btn.edit-btn {
+    background-color: #3498db;
+    color: white;
+}
+
+.action-btn.edit-btn:hover {
+    background-color: #2980b9;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+}
+
+.action-btn.delete-btn {
+    background-color: #e74c3c !important;
+    color: white !important;
+    font-weight: bold !important;
+    border: 2px solid #c0392b !important;
+    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3) !important;
+    padding: 8px 12px !important;
+    border-radius: 5px !important;
+    font-size: 13px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.action-btn.delete-btn:hover {
+    background-color: #c0392b !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.4) !important;
+    border-color: #a93226 !important;
+}
+
+.action-btn.delete-btn:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3) !important;
+}
+
+/* 刪除按鈕的脈衝動畫效果 */
+.action-btn.delete-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.action-btn.delete-btn:hover::before {
+    left: 100%;
+}
+
+/* 內用點餐 QR碼區域樣式 */
+.dine-in-qr {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.qr-container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.qr-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #4CAF50, #45a049, #2c5530);
+}
+
+.qr-container h2 {
+    color: #2c5530;
+    font-size: 2.5em;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.qr-container p {
+    color: #666;
+    font-size: 1.2em;
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+.qr-code {
+    margin: 30px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.qr-code canvas {
+    border: 3px solid #4CAF50;
+    border-radius: 15px;
+    padding: 15px;
+    background: white;
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.qr-code canvas:hover {
+    transform: scale(1.05);
+}
+
+/* 內用點餐QR碼樣式 */
+.dine-in-button-container {
+    margin: 30px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.qr-code-container {
+    position: relative;
+    cursor: pointer;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+    transition: all 0.3s ease;
+    background: white;
+    padding: 15px;
+}
+
+.qr-code-container:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(76, 175, 80, 0.4);
+}
+
+.qr-code-container:active {
+    transform: translateY(-1px);
+}
+
+.qr-code-image {
+    width: 200px;
+    height: 200px;
+    display: block;
+    border-radius: 10px;
+    border: 3px solid #4CAF50;
+}
+
+.qr-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(69, 160, 73, 0.9));
+    color: white;
+    padding: 10px;
+    text-align: center;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.qr-code-container:hover .qr-overlay {
+    transform: translateY(0);
+}
+
+.qr-text {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.qr-instructions {
+    margin-top: 30px;
+    text-align: left;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.qr-instructions h3 {
+    color: #2c5530;
+    font-size: 1.3em;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.qr-instructions ol {
+    color: #555;
+    line-height: 1.8;
+    padding-left: 20px;
+}
+
+.qr-instructions li {
+    margin-bottom: 8px;
+    font-size: 1.1em;
+}
+
+.qr-instructions li::marker {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+@media screen and (max-width: 768px) {
+    .dine-in-qr {
+        padding: 40px 15px;
+    }
+    
+    .qr-container {
+        padding: 30px 20px;
+    }
+    
+    .qr-container h2 {
+        font-size: 2em;
+    }
+    
+    .qr-container p {
+        font-size: 1.1em;
+    }
+    
+    .qr-code canvas {
+        max-width: 250px;
+        width: 100%;
+        height: auto;
+    }
+    
+    .qr-instructions {
+        max-width: 100%;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .qr-container h2 {
+        font-size: 1.8em;
+    }
+    
+    .qr-container p {
+        font-size: 1em;
+    }
+    
+    .qr-code canvas {
+        max-width: 200px;
+    }
+    
+    .qr-instructions li {
+        font-size: 1em;
+    }
+}
+
+
+>>>>>>> Stashed changes

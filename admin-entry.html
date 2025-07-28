@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>後台入口 - 飲茶趣</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .entry-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .entry-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .entry-logo {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 30px;
+            background-image: url('images/sipandsavor.webp');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .entry-title {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .entry-description {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        .entry-btn {
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            display: inline-block;
+            transition: background 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .entry-btn:hover {
+            background: #45a049;
+        }
+
+        .entry-footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .entry-footer a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .entry-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ffeaa7;
+        }
+
+        @media screen and (max-width: 480px) {
+            .entry-container {
+                padding: 30px 20px;
+            }
+            
+            .entry-title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="entry-page">
+        <div class="entry-container">
+            <div class="entry-logo"></div>
+            <h1 class="entry-title">管理員後台</h1>
+            <p class="entry-description">
+                歡迎使用飲茶趣後台管理系統<br>
+                請使用管理員帳號登錄以管理產品、訂單、用戶和新聞
+            </p>
+            
+            <div class="warning">
+                <strong>注意：</strong>此頁面僅供管理員使用，請確保您有相應的權限。
+            </div>
+            
+            <a href="login.html" class="entry-btn">前往登錄</a>
+            
+            <div class="entry-footer">
+                <a href="index.html">返回首頁</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 檢查是否已登錄，如果已登錄則跳轉到後台
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                // 驗證token是否有效
+                checkToken(token);
+            }
+        });
+
+        // 驗證token
+        async function checkToken(token) {
+            try {
+                const currentPort = window.location.port || '3001';
+                const API_BASE_URL = `http://localhost:${currentPort}/api`;
+                
+                const response = await fetch(`${API_BASE_URL}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data.user.role === 'admin') {
+                        window.location.href = 'admin.html';
+                        return;
+                    }
+                }
+                
+                // token無效，清除本地存儲
+                localStorage.removeItem('adminToken');
+            } catch (error) {
+                console.error('Token驗證失敗:', error);
+                localStorage.removeItem('adminToken');
+            }
+        }
+    </script>
+</body>
+</html> 

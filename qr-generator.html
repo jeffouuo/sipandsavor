@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR碼生成器 - 飲茶趣</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c5530;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .generate-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .qr-result {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px dashed #4CAF50;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+
+        .qr-code {
+            margin: 20px 0;
+        }
+
+        .download-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 14px;
+        }
+
+        .download-btn:hover {
+            background: #1976D2;
+        }
+
+        .url-display {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            word-break: break-all;
+            font-family: monospace;
+        }
+
+        .instructions {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .instructions h3 {
+            color: #2c5530;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 QR碼生成器</h1>
+        
+        <form id="qrForm">
+            <div class="form-group">
+                <label for="serverUrl">伺服器網址：</label>
+                <input type="url" id="serverUrl" value="http://localhost:3000" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="qrType">QR碼類型：</label>
+                <select id="qrType">
+                    <option value="dine-in">內用點餐</option>
+                    <option value="menu">飲料菜單</option>
+                    <option value="home">首頁</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="generate-btn">生成QR碼</button>
+        </form>
+
+        <div id="qrResult" class="qr-result" style="display: none;">
+            <h3>生成的QR碼</h3>
+            <div class="url-display" id="urlDisplay"></div>
+            <div class="qr-code" id="qrCode"></div>
+            <button class="download-btn" onclick="downloadQR()">下載QR碼</button>
+            <button class="download-btn" onclick="printQR()">列印QR碼</button>
+        </div>
+
+        <div class="instructions">
+            <h3>📋 使用說明</h3>
+            <ul>
+                <li><strong>伺服器網址</strong>：輸入您的網站網址（本地開發請使用 localhost:3000）</li>
+                <li><strong>QR碼類型</strong>：選擇要生成的QR碼類型</li>
+                <li><strong>生成QR碼</strong>：點擊按鈕生成對應的QR碼</li>
+                <li><strong>下載/列印</strong>：可以下載或列印生成的QR碼</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script>
+        document.getElementById('qrForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const serverUrl = document.getElementById('serverUrl').value;
+            const qrType = document.getElementById('qrType').value;
+            
+            let targetUrl = '';
+            switch(qrType) {
+                case 'dine-in':
+                    targetUrl = `${serverUrl}/dine-in-order.html`;
+                    break;
+                case 'menu':
+                    targetUrl = `${serverUrl}/menu.html`;
+                    break;
+                case 'home':
+                    targetUrl = serverUrl;
+                    break;
+            }
+            
+            // 顯示URL
+            document.getElementById('urlDisplay').textContent = targetUrl;
+            
+            // 生成QR碼
+            const qrContainer = document.getElementById('qrCode');
+            qrContainer.innerHTML = '';
+            
+            QRCode.toCanvas(qrContainer, targetUrl, {
+                width: 300,
+                margin: 2,
+                color: {
+                    dark: '#2c5530',
+                    light: '#ffffff'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('QR碼生成錯誤:', error);
+                    qrContainer.innerHTML = '<p style="color: red;">QR碼生成失敗</p>';
+                } else {
+                    console.log('QR碼生成成功');
+                }
+            });
+            
+            // 顯示結果
+            document.getElementById('qrResult').style.display = 'block';
+        });
+
+        function downloadQR() {
+            const canvas = document.querySelector('#qrCode canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = 'qrcode.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            }
+        }
+
+        function printQR() {
+            const canvas = document.querySelector('#qrCode canvas');
+            if (canvas) {
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>QR碼列印</title>
+                            <style>
+                                body { 
+                                    display: flex; 
+                                    justify-content: center; 
+                                    align-items: center; 
+                                    height: 100vh; 
+                                    margin: 0; 
+                                }
+                                img { max-width: 100%; height: auto; }
+                            </style>
+                        </head>
+                        <body>
+                            <img src="${canvas.toDataURL()}" alt="QR碼">
+                        </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                printWindow.print();
+            }
+        }
+    </script>
+</body>
+</html> 

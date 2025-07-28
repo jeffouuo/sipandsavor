@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理員登錄 - 飲茶趣</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .login-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background-image: url('images/sipandsavor.webp');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .login-title {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .login-subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .form-input.error {
+            border-color: #f44336;
+        }
+
+        .error-message {
+            color: #f44336;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .login-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            background: #45a049;
+        }
+
+        .login-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .login-footer a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media screen and (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+            
+            .login-title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="login-page">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="login-logo"></div>
+                <h1 class="login-title">管理員登錄</h1>
+                <p class="login-subtitle">飲茶趣後台管理系統</p>
+            </div>
+
+            <div id="alert" class="alert"></div>
+
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="email">電子郵件</label>
+                    <input type="email" id="email" class="form-input" required>
+                    <div class="error-message" id="emailError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">密碼</label>
+                    <input type="password" id="password" class="form-input" required>
+                    <div class="error-message" id="passwordError"></div>
+                </div>
+
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <span id="loginText">登錄</span>
+                    <span id="loginLoading" class="loading" style="display: none;"></span>
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <a href="index.html">返回首頁</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 動態獲取當前端口
+        const currentPort = window.location.port || '3001';
+        const API_BASE_URL = `http://localhost:${currentPort}/api`;
+        
+        console.log('🔧 登錄頁面已加載');
+        console.log('📍 當前端口:', currentPort);
+        console.log('🔗 API地址:', API_BASE_URL);
+
+        // 檢查是否已登錄
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                // 驗證token是否有效
+                checkToken(token);
+            }
+        });
+
+        // 驗證token
+        async function checkToken(token) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data.user.role === 'admin') {
+                        window.location.href = 'admin.html';
+                        return;
+                    }
+                }
+                
+                // token無效，清除本地存儲
+                localStorage.removeItem('adminToken');
+            } catch (error) {
+                console.error('Token驗證失敗:', error);
+                localStorage.removeItem('adminToken');
+            }
+        }
+
+        // 登錄表單提交
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // 清除之前的錯誤
+            clearErrors();
+            
+            // 驗證輸入
+            if (!validateForm(email, password)) {
+                return;
+            }
+            
+            // 顯示加載狀態
+            setLoading(true);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // 檢查是否為管理員
+                    if (data.data.user.role !== 'admin') {
+                        showAlert('您沒有管理員權限', 'error');
+                        return;
+                    }
+                    
+                    // 保存token到localStorage
+                    localStorage.setItem('adminToken', data.data.token);
+                    
+                    // 設置cookie（用於服務器端驗證）
+                    document.cookie = `adminToken=${data.data.token}; path=/; max-age=86400; SameSite=Lax`;
+                    
+                    showAlert('登錄成功，正在跳轉...', 'success');
+                    
+                    // 跳轉到管理後台
+                    setTimeout(() => {
+                        window.location.href = 'admin.html';
+                    }, 1000);
+                    
+                } else {
+                    showAlert(data.message || '登錄失敗', 'error');
+                }
+                
+            } catch (error) {
+                console.error('登錄失敗:', error);
+                showAlert('網絡錯誤，請稍後再試', 'error');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // 驗證表單
+        function validateForm(email, password) {
+            let isValid = true;
+            
+            if (!email) {
+                showFieldError('email', '請輸入電子郵件');
+                isValid = false;
+            } else if (!isValidEmail(email)) {
+                showFieldError('email', '請輸入有效的電子郵件');
+                isValid = false;
+            }
+            
+            if (!password) {
+                showFieldError('password', '請輸入密碼');
+                isValid = false;
+            } else if (password.length < 6) {
+                showFieldError('password', '密碼至少需要6個字符');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        // 驗證電子郵件格式
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // 顯示字段錯誤
+        function showFieldError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            const errorElement = document.getElementById(fieldId + 'Error');
+            
+            field.classList.add('error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        // 清除錯誤
+        function clearErrors() {
+            const inputs = document.querySelectorAll('.form-input');
+            const errors = document.querySelectorAll('.error-message');
+            
+            inputs.forEach(input => input.classList.remove('error'));
+            errors.forEach(error => error.style.display = 'none');
+        }
+
+        // 顯示提示信息
+        function showAlert(message, type) {
+            const alertElement = document.getElementById('alert');
+            alertElement.textContent = message;
+            alertElement.className = `alert alert-${type}`;
+            alertElement.style.display = 'block';
+            
+            // 3秒後自動隱藏
+            setTimeout(() => {
+                alertElement.style.display = 'none';
+            }, 3000);
+        }
+
+        // 設置加載狀態
+        function setLoading(loading) {
+            const loginBtn = document.getElementById('loginBtn');
+            const loginText = document.getElementById('loginText');
+            const loginLoading = document.getElementById('loginLoading');
+            
+            if (loading) {
+                loginBtn.disabled = true;
+                loginText.style.display = 'none';
+                loginLoading.style.display = 'inline-block';
+            } else {
+                loginBtn.disabled = false;
+                loginText.style.display = 'inline';
+                loginLoading.style.display = 'none';
+            }
+        }
+
+        // 實時驗證
+        document.getElementById('email').addEventListener('blur', function() {
+            const email = this.value;
+            if (email && !isValidEmail(email)) {
+                showFieldError('email', '請輸入有效的電子郵件');
+            } else {
+                clearFieldError('email');
+            }
+        });
+
+        document.getElementById('password').addEventListener('blur', function() {
+            const password = this.value;
+            if (password && password.length < 6) {
+                showFieldError('password', '密碼至少需要6個字符');
+            } else {
+                clearFieldError('password');
+            }
+        });
+
+        // 清除字段錯誤
+        function clearFieldError(fieldId) {
+            const field = document.getElementById(fieldId);
+            const errorElement = document.getElementById(fieldId + 'Error');
+            
+            field.classList.remove('error');
+            errorElement.style.display = 'none';
+        }
+
+
+
+        // 監聽頁面顯示（處理從緩存恢復的情況）
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                console.log('從緩存恢復頁面，保持登入狀態');
+            }
+        });
+    </script>
+</body>
+</html> 

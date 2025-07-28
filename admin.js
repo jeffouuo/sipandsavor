@@ -1,0 +1,1065 @@
+// 管理員後台 JavaScript
+// 動態獲取當前端口
+const currentPort = window.location.port || '3001';
+const API_BASE_URL = `http://localhost:${currentPort}/api`;
+
+console.log('🔧 管理後台已加載');
+console.log('📍 當前端口:', currentPort);
+console.log('🔗 API地址:', API_BASE_URL);
+console.log('🧪 特殊需求邏輯測試: 如果您看到這條消息，說明 admin.js 已正確加載');
+
+// 請求重試機制
+async function fetchWithRetry(url, options = {}, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const response = await fetch(url, options);
+            
+            if (response.status === 429) {
+                // 如果是429錯誤，等待後重試
+                const retryAfter = response.headers.get('Retry-After') || 5;
+                console.log(`請求過於頻繁，等待 ${retryAfter} 秒後重試...`);
+                await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                continue;
+            }
+            
+            return response;
+        } catch (error) {
+            if (i === maxRetries - 1) throw error;
+            console.log(`請求失敗，${i + 1}/${maxRetries} 次重試...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        }
+    }
+}
+
+let currentUser = null;
+let currentPage = {
+    products: 1,
+    orders: 1,
+    users: 1,
+    news: 1
+};
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuth();
+    loadStats();
+    loadProducts();
+    loadOrders(); // 添加載入訂單數據
+    loadUsers(); // 添加載入用戶數據
+    loadNews(); // 添加載入新聞數據
+});
+
+// 檢查認證
+async function checkAuth() {
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+        console.log('🔐 沒有找到token，跳轉到登錄頁面');
+        window.location.replace('login.html');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('認證失敗');
+        }
+
+        const data = await response.json();
+        currentUser = data.data.user;
+
+        if (currentUser.role !== 'admin') {
+            alert('您沒有管理員權限');
+            window.location.href = 'index.html';
+            return;
+        }
+
+        document.getElementById('adminName').textContent = currentUser.username;
+    } catch (error) {
+        console.error('認證檢查失敗:', error);
+        localStorage.removeItem('adminToken');
+        // 清除cookie
+        document.cookie = 'adminToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        console.log('🔐 認證失敗，跳轉到登錄頁面');
+        window.location.replace('login.html');
+    }
+}
+
+// 登出
+function logout() {
+    localStorage.removeItem('adminToken');
+    // 清除cookie
+    document.cookie = 'adminToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    window.location.href = 'index.html';
+}
+
+
+
+// 顯示/隱藏內容區塊
+function showSection(sectionName) {
+    // 隱藏所有內容區塊
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+    });
+
+    // 移除所有標籤的active狀態
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // 顯示選中的內容區塊
+    document.getElementById(`${sectionName}-section`).classList.add('active');
+    
+    // 設置對應標籤為active
+    event.target.classList.add('active');
+
+    // 載入對應數據
+    switch(sectionName) {
+        case 'products':
+            loadProducts();
+            break;
+        case 'orders':
+            loadOrders(1, '', '');
+            break;
+        case 'users':
+            loadUsers();
+            break;
+        case 'news':
+            loadNews();
+            break;
+    }
+}
+
+// 統計數據緩存
+let statsCache = null;
+let statsCacheTime = 0;
+const STATS_CACHE_DURATION = 30 * 1000; // 30秒緩存
+
+// 載入統計數據
+async function loadStats(forceRefresh = false) {
+    try {
+        // 檢查緩存（除非強制刷新）
+        const now = Date.now();
+        if (!forceRefresh && statsCache && (now - statsCacheTime) < STATS_CACHE_DURATION) {
+            updateStatsDisplay(statsCache);
+            return;
+        }
+
+        const token = localStorage.getItem('adminToken');
+        
+        // 並行請求以提高效率
+        const [productsResponse, ordersStatsResponse, ordersResponse, usersResponse] = await Promise.all([
+            fetchWithRetry(`${API_BASE_URL}/products/admin/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetchWithRetry(`${API_BASE_URL}/orders/admin/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetchWithRetry(`${API_BASE_URL}/orders/admin/all`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetchWithRetry(`${API_BASE_URL}/users/admin/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+        ]);
+
+        const [productsData, ordersStatsData, ordersData, usersData] = await Promise.all([
+            productsResponse.json(),
+            ordersStatsResponse.json(),
+            ordersResponse.json(),
+            usersResponse.json()
+        ]);
+
+        console.log('📊 後台統計數據:', {
+            productsData,
+            ordersStatsData,
+            ordersData,
+            usersData
+        });
+
+        // 緩存結果
+        statsCache = { productsData, ordersStatsData, ordersData, usersData };
+        statsCacheTime = now;
+
+        updateStatsDisplay(statsCache);
+
+    } catch (error) {
+        console.error('載入統計數據失敗:', error);
+    }
+}
+
+// 更新統計顯示
+function updateStatsDisplay(cache) {
+    const { productsData, ordersStatsData, ordersData, usersData } = cache;
+    
+    document.getElementById('totalProducts').textContent = productsData.data?.totalProducts || 0;
+    document.getElementById('totalOrders').textContent = ordersStatsData.data?.totalOrders || 0;
+    document.getElementById('totalUsers').textContent = usersData.data?.totalUsers || 0;
+    
+    // 計算待處理訂單（使用統計數據）
+    const pendingOrders = (ordersStatsData.data?.statusCounts?.pending || 0) + 
+                         (ordersStatsData.data?.statusCounts?.confirmed || 0);
+    document.getElementById('pendingOrders').textContent = pendingOrders;
+    
+    // 使用統計數據中的特殊需求訂單數量
+    const ordersWithNotes = ordersStatsData.data?.ordersWithNotes || 0;
+    
+    // 如果有特殊需求統計元素存在，則更新它
+    const notesStatsElement = document.getElementById('ordersWithNotes');
+    if (notesStatsElement) {
+        notesStatsElement.textContent = ordersWithNotes;
+    }
+    
+    // 添加更多統計信息（如果HTML中有對應元素）
+    const todayOrdersElement = document.getElementById('todayOrders');
+    if (todayOrdersElement) {
+        todayOrdersElement.textContent = ordersStatsData.data?.todayOrders || 0;
+    }
+    
+    const thisMonthOrdersElement = document.getElementById('thisMonthOrders');
+    if (thisMonthOrdersElement) {
+        thisMonthOrdersElement.textContent = ordersStatsData.data?.thisMonthOrders || 0;
+    }
+    
+    const totalRevenueElement = document.getElementById('totalRevenue');
+    if (totalRevenueElement) {
+        totalRevenueElement.textContent = `NT$ ${(ordersStatsData.data?.totalRevenue || 0).toLocaleString()}`;
+    }
+}
+
+// 產品管理功能
+async function loadProducts(page = 1) {
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`${API_BASE_URL}/products/admin/all?page=${page}&limit=10`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('獲取產品失敗');
+
+        const data = await response.json();
+        renderProductsTable(data.data.products, data.data.pagination);
+        currentPage.products = page;
+
+    } catch (error) {
+        console.error('載入產品失敗:', error);
+        showAlert('載入產品失敗', 'error');
+    }
+}
+
+function renderProductsTable(products, pagination) {
+    const tableContainer = document.getElementById('productsTable');
+    
+    let html = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>圖片</th>
+                    <th>名稱</th>
+                    <th>分類</th>
+                    <th>價格</th>
+                    <th>庫存</th>
+                    <th>狀態</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    products.forEach(product => {
+        html += `
+            <tr>
+                <td><img src="${product.image}" alt="${product.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;"></td>
+                <td>${product.name}</td>
+                <td>${product.category}</td>
+                <td>NT$ ${product.price}</td>
+                <td>${product.stock}</td>
+                <td>${product.isAvailable ? '上架' : '下架'}</td>
+                <td>
+                    <button class="action-btn edit-btn" onclick="editProduct('${product._id}')">編輯</button>
+                    <button class="action-btn delete-btn" onclick="deleteProduct('${product._id}')">刪除</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    // 添加分頁
+    if (pagination) {
+        html += renderPagination(pagination, 'products');
+    }
+
+    tableContainer.innerHTML = html;
+}
+
+// 搜索產品
+function searchProducts() {
+    const searchTerm = document.getElementById('productSearch').value;
+    // 實現搜索功能
+    console.log('搜索產品:', searchTerm);
+}
+
+// 顯示產品編輯模態框
+function showProductModal(productId = null) {
+    const modal = document.getElementById('productModal');
+    const title = document.getElementById('productModalTitle');
+    const form = document.getElementById('productForm');
+
+    if (productId) {
+        title.textContent = '編輯產品';
+        currentEditingProductId = productId; // 設定編輯狀態
+        // 載入產品數據
+        loadProductData(productId);
+    } else {
+        title.textContent = '新增產品';
+        currentEditingProductId = null; // 重置編輯狀態
+        form.reset();
+    }
+
+    modal.style.display = 'block';
+}
+
+// 關閉產品編輯模態框
+function closeProductModal() {
+    document.getElementById('productModal').style.display = 'none';
+    currentEditingProductId = null; // 重置編輯狀態
+}
+
+// 載入產品數據
+async function loadProductData(productId) {
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('獲取產品數據失敗');
+
+        const data = await response.json();
+        const product = data.data.product;
+
+        // 填充表單
+        document.getElementById('productName').value = product.name;
+        document.getElementById('productDescription').value = product.description;
+        document.getElementById('productPrice').value = product.price;
+        document.getElementById('productCategory').value = product.category;
+        document.getElementById('productImage').value = product.image;
+        document.getElementById('productStock').value = product.stock;
+        document.getElementById('productFeatured').checked = product.featured;
+
+    } catch (error) {
+        console.error('載入產品數據失敗:', error);
+        showAlert('載入產品數據失敗', 'error');
+    }
+}
+
+// 編輯產品
+function editProduct(productId) {
+    showProductModal(productId);
+}
+
+// 刪除產品
+async function deleteProduct(productId) {
+    if (!confirm('確定要刪除此產品嗎？')) return;
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('刪除產品失敗');
+
+        showAlert('產品刪除成功', 'success');
+        loadProducts(currentPage.products);
+
+    } catch (error) {
+        console.error('刪除產品失敗:', error);
+        showAlert('刪除產品失敗', 'error');
+    }
+}
+
+// 訂單管理功能
+async function loadOrders(page = 1) {
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`${API_BASE_URL}/orders/admin/all?page=${page}&limit=10`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('獲取訂單失敗');
+
+        const data = await response.json();
+        renderOrdersTable(data.data.orders, data.data.pagination);
+        currentPage.orders = page;
+
+    } catch (error) {
+        console.error('載入訂單失敗:', error);
+        showAlert('載入訂單失敗', 'error');
+    }
+}
+
+function renderOrdersTable(orders, pagination) {
+    const tableContainer = document.getElementById('ordersTable');
+    
+    let html = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>訂單編號</th>
+                    <th>用戶</th>
+                    <th>商品</th>
+                    <th>總金額</th>
+                    <th>特殊需求</th>
+                    <th>狀態</th>
+                    <th>付款狀態</th>
+                    <th>創建時間</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    orders.forEach(order => {
+        const itemsText = order.items.map(item => `${item.name} x${item.quantity}`).join(', ');
+        const statusClass = `status-${order.status}`;
+        
+        html += `
+            <tr>
+                <td>${order._id}</td>
+                <td>${order.user?.username || 'N/A'}</td>
+                <td>${itemsText}</td>
+                <td>NT$ ${order.totalAmount}</td>
+                <td style="max-width: 200px; word-wrap: break-word; line-height: 1.3; max-height: 2.6em; overflow: hidden;">
+                    ${(() => {
+                        // 簡單測試：在頁面上顯示一個測試信息
+                        console.log('🔍 特殊需求邏輯執行中...');
+                        
+                        if (!order.notes || order.notes === '前台結帳') {
+                            return '<span style="color: #95a5a6; font-size: 14px;">無</span>';
+                        }
+                        
+                        // 檢查是否有加料（+號）
+                        if (order.notes.includes('+')) {
+                            // 提取所有有加料的飲料和對應的加料
+                            const specialRequests = [];
+                            
+                            // 使用正則表達式找到所有 + 後面的內容，直到遇到 x數字
+                            const regex = /([^,]+?)\s*\+([^x]+?)(?:\s*x\d+)/g;
+                            let match;
+                            
+                            while ((match = regex.exec(order.notes)) !== null) {
+                                const drinkWithCustomization = match[1].trim();
+                                const addOns = match[2].trim();
+                                
+                                if (addOns) {
+                                    specialRequests.push(`${drinkWithCustomization} ${addOns}`);
+                                }
+                            }
+                            
+                            if (specialRequests.length > 0) {
+                                const result = specialRequests.join(', ');
+                                return `<span style="color: #e74c3c; font-weight: 500; font-size: 14px; display: block; word-break: break-all; white-space: normal;">${result.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
+                            }
+                        }
+                        
+                        // 檢查是否有特殊文字（非標準客製化）
+                        const standardCustomizations = ['全糖', '半糖', '微糖', '無糖', '正常冰', '少冰', '微冰', '去冰', '熱'];
+                        const drinkNames = ['美式咖啡', '拿鐵咖啡', '紅茶', '綠茶', '星辰奶茶', '夢幻檸茶', '綠霧奶綠', '冷萃烏龍', '翡翠紅茶', '芒果冰茶', '桂花烏龍', '莓果氣泡飲'];
+                        
+                        let temp = order.notes;
+                        // 移除所有飲料名稱
+                        drinkNames.forEach(name => { 
+                            temp = temp.replace(new RegExp(name, 'g'), ''); 
+                        });
+                        // 移除所有標準客製化
+                        standardCustomizations.forEach(cus => { 
+                            temp = temp.replace(new RegExp(cus, 'g'), ''); 
+                        });
+                        // 移除格式字符和數量
+                        temp = temp.replace(/[()]/g, '').replace(/\s*x\d+/g, '').replace(/,\s*/g, '').trim();
+                        
+                        if (temp.length > 0) {
+                            return `<span style="color: #e74c3c; font-weight: 500; font-size: 14px; display: block; word-break: break-all; white-space: normal;">${order.notes.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
+                        }
+                        
+                        return '<span style="color: #95a5a6; font-size: 14px;">無</span>';
+                    })()}
+                </td>
+                <td><span class="status-badge ${statusClass}">${getStatusText(order.status)}</span></td>
+                <td>${getPaymentStatusText(order.paymentStatus)}</td>
+                <td>${new Date(order.createdAt).toLocaleString()}</td>
+                <td>
+                    <button class="action-btn edit-btn" onclick="updateOrderStatus('${order._id}')">更新狀態</button>
+                    ${order.status === 'completed' ? 
+                        `<button class="action-btn delete-btn" onclick="deleteOrder('${order._id}')" style="margin-left: 5px;">🗑️ 刪除</button>` : 
+                        ''
+                    }
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    if (pagination) {
+        html += renderPagination(pagination, 'orders');
+    }
+
+    tableContainer.innerHTML = html;
+}
+
+// 篩選訂單
+function filterOrders() {
+    const status = document.getElementById('orderStatusFilter').value;
+    const notesFilter = document.getElementById('orderNotesFilter').value;
+    
+    // 重新載入訂單並應用篩選
+    loadOrders(1, status, notesFilter);
+}
+
+// 載入訂單（支援篩選）
+async function loadOrders(page = 1, statusFilter = '', notesFilter = '') {
+    try {
+        const token = localStorage.getItem('adminToken');
+        let url = `${API_BASE_URL}/orders/admin/all?page=${page}&limit=10`;
+        
+        // 添加篩選參數
+        if (statusFilter) {
+            url += `&status=${statusFilter}`;
+        }
+        
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('獲取訂單失敗');
+
+        const data = await response.json();
+        
+        // 客戶端篩選特殊需求
+        let filteredOrders = data.data.orders;
+        if (notesFilter === 'has_notes') {
+            filteredOrders = filteredOrders.filter(order => 
+                order.notes && order.notes !== '前台結帳'
+            );
+        } else if (notesFilter === 'no_notes') {
+            filteredOrders = filteredOrders.filter(order => 
+                !order.notes || order.notes === '前台結帳'
+            );
+        }
+        
+        renderOrdersTable(filteredOrders, data.data.pagination);
+        currentPage.orders = page;
+
+    } catch (error) {
+        console.error('載入訂單失敗:', error);
+        showAlert('載入訂單失敗', 'error');
+    }
+}
+
+
+
+// 更新訂單狀態
+async function updateOrderStatus(orderId) {
+    const newStatus = prompt('請輸入新狀態 (pending/confirmed/preparing/ready/completed/cancelled):');
+    if (!newStatus) return;
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`${API_BASE_URL}/orders/admin/${orderId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        if (!response.ok) throw new Error('更新訂單狀態失敗');
+
+        showAlert('訂單狀態更新成功', 'success');
+        loadOrders(currentPage.orders);
+
+    } catch (error) {
+        console.error('更新訂單狀態失敗:', error);
+        showAlert('更新訂單狀態失敗', 'error');
+    }
+}
+
+// 刪除訂單
+async function deleteOrder(orderId) {
+    if (!confirm('確定要刪除此訂單嗎？')) return;
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`${API_BASE_URL}/orders/admin/${orderId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('刪除訂單失敗');
+
+        showAlert('訂單刪除成功', 'success');
+        
+        // 清除統計數據緩存
+        statsCache = null;
+        statsCacheTime = 0;
+        
+        // 重新載入訂單列表和統計數據
+        await Promise.all([
+            loadOrders(currentPage.orders),
+            loadStats(true) // 強制刷新統計數據
+        ]);
+
+    } catch (error) {
+        console.error('刪除訂單失敗:', error);
+        showAlert('刪除訂單失敗', 'error');
+    }
+}
+
+// 用戶管理功能
+async function loadUsers(page = 1) {
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`${API_BASE_URL}/users/admin/all?page=${page}&limit=10`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('獲取用戶失敗');
+
+        const data = await response.json();
+        renderUsersTable(data.data.users, data.data.pagination);
+        currentPage.users = page;
+
+    } catch (error) {
+        console.error('載入用戶失敗:', error);
+        showAlert('載入用戶失敗', 'error');
+    }
+}
+
+function renderUsersTable(users, pagination) {
+    const tableContainer = document.getElementById('usersTable');
+    
+    let html = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>用戶名</th>
+                    <th>電子郵件</th>
+                    <th>電話</th>
+                    <th>角色</th>
+                    <th>狀態</th>
+                    <th>註冊時間</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    users.forEach(user => {
+        html += `
+            <tr>
+                <td>${user.username}</td>
+                <td>${user.email}</td>
+                <td>${user.phone || 'N/A'}</td>
+                <td>${user.role === 'admin' ? '管理員' : '用戶'}</td>
+                <td>${user.isActive ? '啟用' : '禁用'}</td>
+                <td>${new Date(user.createdAt).toLocaleString()}</td>
+                <td>
+                    <button class="action-btn edit-btn" onclick="toggleUserStatus('${user._id}', ${user.isActive})">
+                        ${user.isActive ? '禁用' : '啟用'}
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    if (pagination) {
+        html += renderPagination(pagination, 'users');
+    }
+
+    tableContainer.innerHTML = html;
+}
+
+// 搜索用戶
+function searchUsers() {
+    const searchTerm = document.getElementById('userSearch').value;
+    // 實現搜索功能
+    console.log('搜索用戶:', searchTerm);
+}
+
+// 切換用戶狀態
+async function toggleUserStatus(userId, currentStatus) {
+    const action = currentStatus ? '禁用' : '啟用';
+    if (!confirm(`確定要${action}此用戶嗎？`)) return;
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`${API_BASE_URL}/users/admin/${userId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ isActive: !currentStatus })
+        });
+
+        if (!response.ok) throw new Error('更新用戶狀態失敗');
+
+        showAlert(`用戶${action}成功`, 'success');
+        loadUsers(currentPage.users);
+
+    } catch (error) {
+        console.error('更新用戶狀態失敗:', error);
+        showAlert('更新用戶狀態失敗', 'error');
+    }
+}
+
+// 新聞管理功能
+async function loadNews(page = 1) {
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`${API_BASE_URL}/news?page=${page}&limit=10`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('獲取新聞失敗');
+
+        const data = await response.json();
+        renderNewsTable(data.data.news, data.data.pagination);
+        currentPage.news = page;
+
+    } catch (error) {
+        console.error('載入新聞失敗:', error);
+        showAlert('載入新聞失敗', 'error');
+    }
+}
+
+function renderNewsTable(news, pagination) {
+    const tableContainer = document.getElementById('newsTable');
+    
+    let html = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>標題</th>
+                    <th>內容</th>
+                    <th>特色</th>
+                    <th>發布日期</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    news.forEach(item => {
+        const content = item.content.length > 50 ? item.content.substring(0, 50) + '...' : item.content;
+        
+        html += `
+            <tr>
+                <td>${item.title}</td>
+                <td>${content}</td>
+                <td>${item.featured ? '是' : '否'}</td>
+                <td>${item.date}</td>
+                <td>
+                    <button class="action-btn edit-btn" onclick="editNews('${item.id}')">編輯</button>
+                    <button class="action-btn delete-btn" onclick="deleteNews('${item.id}')">刪除</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    if (pagination) {
+        html += renderPagination(pagination, 'news');
+    }
+
+    tableContainer.innerHTML = html;
+}
+
+// 顯示新聞編輯模態框
+function showNewsModal(newsId = null) {
+    const modal = document.getElementById('newsModal');
+    const title = document.getElementById('newsModalTitle');
+    const form = document.getElementById('newsForm');
+
+    if (newsId) {
+        title.textContent = '編輯新聞';
+        // 載入新聞數據
+        loadNewsData(newsId);
+    } else {
+        title.textContent = '新增新聞';
+        form.reset();
+    }
+
+    modal.style.display = 'block';
+}
+
+// 關閉新聞編輯模態框
+function closeNewsModal() {
+    document.getElementById('newsModal').style.display = 'none';
+}
+
+// 載入新聞數據
+async function loadNewsData(newsId) {
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`${API_BASE_URL}/news/${newsId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('獲取新聞數據失敗');
+
+        const data = await response.json();
+        const news = data.data.news;
+
+        // 填充表單
+        document.getElementById('newsTitle').value = news.title;
+        document.getElementById('newsContent').value = news.content;
+        document.getElementById('newsImage').value = news.image;
+        document.getElementById('newsFeatured').checked = news.featured;
+
+    } catch (error) {
+        console.error('載入新聞數據失敗:', error);
+        showAlert('載入新聞數據失敗', 'error');
+    }
+}
+
+// 編輯新聞
+function editNews(newsId) {
+    showNewsModal(newsId);
+}
+
+// 刪除新聞
+async function deleteNews(newsId) {
+    if (!confirm('確定要刪除此新聞嗎？')) return;
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`${API_BASE_URL}/news/${newsId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('刪除新聞失敗');
+
+        showAlert('新聞刪除成功', 'success');
+        loadNews(currentPage.news);
+
+    } catch (error) {
+        console.error('刪除新聞失敗:', error);
+        showAlert('刪除新聞失敗', 'error');
+    }
+}
+
+// 通用功能
+function renderPagination(pagination, section) {
+    let html = '<div class="pagination">';
+    
+    // 上一頁
+    html += `<button class="page-btn" ${!pagination.hasPrev ? 'disabled' : ''} onclick="changePage('${section}', ${pagination.currentPage - 1})">上一頁</button>`;
+    
+    // 頁碼
+    for (let i = 1; i <= pagination.totalPages; i++) {
+        const isActive = i === pagination.currentPage;
+        html += `<button class="page-btn ${isActive ? 'active' : ''}" onclick="changePage('${section}', ${i})">${i}</button>`;
+    }
+    
+    // 下一頁
+    html += `<button class="page-btn" ${!pagination.hasNext ? 'disabled' : ''} onclick="changePage('${section}', ${pagination.currentPage + 1})">下一頁</button>`;
+    
+    html += '</div>';
+    return html;
+}
+
+function changePage(section, page) {
+    switch(section) {
+        case 'products':
+            loadProducts(page);
+            break;
+        case 'orders':
+            loadOrders(page);
+            break;
+        case 'users':
+            loadUsers(page);
+            break;
+        case 'news':
+            loadNews(page);
+            break;
+    }
+}
+
+function getStatusText(status) {
+    const statusMap = {
+        'pending': '待確認',
+        'confirmed': '已確認',
+        'preparing': '製作中',
+        'ready': '待取餐',
+        'completed': '已完成',
+        'cancelled': '已取消'
+    };
+    return statusMap[status] || status;
+}
+
+function getPaymentStatusText(status) {
+    const statusMap = {
+        'pending': '待付款',
+        'paid': '已付款',
+        'failed': '付款失敗',
+        'refunded': '已退款'
+    };
+    return statusMap[status] || status;
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.textContent = message;
+    
+    const container = document.querySelector('.admin-container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+// 表單提交處理
+let currentEditingProductId = null; // 追蹤當前編輯的產品ID
+
+document.getElementById('productForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        name: document.getElementById('productName').value,
+        description: document.getElementById('productDescription').value,
+        price: parseFloat(document.getElementById('productPrice').value),
+        category: document.getElementById('productCategory').value,
+        image: document.getElementById('productImage').value,
+        stock: parseInt(document.getElementById('productStock').value),
+        featured: document.getElementById('productFeatured').checked
+    };
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        
+        // 判斷是新增還是編輯
+        const isEditing = currentEditingProductId !== null;
+        const url = isEditing ? `${API_BASE_URL}/products/${currentEditingProductId}` : `${API_BASE_URL}/products`;
+        const method = isEditing ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('API 錯誤回應:', errorData);
+            throw new Error(`保存產品失敗: ${errorData.message || response.statusText}`);
+        }
+
+        showAlert(isEditing ? '產品更新成功' : '產品保存成功', 'success');
+        closeProductModal();
+        loadProducts(currentPage.products);
+        
+        // 重置編輯狀態
+        currentEditingProductId = null;
+
+    } catch (error) {
+        console.error('保存產品失敗:', error);
+        showAlert(error.message || '保存產品失敗', 'error');
+    }
+});
+
+document.getElementById('newsForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        title: document.getElementById('newsTitle').value,
+        content: document.getElementById('newsContent').value,
+        image: document.getElementById('newsImage').value,
+        featured: document.getElementById('newsFeatured').checked
+    };
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        const response = await fetch(`${API_BASE_URL}/news`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) throw new Error('保存新聞失敗');
+
+        showAlert('新聞保存成功', 'success');
+        closeNewsModal();
+        loadNews(currentPage.news);
+
+    } catch (error) {
+        console.error('保存新聞失敗:', error);
+        showAlert('保存新聞失敗', 'error');
+    }
+});
+
+// 點擊模態框外部關閉
+window.onclick = function(event) {
+    const productModal = document.getElementById('productModal');
+    const newsModal = document.getElementById('newsModal');
+    
+    if (event.target === productModal) {
+        closeProductModal();
+    }
+    if (event.target === newsModal) {
+        closeNewsModal();
+    }
+}
+
+// 頁面初始化
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 後台頁面初始化開始...');
+    
+    try {
+        // 檢查認證
+        await checkAuth();
+        
+        // 載入統計數據
+        await loadStats();
+        
+        // 載入產品列表
+        await loadProducts();
+        
+        console.log('✅ 後台頁面初始化完成');
+    } catch (error) {
+        console.error('❌ 後台頁面初始化失敗:', error);
+    }
+}); 

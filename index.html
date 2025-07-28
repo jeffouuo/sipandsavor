@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -167,4 +168,154 @@
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
 
 </body>
+=======
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sipandsavor</title>
+    <link rel="stylesheet" href = "style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <!-- 手機元件 -->
+        <button class="menu" id="hamburgerBtn">&#9776;</button>
+        
+        <a href="index.html"><h1>飲茶趣</h1></a>
+    
+        <!-- 桌面導航 -->
+        <nav class="desktop-nav">
+            <ul>
+                <li><a href="news.html">最新消息</a></li>
+                <li class="dropdown">
+                    <a href="javascript:void(0);">飲料菜單</a>
+                    <ul class="dropdown-menu">
+                        <li><a href="menu.html#coffee">咖啡</a></li>
+                        <li><a href="menu.html#tea">茶類</a></li>
+                    </ul>
+                </li>
+                <li><a href="about.html">關於我們</a></li>
+                <li><a href="stores.html">門市據點</a></li>
+            </ul>
+        </nav>
+    
+        <!-- 購物車圖標 -->
+        <div class="cart-icon" id="cartIcon">
+            <span class="material-icons">shopping_cart</span>
+            <span class="cart-count">0</span>
+        </div>
+
+        <!-- 購物車側邊欄 -->
+        <div class="cart-sidebar" id="cartSidebar">
+            <div class="cart-header">
+                <h3>購物車</h3>
+                <button class="close-cart" id="closeCart">&times;</button>
+            </div>
+            <div class="cart-items">
+                <!-- 購物車項目將通過 JavaScript 動態添加 -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>總計：</span>
+                    <span class="total-amount">NT$ 0</span>
+                </div>
+                <button class="checkout-btn">結帳</button>
+            </div>
+        </div>
+    
+        <!-- 手機菜單 -->
+        <nav id="mobileMenu">
+            <ul>
+                <li><a href="news.html">最新消息</a></li>
+                <li><a href="menu.html">飲料菜單</a></li>
+                <li><a href="about.html">關於我們</a></li>
+                <li><a href="stores.html">門市據點</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <main>  
+        <section class="news">   
+                <h2>每一口都是一個故事</h2>
+                <p>「用心泡製，讓每一口都值得品味。」</p>
+        </section>
+
+        <section class="slogan">
+          <blockquote>"每一口<br>都是幸福的滋味。"</blockquote>  
+        </section>
+        <section class="shop">
+            <img src="images/四季春.webp" alt="四季春" loading="lazy">
+
+                <div class="info">
+                    <h2>一杯飲品，無限回味</h2>
+                    <p>即日起來店消費加 LINE 好友可獲得精緻小點心，等您一同參與</p>
+                </div>       
+        </section>
+        <!-- 內用點餐區域 -->
+        <section class="dine-in-qr">
+            <div class="qr-container">
+                <h2>內用點餐</h2>
+                <p>點擊下方QR碼，輸入桌號即可點餐</p>
+                <div class="dine-in-button-container">
+                    <div class="qr-code-container" onclick="goToDineIn()">
+                        <img src="images/qrcode.webp" alt="內用點餐QR碼" class="qr-code-image">
+                        <div class="qr-overlay">
+                            <span class="qr-text">點擊掃描點餐</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="qr-instructions">
+                    <h3>使用步驟：</h3>
+                    <ol>
+                        <li>點擊上方QR碼</li>
+                        <li>輸入您的桌號</li>
+                        <li>選擇想要的飲料</li>
+                        <li>送出訂單</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    <footer>
+        <p>Copyright ◎ 2025 飲茶趣 All Rights Reserved.</p>
+        <!-- 隱藏的管理入口 -->
+        <div class="hidden-admin-entry" id="hiddenAdminEntry">
+            <div class="admin-entry-trigger" id="adminEntryTrigger">
+                <span class="admin-hint">👑</span>
+            </div>
+            <div class="admin-entry-modal" id="adminEntryModal">
+                <div class="admin-entry-content">
+                    <h3>管理員入口</h3>
+                    <p>確認進入管理後台？</p>
+                    <div class="admin-entry-buttons">
+                        <button id="adminLoginBtn">進入後台</button>
+                        <button id="adminCancelBtn">取消</button>
+                    </div>
+                </div>
+            </div>
+    </footer>
+
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <script>
+        // 跳轉到內用點餐頁面
+        function goToDineIn() {
+            const currentUrl = window.location.origin;
+            const orderUrl = `${currentUrl}/dine-in-order.html`;
+            window.location.href = orderUrl;
+        }
+        
+        // 頁面載入完成後載入主腳本
+        window.addEventListener('load', function() {
+            const script = document.createElement('script');
+            script.src = 'script.js';
+            document.head.appendChild(script);
+        });
+    </script>
+
+</body>
+>>>>>>> Stashed changes
 </html>

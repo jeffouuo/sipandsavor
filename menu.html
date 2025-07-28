@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飲料菜單 - 飲茶趣</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <!-- 手機元件 -->
+        <button class="menu" id="hamburgerBtn">&#9776;</button>
+        
+        <a href="index.html"><h1>飲茶趣</h1></a>
+    
+        <!-- 桌面導航 -->
+        <nav class="desktop-nav">
+            <ul>
+                <li><a href="news.html">最新消息</a></li>
+                <li class="dropdown">
+                    <a href="javascript:void(0);">飲料菜單</a>
+                    <ul class="dropdown-menu">
+                        <li><a href="menu.html#coffee">咖啡</a></li>
+                        <li><a href="menu.html#tea">茶類</a></li>
+                    </ul>
+                </li>
+                <li><a href="about.html">關於我們</a></li>
+                <li><a href="stores.html">門市據點</a></li>
+            </ul>
+        </nav>
+    
+        <!-- 購物車圖標 -->
+        <div class="cart-icon" id="cartIcon">
+            <span class="material-icons">shopping_cart</span>
+            <span class="cart-count">0</span>
+        </div>
+
+        <!-- 購物車側邊欄 -->
+        <div class="cart-sidebar" id="cartSidebar">
+            <div class="cart-header">
+                <h3>購物車</h3>
+                <button class="close-cart" id="closeCart">&times;</button>
+            </div>
+            <div class="cart-items">
+                <!-- 購物車項目將通過 JavaScript 動態添加 -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>總計：</span>
+                    <span class="total-amount">NT$ 0</span>
+                </div>
+                <button class="checkout-btn">結帳</button>
+            </div>
+        </div>
+    
+        <!-- 手機菜單 -->
+        <nav id="mobileMenu">
+            <ul>
+                <li><a href="news.html">最新消息</a></li>
+                <li><a href="menu.html">飲料菜單</a></li>
+                <li><a href="about.html">關於我們</a></li>
+                <li><a href="stores.html">門市據點</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <main>
+        <section class="menu-grid">
+            <div class="menu-container">
+                <!-- 咖啡類 -->
+                <div class="menu-category" id="coffee" data-category="coffee">
+                    <h2 class="category-title">咖啡</h2>
+                    <div class="category-items">
+                        <div class="menu-item" data-name="美式咖啡" data-price="45">
+                            <img src="images/americano.webp" alt="美式咖啡" loading="lazy" class="menu-image">
+                            <div class="menu-info">
+                                <h3>美式咖啡</h3>
+                                <p class="menu-description">純粹的咖啡香氣</p>
+                                <p class="menu-price">NT$ 45</p>
+                                <button class="customize-btn">購買</button>
+                            </div>
+                        </div>
+                        
+                        <div class="menu-item" data-name="拿鐵咖啡" data-price="60">
+                            <img src="images/latte.webp" alt="拿鐵咖啡" loading="lazy" class="menu-image">
+                            <div class="menu-info">
+                                <h3>拿鐵咖啡</h3>
+                                <p class="menu-description">香濃奶香與咖啡的完美融合</p>
+                                <p class="menu-price">NT$ 60</p>
+                                <button class="customize-btn">購買</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 茶類 -->
+                <div class="menu-category" id="tea" data-category="tea">
+                    <h2 class="category-title">茶類</h2>
+                    <div class="category-items">
+                        <div class="menu-item" data-name="星辰奶茶" data-price="50">
+                            <img src="images/milk tea.webp" alt="星辰奶茶" loading="lazy" class="menu-image">
+                            <div class="menu-info">
+                                <h3>星辰奶茶</h3>
+                                <p class="menu-description">每一口都是一場星辰之旅</p>
+                                <p class="menu-price">NT$ 50</p>
+                                <button class="customize-btn">購買</button>
+                            </div>
+                        </div>
+                        
+                        <div class="menu-item" data-name="夢幻檸茶" data-price="60">
+                            <img src="images/lemon black tea.webp" alt="夢幻檸茶" loading="lazy" class="menu-image">
+                            <div class="menu-info">
+                                <h3>夢幻檸茶</h3>
+                                <p class="menu-description">釋放內心的清新力量</p>
+                                <p class="menu-price">NT$ 60</p>
+                                <button class="customize-btn">購買</button>
+                            </div>
+                        </div>
+                        
+                        <div class="menu-item" data-name="綠霧奶綠" data-price="55">
+                            <img src="images/milkgreen.webp" alt="綠霧奶綠" loading="lazy" class="menu-image">
+                            <div class="menu-info">
+                                <h3>綠霧奶綠</h3>
+                                <p class="menu-description">帶來一抹清新</p>
+                                <p class="menu-price">NT$ 55</p>
+                                <button class="customize-btn">購買</button>
+                            </div>
+                        </div>
+                        
+                        <div class="menu-item" data-name="冷萃烏龍" data-price="65">
+                            <img src="images/coldtea.webp" alt="冷萃烏龍" loading="lazy" class="menu-image">
+                            <div class="menu-info">
+                                <h3>冷萃烏龍</h3>
+                                <p class="menu-description">經過12小時低溫慢釀</p>
+                                <p class="menu-price">NT$ 65</p>
+                                <button class="customize-btn">購買</button>
+                            </div>
+                        </div>
+                        
+                        <div class="menu-item" data-name="翡翠紅茶" data-price="30">
+                            <img src="images/blacktea1.webp" alt="翡翠紅茶" loading="lazy" class="menu-image">
+                            <div class="menu-info">
+                                <h3>翡翠紅茶</h3>
+                                <p class="menu-description">醇厚回甘，香氣四溢</p>
+                                <p class="menu-price">NT$ 30</p>
+                                <button class="customize-btn">購買</button>
+                            </div>
+                        </div>
+                        
+                        <div class="menu-item" data-name="芒果冰茶" data-price="70">
+                            <img src="images/mango-iced.webp" alt="芒果冰茶" loading="lazy" class="menu-image">
+                            <div class="menu-info">
+                                <h3>芒果冰茶</h3>
+                                <p class="menu-description">夏日必備的清爽滋味</p>
+                                <p class="menu-price">NT$ 70</p>
+                                <button class="customize-btn">購買</button>
+                            </div>
+                        </div>
+                        
+                        <div class="menu-item" data-name="桂花烏龍" data-price="55">
+                            <img src="images/Osmanthus Oolong Tea.webp" alt="桂花烏龍" loading="lazy" class="menu-image">
+                            <div class="menu-info">
+                                <h3>桂花烏龍</h3>
+                                <p class="menu-description">淡雅花香，回甘持久</p>
+                                <p class="menu-price">NT$ 55</p>
+                                <button class="customize-btn">購買</button>
+                            </div>
+                        </div>
+                        
+                        <div class="menu-item" data-name="莓果氣泡飲" data-price="75">
+                            <img src="images/berry-sparkling.webp" alt="莓果氣泡飲" loading="lazy" class="menu-image">
+                            <div class="menu-info">
+                                <h3>莓果氣泡飲</h3>
+                                <p class="menu-description">清爽氣泡與莓果的繽紛邂逅</p>
+                                <p class="menu-price">NT$ 75</p>
+                                <button class="customize-btn">購買</button>
+                            </div>
+                        </div>
+                        
+                        <div class="menu-item" data-name="綠茶" data-price="30">
+                            <img src="images/greentea.webp" alt="綠茶" loading="lazy" class="menu-image">
+                            <div class="menu-info">
+                                <h3>綠茶</h3>
+                                <p class="menu-description">清新淡雅，回甘悠長</p>
+                                <p class="menu-price">NT$ 30</p>
+                                <button class="customize-btn">購買</button>
+                            </div>
+                        </div>
+                        
+                        <div class="menu-item" data-name="紅茶" data-price="30">
+                            <img src="images/blacktea.webp" alt="紅茶" loading="lazy" class="menu-image">
+                            <div class="menu-info">
+                                <h3>紅茶</h3>
+                                <p class="menu-description">醇厚回甘，香氣四溢</p>
+                                <p class="menu-price">NT$ 30</p>
+                                <button class="customize-btn">購買</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 客製化選項彈出面板 -->
+    <div class="customize-modal" id="customizeModal">
+        <div class="customize-content">
+            <div class="customize-header">
+                <h3 id="customizeDrinkName">客製化飲料</h3>
+                <button class="close-customize" id="closeCustomize">&times;</button>
+            </div>
+            
+            <div class="customize-body">
+                <!-- 糖量選擇 -->
+                <div class="customize-section">
+                    <h4>糖量</h4>
+                    <div class="option-group">
+                        <label class="option-item">
+                            <input type="radio" name="sugar" value="無糖" checked>
+                            <span class="option-text">無糖</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="sugar" value="微糖">
+                            <span class="option-text">微糖</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="sugar" value="半糖">
+                            <span class="option-text">半糖</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="sugar" value="少糖">
+                            <span class="option-text">少糖</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="sugar" value="全糖">
+                            <span class="option-text">全糖</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 冰量選擇 -->
+                <div class="customize-section">
+                    <h4>冰量</h4>
+                    <div class="option-group">
+                        <label class="option-item">
+                            <input type="radio" name="ice" value="去冰">
+                            <span class="option-text">去冰</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="ice" value="微冰">
+                            <span class="option-text">微冰</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="ice" value="少冰">
+                            <span class="option-text">少冰</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="radio" name="ice" value="正常冰" checked>
+                            <span class="option-text">正常冰</span>
+                        </label>
+                        <label class="option-item" id="hotOption" style="display: none;">
+                            <input type="radio" name="ice" value="熱飲">
+                            <span class="option-text">熱飲</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 加料選擇 -->
+                <div class="customize-section" id="toppingsSection">
+                    <h4>加料 (每項 +NT$ 15)</h4>
+                    <div class="option-group">
+                        <label class="option-item">
+                            <input type="checkbox" name="toppings" value="珍珠">
+                            <span class="option-text">珍珠</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="checkbox" name="toppings" value="椰果">
+                            <span class="option-text">椰果</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="checkbox" name="toppings" value="布丁">
+                            <span class="option-text">布丁</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="checkbox" name="toppings" value="仙草">
+                            <span class="option-text">仙草</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="checkbox" name="toppings" value="愛玉">
+                            <span class="option-text">愛玉</span>
+                        </label>
+                        <label class="option-item">
+                            <input type="checkbox" name="toppings" value="寒天">
+                            <span class="option-text">寒天</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 特殊要求 -->
+                <div class="customize-section">
+                    <h4>特殊要求</h4>
+                    <textarea id="specialRequest" placeholder="請輸入特殊要求 (選填)"></textarea>
+                </div>
+
+                <!-- 價格顯示 -->
+                <div class="customize-price">
+                    <span>總價：</span>
+                    <span id="customizeTotalPrice">NT$ 0</span>
+                </div>
+            </div>
+
+            <div class="customize-footer">
+                <button class="add-to-cart-btn" id="addToCartBtn">加入購物車</button>
+                <button class="cancel-customize-btn" id="cancelCustomizeBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Copyright ◎ 2025 飲茶趣 All Rights Reserved.</p>
+        <!-- 隱藏的管理入口 -->
+        <div class="hidden-admin-entry" id="hiddenAdminEntry">
+            <div class="admin-entry-trigger" id="adminEntryTrigger">
+                <span class="admin-hint">👑</span>
+            </div>
+            <div class="admin-entry-modal" id="adminEntryModal">
+                <div class="admin-entry-content">
+                    <h3>管理員入口</h3>
+                    <p>確認進入管理後台？</p>
+                    <div class="admin-entry-buttons">
+                        <button id="adminLoginBtn">進入後台</button>
+                        <button id="adminCancelBtn">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+
+    <!-- 隱藏管理入口功能 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const trigger = document.getElementById('adminEntryTrigger');
+            const modal = document.getElementById('adminEntryModal');
+            const loginBtn = document.getElementById('adminLoginBtn');
+            const cancelBtn = document.getElementById('adminCancelBtn');
+            
+            let clickCount = 0;
+            let clickTimer = null;
+            
+            // 雙擊觸發器顯示管理入口
+            if (trigger) {
+                trigger.addEventListener('click', function() {
+                    clickCount++;
+                    
+                    if (clickCount === 1) {
+                        clickTimer = setTimeout(() => {
+                            clickCount = 0;
+                        }, 300);
+                    } else if (clickCount === 2) {
+                        clearTimeout(clickTimer);
+                        clickCount = 0;
+                        
+                        // 添加動畫效果
+                        trigger.classList.add('double-clicked');
+                        setTimeout(() => {
+                            trigger.classList.remove('double-clicked');
+                        }, 500);
+                        
+                        // 顯示管理入口
+                        showAdminEntry();
+                    }
+                });
+            }
+            
+            // 顯示管理入口
+            function showAdminEntry() {
+                modal.style.display = 'flex';
+            }
+            
+            // 隱藏管理入口
+            function hideAdminEntry() {
+                modal.style.display = 'none';
+            }
+            
+            // 登入按鈕事件
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function() {
+                                    // 跳轉到正式的登錄頁面進行身份驗證
+                window.location.href = 'login.html?redirect=admin';
+                });
+            }
+            
+            // 取消按鈕事件
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', hideAdminEntry);
+            }
+            
+            // 點擊背景關閉
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        hideAdminEntry();
+                    }
+                });
+            }
+        });
+    </script>
+
+    <!-- 分類篩選功能 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuCategories = document.querySelectorAll('.menu-category');
+            
+            // 篩選功能
+            function filterCategories(category) {
+                console.log('篩選類別:', category); // 調試用
+                menuCategories.forEach(categoryEl => {
+                    if (category === 'all' || categoryEl.dataset.category === category) {
+                        categoryEl.classList.remove('hidden', 'fade-out');
+                        categoryEl.style.display = 'block';
+                        categoryEl.style.opacity = '1';
+                        categoryEl.style.transform = 'translateY(0)';
+                    } else {
+                        categoryEl.classList.add('hidden');
+                        categoryEl.style.display = 'none';
+                    }
+                });
+            }
+            
+            // URL錨點處理
+            function handleUrlAnchor() {
+                const hash = window.location.hash;
+                console.log('當前錨點:', hash); // 調試用
+                
+                if (hash) {
+                    const category = hash.substring(1); // 移除 #
+                    if (category === 'coffee' || category === 'tea') {
+                        filterCategories(category);
+                    } else {
+                        filterCategories('all');
+                    }
+                } else {
+                    filterCategories('all');
+                }
+            }
+            
+            // 頁面載入時處理URL錨點
+            handleUrlAnchor();
+            
+            // 監聽URL變化
+            window.addEventListener('hashchange', handleUrlAnchor);
+        });
+    </script>
+
+    <!-- 客製化功能 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const customizeModal = document.getElementById('customizeModal');
+            const customizeDrinkName = document.getElementById('customizeDrinkName');
+            const customizeTotalPrice = document.getElementById('customizeTotalPrice');
+            const closeCustomize = document.getElementById('closeCustomize');
+            const cancelCustomizeBtn = document.getElementById('cancelCustomizeBtn');
+            const addToCartBtn = document.getElementById('addToCartBtn');
+            const specialRequest = document.getElementById('specialRequest');
+            
+            let currentDrink = null;
+            let basePrice = 0;
+            const toppingPrice = 15; // 每項加料價格
+            
+            // 客製化按鈕點擊事件
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('customize-btn')) {
+                    const menuItem = e.target.closest('.menu-item');
+                    const drinkName = menuItem.dataset.name;
+                    const price = parseInt(menuItem.dataset.price);
+                    
+                    currentDrink = drinkName;
+                    basePrice = price;
+                    
+                    // 檢查是否為咖啡類飲料
+                    const isCoffee = ['美式咖啡', '拿鐵咖啡'].includes(drinkName);
+                    
+                    // 顯示或隱藏加料區
+                    const toppingsSection = document.getElementById('toppingsSection');
+                    if (toppingsSection) {
+                        toppingsSection.style.display = isCoffee ? 'none' : 'block';
+                    }
+                    
+                    // 根據飲料類型調整冰量選項
+                    const hotOption = document.getElementById('hotOption');
+                    const hotDrinks = ['綠茶', '紅茶', '翡翠紅茶', '星辰奶茶', '美式咖啡', '拿鐵咖啡'];
+                    
+                    if (hotDrinks.includes(drinkName)) {
+                        // 這些飲料顯示熱飲選項
+                        hotOption.style.display = 'block';
+                    } else {
+                        // 其他飲料不顯示熱飲選項
+                        hotOption.style.display = 'none';
+                        // 如果當前選中的是"熱飲"，則改為"正常冰"
+                        const hotRadio = document.querySelector('input[name="ice"][value="熱飲"]');
+                        if (hotRadio && hotRadio.checked) {
+                            document.querySelector('input[name="ice"][value="正常冰"]').checked = true;
+                        }
+                    }
+                    
+                    // 更新彈出面板
+                    customizeDrinkName.textContent = `客製化 ${drinkName}`;
+                    updateTotalPrice();
+                    
+                    // 顯示彈出面板
+                    customizeModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+            
+            // 關閉客製化面板
+            function closeCustomizeModal() {
+                customizeModal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+                
+                // 重置選項
+                document.querySelector('input[name="sugar"][value="無糖"]').checked = true;
+                document.querySelector('input[name="ice"][value="正常冰"]').checked = true;
+                document.querySelectorAll('input[name="toppings"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                specialRequest.value = '';
+                
+                // 重新顯示加料區（為下次打開做準備）
+                const toppingsSection = document.getElementById('toppingsSection');
+                if (toppingsSection) {
+                    toppingsSection.style.display = 'block';
+                }
+                
+                // 重新隱藏熱飲選項（為下次打開做準備）
+                const hotOption = document.getElementById('hotOption');
+                if (hotOption) {
+                    hotOption.style.display = 'none';
+                }
+                
+                currentDrink = null;
+                basePrice = 0;
+            }
+            
+            closeCustomize.addEventListener('click', closeCustomizeModal);
+            cancelCustomizeBtn.addEventListener('click', closeCustomizeModal);
+            
+            // 點擊背景關閉
+            customizeModal.addEventListener('click', function(e) {
+                if (e.target === customizeModal) {
+                    closeCustomizeModal();
+                }
+            });
+            
+            // 更新總價
+            function updateTotalPrice() {
+                const selectedToppings = document.querySelectorAll('input[name="toppings"]:checked');
+                const toppingsCost = selectedToppings.length * toppingPrice;
+                const totalPrice = basePrice + toppingsCost;
+                
+                customizeTotalPrice.textContent = `NT$ ${totalPrice}`;
+            }
+            
+            // 監聽選項變化
+            document.querySelectorAll('input[name="sugar"], input[name="ice"]').forEach(radio => {
+                radio.addEventListener('change', updateTotalPrice);
+            });
+            
+            document.querySelectorAll('input[name="toppings"]').forEach(checkbox => {
+                checkbox.addEventListener('change', updateTotalPrice);
+            });
+
+
+            
+            // 加入購物車
+            addToCartBtn.addEventListener('click', function() {
+                if (!currentDrink) return;
+                
+                const selectedSugar = document.querySelector('input[name="sugar"]:checked').value;
+                const selectedIce = document.querySelector('input[name="ice"]:checked').value;
+                const selectedToppings = Array.from(document.querySelectorAll('input[name="toppings"]:checked')).map(cb => cb.value);
+                const specialReq = specialRequest.value.trim();
+                
+                const selectedToppingsCost = selectedToppings.length * toppingPrice;
+                const totalPrice = basePrice + selectedToppingsCost;
+                
+                // 創建客製化項目
+                const customizedItem = {
+                    name: currentDrink,
+                    basePrice: basePrice,
+                    sugar: selectedSugar,
+                    ice: selectedIce,
+                    toppings: selectedToppings,
+                    specialRequest: specialReq,
+                    totalPrice: totalPrice,
+                    quantity: 1
+                };
+                
+                // 添加到購物車（需要與現有購物車整合）
+                addToCart(customizedItem);
+                
+                // 構建完整的顯示訊息
+                let displayMessage = `${currentDrink}`;
+                
+                // 添加糖量資訊（顯示所有選擇）
+                if (selectedSugar) {
+                    displayMessage += ` ${selectedSugar}`;
+                }
+                
+                // 添加冰量資訊（顯示所有選擇）
+                if (selectedIce) {
+                    displayMessage += ` ${selectedIce}`;
+                }
+                
+                // 添加加料資訊
+                if (selectedToppings && selectedToppings.length > 0) {
+                    displayMessage += ` +${selectedToppings.join(',')}`;
+                }
+                
+                // 添加特殊要求（如果有）
+                if (specialReq) {
+                    displayMessage += ` (${specialReq})`;
+                }
+                
+                displayMessage += ` 已加入購物車！`;
+                
+                // 顯示成功訊息
+                showNotification(displayMessage, 'success');
+                
+                // 關閉面板
+                closeCustomizeModal();
+            });
+            
+            // 添加到購物車的函數（需要與現有購物車整合）
+            function addToCart(item) {
+                // 與現有購物車功能整合
+                const id = Date.now().toString(); // 生成唯一ID
+                
+                // 構建商品名稱（包含客製化選項）
+                let displayName = item.name;
+                if (item.sugar) {
+                    displayName += ` (${item.sugar})`;
+                }
+                if (item.ice) {
+                    displayName += ` (${item.ice})`;
+                }
+                if (item.toppings && item.toppings.length > 0) {
+                    displayName += ` +${item.toppings.join(',')}`;
+                }
+                
+                // 使用現有的購物車功能
+                if (window.addToCart) {
+                    window.addToCart(id, displayName, item.totalPrice, false, item.specialRequest); // 傳遞特殊需求
+                } else {
+                    // 如果現有購物車功能不可用，使用備用方案
+                    console.log('添加到購物車:', displayName, item.totalPrice);
+                    
+                    // 存儲到 localStorage
+                    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                    cart.push({
+                        id: id,
+                        name: displayName,
+                        price: item.totalPrice,
+                        quantity: 1,
+                        customized: true, // 標記為客製化商品
+                        originalItem: item // 保存原始客製化資訊
+                    });
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    
+                    // 更新購物車顯示
+                    if (window.syncCartState) {
+                        window.syncCartState();
+                    }
+                }
+            }
+            
+            // 顯示通知
+            function showNotification(message, type = 'success') {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.innerHTML = `
+                    <div class="notification-icon">${type === 'success' ? '✓' : '✕'}</div>
+                    <div class="notification-message">${message}</div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // 顯示動畫
+                setTimeout(() => notification.classList.add('show'), 100);
+                
+                // 自動隱藏
+                setTimeout(() => {
+                    notification.classList.add('hide');
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+        });
+    </script>
+
+</body>
+</html> 
