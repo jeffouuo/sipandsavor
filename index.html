@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sipandsavor</title>
-    <link rel="stylesheet" href = "style-optimized.css">
+    <title>飲茶趣 - 每一口都是幸福的滋味</title>
+    <link rel="stylesheet" href="style-optimized.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
@@ -82,6 +82,7 @@
                     <p>即日起來店消費加 LINE 好友可獲得精緻小點心，等您一同參與</p>
                 </div>       
         </section>
+<<<<<<< HEAD
         <!-- 內用點餐區域 -->
         <section class="dine-in-qr">
             <div class="qr-container">
@@ -107,6 +108,73 @@
             </div>
         </section>
 
+=======
+        
+        <!-- 產品展示區域 -->
+        <section class="product">
+            <div class="swiper-container">
+                <div class="swiper-wrapper">
+                    <!-- 星辰奶茶 -->
+                    <div class="swiper-slide">
+                        <img src="images/milk tea.webp" alt="星辰奶茶" loading="lazy" class="product-image" data-name="星辰奶茶" data-price="50">
+                        <h3>星辰奶茶 <span class="price">NT$ 50</span></h3>
+                        <p>每一口<br>都是一場星辰之旅。</p>
+                    </div>
+                    
+                    <!-- 夢幻檸茶 -->
+                    <div class="swiper-slide">
+                        <img src="images/lemon black tea.webp" alt="夢幻檸茶" loading="lazy" class="product-image" data-name="夢幻檸茶" data-price="60">
+                        <h3>夢幻檸茶 <span class="price">NT$ 60</span></h3>
+                        <p>釋放內心的清新力量</p>
+                    </div>
+                    
+                    <!-- 綠霧奶綠 -->
+                    <div class="swiper-slide"> 
+                        <img src="images/milkgreen.webp" alt="綠霧奶綠" loading="lazy" class="product-image" data-name="綠霧奶綠" data-price="55">
+                        <h3>綠霧奶綠 <span class="price">NT$ 55</span></h3>
+                        <p>帶來一抹清新</p>
+                    </div>
+                    
+                    <!-- 冷萃烏龍 -->
+                    <div class="swiper-slide">
+                        <img src="images/coldtea.webp" alt="冷萃烏龍" loading="lazy" class="product-image" data-name="冷萃烏龍" data-price="65">
+                        <h3>冷萃烏龍 <span class="price">NT$ 65</span></h3>
+                        <p>經過12小時低溫慢釀</p>
+                    </div>
+                </div>
+                
+                <!-- 輪播導航按鈕 -->
+                <div class="swiper-button-next"></div>
+                <div class="swiper-button-prev"></div>
+                
+                <!-- 輪播分頁指示器 -->
+                <div class="swiper-pagination"></div>
+            </div>
+        </section>
+        <!-- 內用點餐區域 -->
+        <section class="dine-in-qr">
+            <div class="qr-container">
+                <h2>內用點餐</h2>
+                <p>點擊下方QR碼，輸入桌號即可點餐</p>
+                <div class="dine-in-button-container">
+                    <div class="qr-code-container" onclick="goToDineIn()">
+                        <img src="images/qrcode.webp" alt="內用點餐QR碼" class="qr-code-image">
+                        <div class="qr-overlay">
+                            <span class="qr-text">點擊掃描點餐</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="qr-instructions">
+                    <h3>使用步驟：</h3>
+                    <ol>
+                        <li>點擊上方QR碼</li>
+                        <li>輸入您的桌號</li>
+                        <li>選擇想要的飲料</li>
+                        <li>送出訂單</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
     </main>
     <footer>
         <p>Copyright ◎ 2025 飲茶趣 All Rights Reserved.</p>
@@ -125,6 +193,7 @@
                     </div>
                 </div>
             </div>
+        </div>
     </footer>
 
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
