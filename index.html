@@ -1,181 +1,10 @@
-<<<<<<< Updated upstream
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sipandsavor</title>
-    <link rel="stylesheet" href = "style.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-</head>
-<body>
-    <header>
-        <!-- 手機元件 -->
-        <button class="menu" id="hamburgerBtn">&#9776;</button>
-        
-        <a href="index.html"><h1>飲茶趣</h1></a>
-    
-        <!-- 桌面導航 -->
-        <nav class="desktop-nav">
-            <ul>
-                <li><a href="news.html">最新消息</a></li>
-                <li><a href="about.html">關於我們</a></li>
-                <li><a href="stores.html">門市據點</a></li>
-            </ul>
-        </nav>
-    
-        <!-- 購物車圖標 -->
-        <div class="cart-icon" id="cartIcon">
-            <span class="material-icons">shopping_cart</span>
-            <span class="cart-count">0</span>
-        </div>
-
-        <!-- 購物車側邊欄 -->
-        <div class="cart-sidebar" id="cartSidebar">
-            <div class="cart-header">
-                <h3>購物車</h3>
-                <button class="close-cart" id="closeCart">&times;</button>
-            </div>
-            <div class="cart-items">
-                <!-- 購物車項目將通過 JavaScript 動態添加 -->
-            </div>
-            <div class="cart-footer">
-                <div class="cart-total">
-                    <span>總計：</span>
-                    <span class="total-amount">NT$ 0</span>
-                </div>
-                <button class="checkout-btn">結帳</button>
-            </div>
-        </div>
-    
-        <!-- 手機菜單 -->
-        <nav id="mobileMenu">
-            <ul>
-                <li><a href="news.html">最新消息</a></li>
-                <li><a href="about.html">關於我們</a></li>
-                <li><a href="stores.html">門市據點</a></li>
-            </ul>
-        </nav>
-    </header>
-    
-    <main>  
-        <section class="news">   
-                <h2>每一口都是一個故事</h2>
-                <p>「用心泡製，讓每一口都值得品味。」</p>
-        </section>
-
-        <section class="slogan">
-          <blockquote>"每一口<br>都是幸福的滋味。"</blockquote>  
-        </section>
-        <section class="shop">
-            <img src="images/四季春.webp" alt="四季春" loading="lazy">
-
-                <div class="info">
-                    <h2>一杯飲品，無限回味</h2>
-                    <p>即日起來店消費加 LINE 好友可獲得精緻小點心，等您一同參與</p>
-                </div>       
-        </section>
-        <section class="product">
-            <!-- 新增轮播容器 -->
-            <div class="swiper-container">
-                <div class="swiper-wrapper">
-                    <!-- 原始产品 -->
-                    <div class="swiper-slide">
-                        <img src="images/milk tea.webp" alt="星辰奶茶" loading="lazy" class="product-image" data-name="星辰奶茶" data-price="50">
-                        <h3>星辰奶茶 <span class="price">NT$ 50</span></h3>
-                        <p>每一口<br>都是一場星辰之旅。</p>
-                    </div>
-                    <div class="swiper-slide">
-                        <img src="images/lemon black tea.webp" alt="夢幻檸茶" loading="lazy" class="product-image" data-name="夢幻檸茶" data-price="60">
-                        <h3>夢幻檸茶 <span class="price">NT$ 60</span></h3>
-                        <p>釋放內心的清新力量</p>
-                    </div>
-                    <div class="swiper-slide"> 
-                        <img src="images/milkgreen.webp" alt="綠霧奶綠" loading="lazy" class="product-image" data-name="綠霧奶綠" data-price="55">
-                        <h3>綠霧奶綠 <span class="price">NT$ 55</span></h3>
-                        <p>帶來一抹清新</p>
-                    </div>
-                    <div class="swiper-slide">
-                        <img src="images/coldtea.webp" alt="冷萃烏龍" loading="lazy" class="product-image" data-name="冷萃烏龍" data-price="65">
-                        <h3>冷萃烏龍 <span class="price">NT$ 65</span></h3>
-                        <p>經過12小時低溫慢釀</p>
-                    </div>
-                    <div class="swiper-slide">
-                        <img src="images/blacktea1.webp" alt="翡翠紅茶" loading="lazy" class="product-image" data-name="翡翠紅茶" data-price="30">
-                        <h3>翡翠紅茶 <span class="price">NT$ 30</span></h3>
-                        <p>醇厚回甘，香氣四溢</p>
-                    </div>
-                    <div class="swiper-slide">
-                        <img src="images/mango-iced.webp" alt="芒果冰茶" loading="lazy" class="product-image" data-name="芒果冰茶" data-price="70">
-                        <h3>芒果冰茶 <span class="price">NT$ 70</span></h3>
-                        <p>夏日必備的清爽滋味</p>
-                    </div>
-                    <div class="swiper-slide">
-                        <img src="images/Osmanthus Oolong Tea.webp" alt="桂花烏龍" loading="lazy" class="product-image" data-name="桂花烏龍" data-price="55">
-                        <h3>桂花烏龍 <span class="price">NT$ 55</span></h3>
-                        <p>淡雅花香，回甘持久</p>
-                    </div>
-                    <div class="swiper-slide">
-                        <img src="images/americano.webp" alt="美式咖啡" loading="lazy" class="product-image" data-name="美式咖啡" data-price="45">
-                        <h3>美式咖啡 <span class="price">NT$ 45</span></h3>
-                        <p>純粹的咖啡香氣</p>
-                    </div>
-                    <div class="swiper-slide">
-                        <img src="images/latte.webp" alt="拿鐵咖啡" loading="lazy" class="product-image" data-name="拿鐵咖啡" data-price="60">
-                        <h3>拿鐵咖啡 <span class="price">NT$ 60</span></h3>
-                        <p>香濃奶香與咖啡的完美融合</p>
-                    </div>
-                    <div class="swiper-slide">
-                        <img src="images/berry-sparkling.webp" alt="莓果氣泡飲" loading="lazy" class="product-image" data-name="莓果氣泡飲" data-price="75">
-                        <h3>莓果氣泡飲 <span class="price">NT$ 75</span></h3>
-                        <p>清爽氣泡與莓果的繽紛邂逅</p>
-                    </div>
-                    <div class="swiper-slide">
-                        <img src="images/greentea.webp" alt="綠茶" loading="lazy" class="product-image" data-name="綠茶" data-price="30">
-                        <h3>綠茶 <span class="price">NT$ 30</span></h3>
-                        <p>清新淡雅，回甘悠長</p>
-                    </div>
-                    <div class="swiper-slide">
-                        <img src="images/blacktea.webp" alt="紅茶" loading="lazy" class="product-image" data-name="紅茶" data-price="30">
-                        <h3>紅茶 <span class="price">NT$ 30</span></h3>
-                        <p>醇厚回甘，香氣四溢</p>
-                    </div>
-                    
-                </div>
-                <!-- 添加導航按鈕 -->
-                <div class="swiper-button-next"></div>
-                <div class="swiper-button-prev"></div>
-                <!-- 添加分頁器 -->
-                <div class="swiper-pagination"></div>
-            </div>
-        </section>
-                    <section class="newsletter">
-                        <p>歡迎訂閱電子報，可不定期收到優惠</p>
-                        <form>
-                            <input type="email" placeholder="請輸入您的 Email" required>
-                            <button type="summit">送出</button>
-                        </form>
-                    </section>
-
-    </main>
-    <footer>
-        <p>Copyright ◎ 2025 飲茶趣 All Rights Reserved.</p>
-    </footer>
-
-    <script src="script.js"></script>
-
-    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
-    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
-
-</body>
-=======
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sipandsavor</title>
-    <link rel="stylesheet" href = "style.css">
+    <link rel="stylesheet" href = "style-optimized.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
@@ -300,6 +129,7 @@
 
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <script src="script-enhanced.js"></script>
     <script>
         // 跳轉到內用點餐頁面
         function goToDineIn() {
@@ -307,15 +137,7 @@
             const orderUrl = `${currentUrl}/dine-in-order.html`;
             window.location.href = orderUrl;
         }
-        
-        // 頁面載入完成後載入主腳本
-        window.addEventListener('load', function() {
-            const script = document.createElement('script');
-            script.src = 'script.js';
-            document.head.appendChild(script);
-        });
     </script>
 
 </body>
->>>>>>> Stashed changes
 </html>

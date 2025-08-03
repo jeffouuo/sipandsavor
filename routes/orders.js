@@ -128,6 +128,10 @@ router.post('/checkout', [
         let calculatedTotal = 0;
 
         for (const item of items) {
+            console.log('🔍 處理訂單項目:', item);
+            console.log('🔍 項目客制化信息:', item.customizations);
+            console.log('🔍 項目特殊需求:', item.specialRequest);
+            
             // 首先嘗試從數據庫查找產品
             let product = null;
             try {
@@ -189,7 +193,9 @@ router.post('/checkout', [
                 name: item.name, // 保留原始名称（包含客制化信息）
                 price: item.price, // 使用前端发送的价格（可能包含加料费用）
                 quantity: item.quantity,
-                subtotal
+                subtotal,
+                customizations: item.customizations || '', // 保存客制化信息
+                specialRequest: item.specialRequest || '' // 保存特殊需求
             });
 
             // 更新庫存（如果使用數據庫）
@@ -415,6 +421,7 @@ router.post('/dine-in', [
             status = 'pending',
             orderTime
         } = req.body;
+        console.log('🟢 後端收到桌號:', tableNumber);
 
         // 驗證總金額
         const calculatedTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -426,14 +433,23 @@ router.post('/dine-in', [
         }
 
         // 創建訂單項目
-        const orderItems = items.map(item => ({
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            subtotal: item.price * item.quantity
-        }));
+        const orderItems = items.map(item => {
+            console.log('🔍 內用訂單項目:', item);
+            console.log('🔍 內用訂單客制化信息:', item.customizations);
+            console.log('🔍 內用訂單特殊需求:', item.specialRequest);
+            
+            return {
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                subtotal: item.price * item.quantity,
+                customizations: item.customizations || '', // 保存客制化信息
+                specialRequest: item.specialRequest || '' // 保存特殊需求
+            };
+        });
 
         // 創建內用訂單
+        console.log('🟢 創建訂單時的tableNumber:', tableNumber);
         const order = new Order({
             tableNumber,
             area,
@@ -443,11 +459,12 @@ router.post('/dine-in', [
             status,
             deliveryMethod: 'dine-in',
             paymentMethod: 'cash', // 內用默認現金付款
-            notes: `內用訂單 - 桌號: ${tableNumber}${area ? `, 區域: ${area}` : ''}`,
+            notes: '前台結帳',
             orderTime: orderTime ? new Date(orderTime) : new Date()
         });
-
+        console.log('🟢 創建的order物件:', order);
         await order.save();
+        console.log('🟢 儲存後的order物件:', order);
 
         res.status(201).json({
             success: true,
@@ -824,6 +841,12 @@ router.get('/admin/all', adminAuth, [
                 .limit(parseInt(limit)),
             Order.countDocuments(query)
         ]);
+
+        console.log('🟢 後台API回傳的訂單資料:', orders.map(order => ({
+            _id: order._id,
+            tableNumber: order.tableNumber,
+            orderType: order.orderType
+        })));
 
         // 計算分頁信息
         const totalPages = Math.ceil(total / parseInt(limit));

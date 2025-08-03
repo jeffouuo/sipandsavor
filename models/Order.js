@@ -22,6 +22,14 @@ const orderItemSchema = new mongoose.Schema({
     subtotal: {
         type: Number,
         required: true
+    },
+    customizations: {
+        type: String,
+        required: false
+    },
+    specialRequest: {
+        type: String,
+        required: false
     }
 });
 

@@ -416,7 +416,7 @@ function renderOrdersTable(orders, pagination) {
             <thead>
                 <tr>
                     <th>訂單編號</th>
-                    <th>用戶</th>
+                    <th>用戶/桌號</th>
                     <th>商品</th>
                     <th>總金額</th>
                     <th>特殊需求</th>
@@ -430,68 +430,67 @@ function renderOrdersTable(orders, pagination) {
     `;
 
     orders.forEach(order => {
+        console.log('🟢 後台渲染桌號:', order.tableNumber);
         const itemsText = order.items.map(item => `${item.name} x${item.quantity}`).join(', ');
         const statusClass = `status-${order.status}`;
         
         html += `
             <tr>
                 <td>${order._id}</td>
-                <td>${order.user?.username || 'N/A'}</td>
+                <td>${order.orderType === 'dine-in' ? 
+                    `桌號: ${order.tableNumber || 'N/A'}` : 
+                    (order.user?.username || 'N/A')}</td>
                 <td>${itemsText}</td>
                 <td>NT$ ${order.totalAmount}</td>
                 <td style="max-width: 200px; word-wrap: break-word; line-height: 1.3; max-height: 2.6em; overflow: hidden;">
                     ${(() => {
-                        // 簡單測試：在頁面上顯示一個測試信息
-                        console.log('🔍 特殊需求邏輯執行中...');
+                        console.log('🔍 處理訂單特殊需求:', order._id);
+                        console.log('🔍 訂單項目:', order.items);
                         
-                        if (!order.notes || order.notes === '前台結帳') {
-                            return '<span style="color: #95a5a6; font-size: 14px;">無</span>';
+                        // 首先檢查是否有來自 specialRequest 字段的特殊需求
+                        const specialRequestsFromItems = order.items
+                            .filter(item => item.specialRequest && item.specialRequest.trim() !== '')
+                            .map(item => `${item.name}: ${item.specialRequest.trim()}`)
+                            .join(', ');
+                        
+                        console.log('🔍 找到的特殊需求:', specialRequestsFromItems);
+                        
+                        if (specialRequestsFromItems) {
+                            return `<span style="color: #e74c3c; font-weight: 500; font-size: 14px; display: block; word-break: break-all; white-space: normal;">${specialRequestsFromItems.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
                         }
                         
-                        // 檢查是否有加料（+號）
-                        if (order.notes.includes('+')) {
-                            // 提取所有有加料的飲料和對應的加料
-                            const specialRequests = [];
-                            
-                            // 使用正則表達式找到所有 + 後面的內容，直到遇到 x數字
-                            const regex = /([^,]+?)\s*\+([^x]+?)(?:\s*x\d+)/g;
-                            let match;
-                            
-                            while ((match = regex.exec(order.notes)) !== null) {
-                                const drinkWithCustomization = match[1].trim();
-                                const addOns = match[2].trim();
+                        // 如果沒有 specialRequest，則檢查 customizations 字段中是否有真正的特殊需求
+                        const customizationsWithSpecialRequests = order.items
+                            .filter(item => {
+                                if (!item.customizations || item.customizations.trim() === '') return false;
                                 
-                                if (addOns) {
-                                    specialRequests.push(`${drinkWithCustomization} ${addOns}`);
-                                }
-                            }
-                            
-                            if (specialRequests.length > 0) {
-                                const result = specialRequests.join(', ');
-                                return `<span style="color: #e74c3c; font-weight: 500; font-size: 14px; display: block; word-break: break-all; white-space: normal;">${result.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
-                            }
+                                // 檢查是否包含真正的特殊需求（不是標準客製化）
+                                const customizations = item.customizations.trim();
+                                const standardCustomizations = ['無糖', '微糖', '半糖', '少糖', '全糖', '去冰', '微冰', '少冰', '正常冰', '熱飲'];
+                                
+                                // 檢查是否有加料（+號）
+                                const hasToppings = customizations.includes('+');
+                                
+                                // 檢查是否有其他特殊需求（非標準客製化且非加料）
+                                const hasOtherSpecialRequests = customizations.split(',').some(part => {
+                                    const trimmedPart = part.trim();
+                                    return trimmedPart && 
+                                           !standardCustomizations.some(standard => trimmedPart.includes(standard)) &&
+                                           !trimmedPart.includes('+');
+                                });
+                                
+                                return hasToppings || hasOtherSpecialRequests;
+                            })
+                            .map(item => `${item.name}: ${item.customizations.trim()}`)
+                            .join(', ');
+                        
+                        console.log('🔍 找到的客制化特殊需求:', customizationsWithSpecialRequests);
+                        
+                        if (customizationsWithSpecialRequests) {
+                            return `<span style="color: #e74c3c; font-weight: 500; font-size: 14px; display: block; word-break: break-all; white-space: normal;">${customizationsWithSpecialRequests.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
                         }
                         
-                        // 檢查是否有特殊文字（非標準客製化）
-                        const standardCustomizations = ['全糖', '半糖', '微糖', '無糖', '正常冰', '少冰', '微冰', '去冰', '熱'];
-                        const drinkNames = ['美式咖啡', '拿鐵咖啡', '紅茶', '綠茶', '星辰奶茶', '夢幻檸茶', '綠霧奶綠', '冷萃烏龍', '翡翠紅茶', '芒果冰茶', '桂花烏龍', '莓果氣泡飲'];
-                        
-                        let temp = order.notes;
-                        // 移除所有飲料名稱
-                        drinkNames.forEach(name => { 
-                            temp = temp.replace(new RegExp(name, 'g'), ''); 
-                        });
-                        // 移除所有標準客製化
-                        standardCustomizations.forEach(cus => { 
-                            temp = temp.replace(new RegExp(cus, 'g'), ''); 
-                        });
-                        // 移除格式字符和數量
-                        temp = temp.replace(/[()]/g, '').replace(/\s*x\d+/g, '').replace(/,\s*/g, '').trim();
-                        
-                        if (temp.length > 0) {
-                            return `<span style="color: #e74c3c; font-weight: 500; font-size: 14px; display: block; word-break: break-all; white-space: normal;">${order.notes.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
-                        }
-                        
+                        // 如果沒有特殊需求，顯示"無"
                         return '<span style="color: #95a5a6; font-size: 14px;">無</span>';
                     })()}
                 </td>

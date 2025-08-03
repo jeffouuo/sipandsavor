@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>門市據點 - 飲茶趣</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-optimized.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         .stores-page {
@@ -149,19 +149,26 @@
 </head>
 <body>
     <header>
-        <!-- 桌面導航 -->
-        <nav class="desktop-nav">
-            <ul>
-                <li><a href="news.html">最新消息</a></li>
-                <li><a href="about.html">關於我們</a></li>
-                <li><a href="stores.html">門市據點</a></li>
-            </ul>
-        </nav>
-    
         <!-- 手機元件 -->
         <button class="menu" id="hamburgerBtn">&#9776;</button>
         
         <a href="index.html"><h1>飲茶趣</h1></a>
+    
+        <!-- 桌面導航 -->
+        <nav class="desktop-nav">
+            <ul>
+                <li><a href="news.html">最新消息</a></li>
+                <li class="dropdown">
+                    <a href="javascript:void(0);">飲料菜單</a>
+                    <ul class="dropdown-menu">
+                        <li><a href="menu.html#coffee">咖啡</a></li>
+                        <li><a href="menu.html#tea">茶類</a></li>
+                    </ul>
+                </li>
+                <li><a href="about.html">關於我們</a></li>
+                <li><a href="stores.html">門市據點</a></li>
+            </ul>
+        </nav>
     
         <!-- 購物車圖標 -->
         <div class="cart-icon" id="cartIcon">
@@ -191,6 +198,7 @@
         <nav id="mobileMenu">
             <ul>
                 <li><a href="news.html">最新消息</a></li>
+                <li><a href="menu.html">飲料菜單</a></li>
                 <li><a href="about.html">關於我們</a></li>
                 <li><a href="stores.html">門市據點</a></li>
             </ul>
@@ -199,7 +207,6 @@
 
     <main class="stores-page">
         <div class="stores-container">
-            <h1 class="stores-title">門市據點</h1>
 
             <!-- 門市列表 -->
             <section class="stores-section">
@@ -264,8 +271,24 @@
 
     <footer>
         <p>Copyright ◎ 2025 飲茶趣 All Rights Reserved.</p>
+        <!-- 隱藏的管理入口 -->
+        <div class="hidden-admin-entry" id="hiddenAdminEntry">
+            <div class="admin-entry-trigger" id="adminEntryTrigger">
+                <span class="admin-hint">👑</span>
+            </div>
+            <div class="admin-entry-modal" id="adminEntryModal">
+                <div class="admin-entry-content">
+                    <h3>管理員入口</h3>
+                    <p>確認進入管理後台？</p>
+                    <div class="admin-entry-buttons">
+                        <button id="adminLoginBtn">進入後台</button>
+                        <button id="adminCancelBtn">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="script-enhanced.js"></script>
 </body>
 </html> 

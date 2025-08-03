@@ -67,16 +67,23 @@ app.use(cors(corsOptions));
 // 速率限制
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15分鐘
-    max: 500 // 限制每个IP 15分鐘內最多500個請求
+    max: 1000 // 增加限制，避免误判
 });
 
 // 为登录端点设置更宽松的限制
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15分鐘
-    max: 50 // 登录端点限制更严格
+    max: 100 // 增加登录限制
+});
+
+// 为结账端点设置更宽松的限制
+const checkoutLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15分鐘
+    max: 200 // 结账端点限制更宽松
 });
 
 app.use('/api/auth/login', loginLimiter);
+app.use('/api/orders/checkout', checkoutLimiter);
 app.use('/api', limiter);
 
 // 解析JSON和URL编码的数据
@@ -85,6 +92,22 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 
+
+// 数据库连接
+console.log('🔗 嘗試連接數據庫...');
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/sipandsavor', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
+.then(() => console.log('✅ MongoDB 連接成功'))
+.catch(err => console.error('❌ MongoDB 連接失敗:', err));
+
+// API 路由（在静态文件服务之前）
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/products', require('./routes/products'));
+app.use('/api/orders', require('./routes/orders'));
+app.use('/api/news', require('./routes/news'));
+app.use('/api/users', require('./routes/users'));
 
 // 静态文件服务（除了admin.html和admin.js）
 app.use(express.static(path.join(__dirname), {
@@ -103,22 +126,6 @@ app.use(express.static(path.join(__dirname), {
     }
 }));
 app.use('/images', express.static('images'));
-
-// 数据库连接
-console.log('🔗 嘗試連接數據庫...');
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/sipandsavor', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB 連接成功'))
-.catch(err => console.error('❌ MongoDB 連接失敗:', err));
-
-// 路由
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/products', require('./routes/products'));
-app.use('/api/orders', require('./routes/orders'));
-app.use('/api/news', require('./routes/news'));
-app.use('/api/users', require('./routes/users'));
 
 // 管理页面路由
 app.get('/admin', async (req, res) => {
@@ -287,8 +294,10 @@ const startServer = (port, maxRetries = 10) => {
         console.log(`🚀 服務器運行在 http://localhost:${port}`);
         console.log(`📊 健康檢查: http://localhost:${port}/api/health`);
         console.log(`🏠 首頁: http://localhost:${port}`);
-        console.log(`🔧 後台入口: http://localhost:${port}/admin-entry.html`);
-        console.log(`⚙️ 系統初始化: http://localhost:${port}/init-admin.html`);
+        console.log(`🔧 後台入口: http://localhost:${port}/admin.html`);
+        console.log(`🔐 登錄頁面: http://localhost:${port}/login.html`);
+        console.log(`📋 菜單頁面: http://localhost:${port}/menu.html`);
+        console.log(`🍽️ 內用點餐: http://localhost:${port}/dine-in-order.html`);
     }).on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
             console.log(`⚠️ 端口 ${port} 已被占用，嘗試端口 ${port + 1}`);

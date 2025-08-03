@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>飲料菜單 - 飲茶趣</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-optimized.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 <body>
@@ -300,13 +300,13 @@
                 <!-- 特殊要求 -->
                 <div class="customize-section">
                     <h4>特殊要求</h4>
-                    <textarea id="specialRequest" placeholder="請輸入特殊要求 (選填)"></textarea>
+                    <textarea class="special-request-input" placeholder="請輸入特殊要求 (選填)"></textarea>
                 </div>
 
                 <!-- 價格顯示 -->
                 <div class="customize-price">
                     <span>總價：</span>
-                    <span id="customizeTotalPrice">NT$ 0</span>
+                    <span class="customize-total-price">NT$ 0</span>
                 </div>
             </div>
 
@@ -337,7 +337,7 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="script-enhanced.js"></script>
 
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
@@ -463,11 +463,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             const customizeModal = document.getElementById('customizeModal');
             const customizeDrinkName = document.getElementById('customizeDrinkName');
-            const customizeTotalPrice = document.getElementById('customizeTotalPrice');
+            const customizeTotalPrice = document.querySelector('.customize-total-price');
             const closeCustomize = document.getElementById('closeCustomize');
             const cancelCustomizeBtn = document.getElementById('cancelCustomizeBtn');
             const addToCartBtn = document.getElementById('addToCartBtn');
-            const specialRequest = document.getElementById('specialRequest');
+            const specialRequest = document.querySelector('.special-request-input');
             
             let currentDrink = null;
             let basePrice = 0;
@@ -478,7 +478,7 @@
                 if (e.target.classList.contains('customize-btn')) {
                     const menuItem = e.target.closest('.menu-item');
                     const drinkName = menuItem.dataset.name;
-                    const price = parseInt(menuItem.dataset.price);
+                    const price = parseFloat(menuItem.dataset.price);
                     
                     currentDrink = drinkName;
                     basePrice = price;
@@ -486,7 +486,7 @@
                     // 檢查是否為咖啡類飲料
                     const isCoffee = ['美式咖啡', '拿鐵咖啡'].includes(drinkName);
                     
-                    // 顯示或隱藏加料區
+                    // 顯示或隱藏加料區 - 除了咖啡類之外，其他飲品都要有客製化選項
                     const toppingsSection = document.getElementById('toppingsSection');
                     if (toppingsSection) {
                         toppingsSection.style.display = isCoffee ? 'none' : 'block';
@@ -628,7 +628,7 @@
                     displayMessage += ` (${specialReq})`;
                 }
                 
-                displayMessage += ` 已加入購物車！`;
+                displayMessage += ` 已加入購物車!`;
                 
                 // 顯示成功訊息
                 showNotification(displayMessage, 'success');
@@ -642,68 +642,38 @@
                 // 與現有購物車功能整合
                 const id = Date.now().toString(); // 生成唯一ID
                 
-                // 構建商品名稱（包含客製化選項）
+                // 構建商品名稱（只顯示基本名稱，客製化信息放在customizations字段中）
                 let displayName = item.name;
-                if (item.sugar) {
-                    displayName += ` (${item.sugar})`;
-                }
-                if (item.ice) {
-                    displayName += ` (${item.ice})`;
-                }
-                if (item.toppings && item.toppings.length > 0) {
-                    displayName += ` +${item.toppings.join(',')}`;
-                }
                 
                 // 使用現有的購物車功能
-                if (window.addToCart) {
-                    window.addToCart(id, displayName, item.totalPrice, false, item.specialRequest); // 傳遞特殊需求
-                } else {
-                    // 如果現有購物車功能不可用，使用備用方案
-                    console.log('添加到購物車:', displayName, item.totalPrice);
-                    
-                    // 存儲到 localStorage
-                    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                    cart.push({
-                        id: id,
-                        name: displayName,
-                        price: item.totalPrice,
-                        quantity: 1,
-                        customized: true, // 標記為客製化商品
-                        originalItem: item // 保存原始客製化資訊
-                    });
-                    localStorage.setItem('cart', JSON.stringify(cart));
-                    
-                    // 更新購物車顯示
-                    if (window.syncCartState) {
-                        window.syncCartState();
+                const waitForGlobalCart = () => {
+                    if (window.addToCart) {
+                        // 構建客制化字符串
+                        let customizations = '';
+                        const parts = [];
+                        if (item.sugar) parts.push(item.sugar);
+                        if (item.ice) parts.push(item.ice);
+                        if (item.toppings && item.toppings.length > 0) {
+                            parts.push(`+${item.toppings.join(',')}`);
+                        }
+                        if (item.specialRequest && item.specialRequest.trim()) {
+                            parts.push(item.specialRequest);
+                            console.log('🔍 特殊需求已添加:', item.specialRequest);
+                        }
+                        customizations = parts.join(', ');
+                        console.log('🔍 最終客制化字符串:', customizations);
+                        
+                        window.addToCart(displayName, item.totalPrice, customizations, item.specialRequest || '', true);
+                    } else {
+                        console.log('⏳ 等待全局購物車系統初始化...');
+                        setTimeout(waitForGlobalCart, 100);
                     }
-                }
+                };
+                
+                waitForGlobalCart();
             }
             
-            // 顯示通知
-            function showNotification(message, type = 'success') {
-                const notification = document.createElement('div');
-                notification.className = `notification ${type}`;
-                notification.innerHTML = `
-                    <div class="notification-icon">${type === 'success' ? '✓' : '✕'}</div>
-                    <div class="notification-message">${message}</div>
-                `;
-                
-                document.body.appendChild(notification);
-                
-                // 顯示動畫
-                setTimeout(() => notification.classList.add('show'), 100);
-                
-                // 自動隱藏
-                setTimeout(() => {
-                    notification.classList.add('hide');
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.parentNode.removeChild(notification);
-                        }
-                    }, 300);
-                }, 3000);
-            }
+            // 使用全局的 showNotification 函數
         });
     </script>
 

@@ -371,7 +371,7 @@ MIT License
 
 2. **通過入口頁面**：
    ```
-   http://localhost:3000/admin-entry.html
+   http://localhost:3000/admin.html
    ```
 
 3. **直接訪問後台**（如果已登錄）：
@@ -463,7 +463,7 @@ MIT License
 ### 📌 快速開始
 
 1. 確保後端服務器運行在 `http://localhost:3000`
-2. 訪問 `http://localhost:3000/admin-entry.html`
+2. 訪問 `http://localhost:3000/admin.html`
 3. 點擊「前往登錄」
 4. 使用管理員帳號登錄
 5. 開始管理你的網站！
