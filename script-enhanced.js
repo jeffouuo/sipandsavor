@@ -113,7 +113,7 @@ const initSwiper = () => {
             slidesPerView: 'auto',
             spaceBetween: 20,
             centeredSlides: true,
-            loop: true,
+            loop: false, // 改為false，因為滑塊數量不足
             autoplay: {
                 delay: 4000,
                 disableOnInteraction: false,
@@ -129,23 +129,23 @@ const initSwiper = () => {
             },
             breakpoints: {
                 320: {
-                    slidesPerView: 1.5,
+                    slidesPerView: 1.2,
                     spaceBetween: 10,
                 },
                 480: {
-                    slidesPerView: 2.5,
+                    slidesPerView: 2.2,
                     spaceBetween: 15,
                 },
                 768: {
-                    slidesPerView: 3.5,
+                    slidesPerView: 3.2,
                     spaceBetween: 20,
                 },
                 1024: {
-                    slidesPerView: 4.5,
+                    slidesPerView: 4,
                     spaceBetween: 25,
                 },
                 1200: {
-                    slidesPerView: 5.5,
+                    slidesPerView: 4,
                     spaceBetween: 30,
                 }
             },
