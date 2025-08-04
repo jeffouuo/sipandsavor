@@ -88,10 +88,10 @@
                 <h2>內用點餐</h2>
                 <p>點擊下方QR碼，輸入桌號即可點餐</p>
                 <div class="dine-in-button-container">
-                    <div class="qr-code-container" onclick="goToDineIn()">
+                    <div class="qr-code-container" id="qrContainer">
                         <img src="images/qrcode_sipandsavor.vercel.app.webp" alt="內用點餐QR碼" class="qr-code-image">
                         <div class="qr-overlay">
-                            <span class="qr-text">點擊掃描點餐</span>
+                            <span class="qr-text" id="qrText">掃描QR碼點餐</span>
                         </div>
                     </div>
                 </div>
@@ -129,12 +129,41 @@
 
     <script src="script-enhanced.js"></script>
     <script>
-        // 跳轉到內用點餐頁面
-        function goToDineIn() {
-            const currentUrl = window.location.origin;
-            const orderUrl = `${currentUrl}/dine-in-order.html`;
-            window.location.href = orderUrl;
-        }
+        // 檢測設備類型並設置QR碼行為
+        document.addEventListener('DOMContentLoaded', function() {
+            const qrContainer = document.getElementById('qrContainer');
+            const qrText = document.getElementById('qrText');
+            
+            // 檢測是否為移動設備
+            function isMobileDevice() {
+                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                       window.innerWidth <= 768;
+            }
+            
+            if (isMobileDevice()) {
+                // 手機端：顯示掃描提示，不添加點擊事件
+                qrText.textContent = '掃描QR碼點餐';
+                qrContainer.style.cursor = 'default';
+            } else {
+                // 電腦端：添加點擊事件，跳轉到點餐頁面
+                qrText.textContent = '點擊進入點餐';
+                qrContainer.style.cursor = 'pointer';
+                qrContainer.addEventListener('click', function() {
+                    const currentUrl = window.location.origin;
+                    const orderUrl = `${currentUrl}/dine-in-order.html`;
+                    window.location.href = orderUrl;
+                });
+                
+                // 添加懸停效果
+                qrContainer.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.05)';
+                });
+                
+                qrContainer.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            }
+        });
     </script>
 
 </body>
