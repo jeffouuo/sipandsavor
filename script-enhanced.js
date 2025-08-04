@@ -182,11 +182,15 @@ const initImageLoading = () => {
                 img.style.transform = 'scale(1)';
                 img.classList.add('loaded');
                 
-                img.onload = () => {
-                    img.style.opacity = '1';
-                    img.style.transform = 'scale(1)';
-                    img.classList.add('loaded');
-                };
+                // 避免重複綁定事件
+                if (!img.hasAttribute('data-loaded')) {
+                    img.setAttribute('data-loaded', 'true');
+                    img.onload = () => {
+                        img.style.opacity = '1';
+                        img.style.transform = 'scale(1)';
+                        img.classList.add('loaded');
+                    };
+                }
                 
                 img.onerror = () => {
                     img.classList.add('error');
@@ -214,7 +218,7 @@ const initImageLoading = () => {
     
     console.log(`✅ 圖片載入初始化完成，共 ${images.length} 張圖片`);
     
-    // 備用方案：確保所有圖片在3秒後可見
+    // 備用方案：確保所有圖片在2秒後可見
     setTimeout(() => {
         images.forEach(img => {
             if (!img.classList.contains('loaded')) {
@@ -223,7 +227,7 @@ const initImageLoading = () => {
                 img.classList.add('loaded');
             }
         });
-    }, 3000);
+    }, 2000);
 };
 
 // 購物車功能初始化
@@ -250,35 +254,17 @@ const initCart = () => {
         document.body.style.overflow = 'hidden';
     });
     
-    // 關閉購物車（只有在購物車為空時才關閉）
+    // 關閉購物車
     closeCart.addEventListener('click', () => {
-        // 檢查購物車是否為空
-        const totalItems = window.cart.reduce((sum, item) => {
-            const quantity = parseInt(item.quantity) || 0;
-            return sum + quantity;
-        }, 0);
-        
-        // 只有在購物車為空時才關閉側邊欄
-        if (totalItems === 0) {
-            closeCartSidebar();
-        }
+        closeCartSidebar();
     });
     
-    // 點擊外部關閉購物車（只有在購物車為空時才關閉）
+    // 點擊外部關閉購物車
     document.addEventListener('click', (e) => {
         if (cartSidebar.classList.contains('active') && 
             !cartSidebar.contains(e.target) && 
             !cartIcon.contains(e.target)) {
-            // 檢查購物車是否為空
-            const totalItems = window.cart.reduce((sum, item) => {
-                const quantity = parseInt(item.quantity) || 0;
-                return sum + quantity;
-            }, 0);
-            
-            // 只有在購物車為空時才關閉側邊欄
-            if (totalItems === 0) {
-                closeCartSidebar();
-            }
+            closeCartSidebar();
         }
     });
     
@@ -411,14 +397,11 @@ window.updateQuantity = (index, change) => {
         const newQuantity = currentQuantity + change;
         
         if (newQuantity <= 0) {
-            // 移除商品但保持購物車側邊欄打開
+            // 移除商品
             window.cart.splice(index, 1);
-            // 確保購物車側邊欄保持打開狀態
-            const cartSidebar = document.getElementById('cartSidebar');
-            if (cartSidebar) {
-                cartSidebar.classList.add('active');
-                cartSidebar.style.right = '0';
-                cartSidebar.style.transform = 'translateX(0)';
+            // 如果購物車為空，關閉側邊欄
+            if (window.cart.length === 0) {
+                closeCartSidebar();
             }
         } else {
             window.cart[index].quantity = newQuantity;
@@ -707,6 +690,17 @@ const initPerformanceMonitoring = () => {
             console.warn('⚠️ 圖片載入失敗:', e.target.src);
         }
     }, true);
+    
+    // 監控JavaScript錯誤
+    window.addEventListener('error', (e) => {
+        console.error('❌ JavaScript錯誤:', e.error);
+        console.error('❌ 錯誤位置:', e.filename, '行:', e.lineno);
+    });
+    
+    // 監控未處理的Promise拒絕
+    window.addEventListener('unhandledrejection', (e) => {
+        console.error('❌ 未處理的Promise拒絕:', e.reason);
+    });
 };
 
 // 初始化性能監控

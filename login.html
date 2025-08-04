@@ -7,60 +7,126 @@
     <link rel="stylesheet" href="style-optimized.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
         .login-page {
             min-height: 100vh;
+            height: 100vh;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            position: relative;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        /* 背景裝飾 */
+        .login-page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(255,255,255,0.05) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { 
+                opacity: 0.8;
+                transform: scale(1) rotate(0deg); 
+            }
+            50% { 
+                opacity: 1;
+                transform: scale(1.1) rotate(180deg); 
+            }
         }
 
         .login-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            padding: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            padding: 50px 40px;
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .login-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
         }
 
         .login-logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
-            background-image: url('images/sipandsavor.webp');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            cursor: pointer;
-            transition: opacity 0.3s ease;
+            width: 90px !important;
+            height: 90px !important;
+            margin: 0 auto 25px !important;
+            background-image: url('images/sipandsavor.webp') !important;
+            background-size: contain !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            cursor: pointer !important;
+            transition: all 0.3s ease !important;
+            border-radius: 50% !important;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+            position: relative !important;
+            display: block !important;
+            text-indent: 0 !important;
+            opacity: 1 !important;
+            z-index: 1 !important;
+            pointer-events: auto !important;
         }
         
         .login-logo:hover {
-            opacity: 0.8;
+            transform: scale(1.05) !important;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.15) !important;
         }
 
         .login-title {
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
         }
 
         .login-subtitle {
-            color: #666;
+            color: #7f8c8d;
             font-size: 16px;
+            font-weight: 400;
         }
 
         .login-form {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 25px;
         }
 
         .form-group {
@@ -69,103 +135,146 @@
 
         .form-label {
             display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-weight: 600;
             font-size: 14px;
+            letter-spacing: 0.5px;
         }
 
         .form-input {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
+            padding: 18px 20px;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
             font-size: 16px;
-            transition: border-color 0.3s ease;
-            box-sizing: border-box;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+            color: #2c3e50;
+            position: relative;
+        }
+
+        .form-input::placeholder {
+            color: #95a5a6;
+            font-style: italic;
         }
 
         .form-input:focus {
             outline: none;
-            border-color: #4CAF50;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            background: white;
         }
 
         .form-input.error {
-            border-color: #f44336;
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
         }
 
         .error-message {
-            color: #f44336;
-            font-size: 12px;
-            margin-top: 5px;
+            color: #e74c3c;
+            font-size: 13px;
+            margin-top: 8px;
             display: none;
+            font-weight: 500;
         }
 
         .login-btn {
-            background: #4CAF50;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
             color: white;
             border: none;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 18px;
+            border-radius: 12px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s ease;
-            margin-top: 10px;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .login-btn:hover::before {
+            left: 100%;
         }
 
         .login-btn:hover {
-            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.3);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
         }
 
         .login-btn:disabled {
-            background: #ccc;
+            background: #bdc3c7;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        .login-footer {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
 
-        .login-footer a {
-            color: #4CAF50;
-            text-decoration: none;
-            font-size: 14px;
-        }
 
-        .login-footer a:hover {
-            text-decoration: underline;
-        }
+
 
         .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
             display: none;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .alert::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
         }
 
         .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #d5f4e6;
+            color: #27ae60;
+            border: 1px solid #a8e6cf;
+        }
+
+        .alert-success::before {
+            background: #27ae60;
         }
 
         .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #fadbd8;
+            color: #e74c3c;
+            border: 1px solid #f1948a;
+        }
+
+        .alert-error::before {
+            background: #e74c3c;
         }
 
         .loading {
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid #ffffff;
+            border: 3px solid rgba(255,255,255,0.3);
             border-radius: 50%;
-            border-top-color: transparent;
+            border-top-color: #ffffff;
             animation: spin 1s ease-in-out infinite;
         }
 
@@ -173,13 +282,121 @@
             to { transform: rotate(360deg); }
         }
 
+        /* 響應式設計 */
         @media screen and (max-width: 480px) {
+            .login-page {
+                padding: 10px;
+            }
+            
             .login-container {
                 padding: 30px 20px;
+                margin: 0;
+                max-width: 100%;
+                width: 100%;
             }
             
             .login-title {
-                font-size: 24px;
+                font-size: 28px;
+            }
+
+            .login-logo {
+                width: 80px;
+                height: 80px;
+            }
+
+            .form-input {
+                padding: 16px 18px;
+            }
+
+            .login-btn {
+                padding: 16px;
+            }
+        }
+
+        /* 確保在所有螢幕尺寸下都填滿 */
+        @media screen and (max-height: 600px) {
+            .login-container {
+                padding: 30px 25px;
+            }
+            
+            .login-header {
+                margin-bottom: 25px;
+            }
+            
+            .login-logo {
+                width: 70px;
+                height: 70px;
+                margin-bottom: 15px;
+            }
+            
+            .login-title {
+                font-size: 26px;
+            }
+        }
+
+        /* 頁面載入動畫 */
+        .login-container {
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 表單元素動畫 */
+        .form-group {
+            animation: fadeInUp 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .form-group:nth-child(1) { animation-delay: 0.1s; }
+        .form-group:nth-child(2) { animation-delay: 0.2s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 深色模式支持 */
+        @media (prefers-color-scheme: dark) {
+            .login-container {
+                background: rgba(44, 62, 80, 0.95);
+                border-color: rgba(255, 255, 255, 0.1);
+            }
+
+            .login-title {
+                color: #ecf0f1;
+            }
+
+            .login-subtitle {
+                color: #bdc3c7;
+            }
+
+            .form-label {
+                color: #ecf0f1;
+            }
+
+            .form-input {
+                background: rgba(52, 73, 94, 0.9);
+                border-color: #34495e;
+                color: #ecf0f1;
+            }
+
+            .form-input:focus {
+                background: #34495e;
             }
         }
     </style>
@@ -188,7 +405,7 @@
     <main class="login-page">
         <div class="login-container">
             <div class="login-header">
-                <a href="index.html" class="login-logo" title="返回首頁"></a>
+                <a href="index.html" class="login-logo"></a>
                 <h1 class="login-title">管理員登錄</h1>
                 <p class="login-subtitle">飲茶趣後台管理系統</p>
             </div>
@@ -197,26 +414,33 @@
 
             <form class="login-form" id="loginForm">
                 <div class="form-group">
-                    <label class="form-label" for="email">電子郵件</label>
-                    <input type="email" id="email" class="form-input" required>
+                    <label class="form-label" for="email">
+                        <span class="material-icons" style="font-size: 16px; margin-right: 8px; vertical-align: middle;">email</span>
+                        電子郵件
+                    </label>
+                    <input type="email" id="email" class="form-input" placeholder="請輸入您的電子郵件" required>
                     <div class="error-message" id="emailError"></div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="password">密碼</label>
-                    <input type="password" id="password" class="form-input" required>
+                    <label class="form-label" for="password">
+                        <span class="material-icons" style="font-size: 16px; margin-right: 8px; vertical-align: middle;">lock</span>
+                        密碼
+                    </label>
+                    <input type="password" id="password" class="form-input" placeholder="請輸入您的密碼" required>
                     <div class="error-message" id="passwordError"></div>
                 </div>
 
                 <button type="submit" class="login-btn" id="loginBtn">
-                    <span id="loginText">登錄</span>
+                    <span id="loginText">
+                        <span class="material-icons" style="font-size: 18px; margin-right: 8px; vertical-align: middle;">login</span>
+                        登錄
+                    </span>
                     <span id="loginLoading" class="loading" style="display: none;"></span>
                 </button>
             </form>
 
-            <div class="login-footer">
-                <a href="index.html">返回首頁</a>
-            </div>
+
         </div>
     </main>
 

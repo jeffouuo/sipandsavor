@@ -57,10 +57,13 @@ const corsOptions = {
         if (!origin || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
             callback(null, true);
         } else {
+            // 生產環境應該限制特定域名
             callback(new Error('不允許的來源'));
         }
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 };
 app.use(cors(corsOptions));
 
@@ -98,6 +101,8 @@ console.log('🔗 嘗試連接數據庫...');
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/sipandsavor', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000, // 5秒超時
+    socketTimeoutMS: 45000 // 45秒socket超時
 })
 .then(() => console.log('✅ MongoDB 連接成功'))
 .catch(err => console.error('❌ MongoDB 連接失敗:', err));

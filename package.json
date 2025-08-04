@@ -9,6 +9,8 @@
     "init-db": "node init-db.js",
     "init-admin": "node init-admin.js",
     "init": "npm run init-db && npm run init-admin",
+    "check-env": "node check-env.js",
+    "start:check": "npm run check-env && npm start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
