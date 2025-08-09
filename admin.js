@@ -44,7 +44,13 @@ let currentPage = {
 
 // 檢查認證
 async function checkAuth() {
+    console.log('🔍 開始檢查認證...');
+    console.log('📍 當前頁面:', window.location.href);
+    console.log('🔗 使用的API地址:', API_BASE_URL);
+    
     const token = localStorage.getItem('adminToken');
+    console.log('🎫 Token狀態:', token ? '已找到' : '未找到');
+    
     if (!token) {
         console.log('🔐 沒有找到token，跳轉到登錄頁面');
         window.location.replace('login.html');
@@ -52,28 +58,46 @@ async function checkAuth() {
     }
 
     try {
+        console.log('📡 發送認證請求到:', `${API_BASE_URL}/auth/me`);
+        
         const response = await fetch(`${API_BASE_URL}/auth/me`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
 
+        console.log('📥 認證回應狀態:', response.status);
+        console.log('📥 認證回應OK:', response.ok);
+
         if (!response.ok) {
-            throw new Error('認證失敗');
+            const errorText = await response.text();
+            console.error('❌ 認證失敗回應內容:', errorText);
+            throw new Error(`認證失敗: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
+        console.log('✅ 認證成功，用戶數據:', data);
+        
         currentUser = data.data.user;
 
         if (currentUser.role !== 'admin') {
+            console.error('❌ 用戶角色不是管理員:', currentUser.role);
             alert('您沒有管理員權限');
             window.location.href = 'index.html';
             return;
         }
 
+        console.log('✅ 管理員認證通過:', currentUser.username);
         document.getElementById('adminName').textContent = currentUser.username;
     } catch (error) {
-        console.error('認證檢查失敗:', error);
+        console.error('❌ 認證檢查失敗:', error);
+        console.error('❌ 錯誤詳情:', {
+            message: error.message,
+            stack: error.stack,
+            API_BASE_URL: API_BASE_URL,
+            token: token ? '存在' : '不存在'
+        });
+        
         localStorage.removeItem('adminToken');
         // 清除cookie
         document.cookie = 'adminToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
@@ -134,15 +158,27 @@ const STATS_CACHE_DURATION = 30 * 1000; // 30秒緩存
 
 // 載入統計數據
 async function loadStats(forceRefresh = false) {
+    console.log('📊 開始載入統計數據...');
+    console.log('🔗 使用API地址:', API_BASE_URL);
+    
     try {
         // 檢查緩存（除非強制刷新）
         const now = Date.now();
         if (!forceRefresh && statsCache && (now - statsCacheTime) < STATS_CACHE_DURATION) {
+            console.log('📋 使用緩存的統計數據');
             updateStatsDisplay(statsCache);
             return;
         }
 
         const token = localStorage.getItem('adminToken');
+        console.log('🎫 Token狀態:', token ? '已找到' : '未找到');
+        
+        if (!token) {
+            console.error('❌ 沒有token，無法載入統計數據');
+            return;
+        }
+        
+        console.log('📡 發送統計數據請求...');
         
         // 並行請求以提高效率
         const [productsResponse, ordersStatsResponse, ordersResponse, usersResponse] = await Promise.all([
@@ -159,6 +195,13 @@ async function loadStats(forceRefresh = false) {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
         ]);
+
+        console.log('📥 統計數據回應狀態:', {
+            products: productsResponse?.status,
+            ordersStats: ordersStatsResponse?.status,
+            orders: ordersResponse?.status,
+            users: usersResponse?.status
+        });
 
         const [productsData, ordersStatsData, ordersData, usersData] = await Promise.all([
             productsResponse.json(),
