@@ -447,12 +447,13 @@
     </main>
 
     <script>
-        // 動態獲取當前端口
-        const currentPort = window.location.port || '3001';
-        const API_BASE_URL = `http://localhost:${currentPort}/api`;
+        // 動態獲取 API 基礎 URL - 支持本地開發和生產環境
+        const API_BASE_URL = window.location.hostname.includes('localhost') 
+            ? `http://localhost:${window.location.port || '3001'}/api`
+            : '/api';
         
         console.log('🔧 登錄頁面已加載');
-        console.log('📍 當前端口:', currentPort);
+        console.log('📍 當前環境:', window.location.hostname);
         console.log('🔗 API地址:', API_BASE_URL);
 
         // 檢查是否已登錄
