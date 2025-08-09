@@ -254,61 +254,62 @@ router.post('/checkout', [
             });
         }
 
-        // 快速創建訂單 - 優先使用內存模式以提升速度
+        // 智能訂單創建 - 快速響應 + 非同步保存
         console.log('💾 開始創建訂單...');
         const orderCreationStart = Date.now();
         
+        // 創建訂單數據
+        const orderData = {
+            user: null,
+            items: orderItems,
+            totalAmount: totalAmount,
+            paymentMethod,
+            deliveryMethod,
+            notes,
+            status: 'pending',
+            paymentStatus: 'pending',
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+        
         let order = null;
         
-        // 在生產環境優先使用內存訂單，避免數據庫延遲
-        const useMemoryOrder = process.env.NODE_ENV === 'production';
-        
-        if (useMemoryOrder) {
-            // 直接創建內存訂單（更快）
+        // 先嘗試快速數據庫保存（設置短超時）
+        try {
+            const dbSavePromise = (async () => {
+                const newOrder = new Order(orderData);
+                await newOrder.save();
+                return newOrder;
+            })();
+            
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('數據庫保存超時')), 2000) // 2秒超時
+            );
+            
+            order = await Promise.race([dbSavePromise, timeoutPromise]);
+            console.log('✅ 訂單已快速保存到數據庫');
+            
+        } catch (dbError) {
+            console.log('⚠️ 數據庫保存超時或失敗，使用內存訂單並啟動後台保存');
+            
+            // 創建內存訂單以便立即響應
             order = {
                 _id: 'order_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                user: null,
-                items: orderItems,
-                totalAmount: totalAmount,
-                paymentMethod,
-                deliveryMethod,
-                notes,
-                status: 'pending',
-                paymentStatus: 'pending',
-                createdAt: new Date(),
-                updatedAt: new Date()
+                ...orderData
             };
-            console.log('⚡ 使用內存訂單模式，跳過數據庫操作');
-        } else {
-            // 開發環境仍使用數據庫
-            try {
-                order = new Order({
-                    user: null,
-                    items: orderItems,
-                    totalAmount: totalAmount,
-                    paymentMethod,
-                    deliveryMethod,
-                    notes
-                });
-
-                await order.save();
-                await order.populate('user', 'username email phone');
-            } catch (orderError) {
-                console.log('訂單保存失敗，創建內存訂單:', orderError.message);
-                order = {
-                    _id: 'order_' + Date.now(),
-                    user: null,
-                    items: orderItems,
-                    totalAmount: totalAmount,
-                    paymentMethod,
-                    deliveryMethod,
-                    notes,
-                    status: 'pending',
-                    paymentStatus: 'pending',
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                };
-            }
+            
+            // 非同步保存到數據庫（不阻塞響應）
+            setImmediate(async () => {
+                try {
+                    console.log('🔄 開始後台保存訂單...');
+                    const backgroundOrder = new Order(orderData);
+                    await backgroundOrder.save();
+                    console.log('✅ 訂單已成功後台保存到數據庫');
+                } catch (backgroundError) {
+                    console.error('❌ 後台訂單保存失敗:', backgroundError.message);
+                    // 可以在這裡添加重試機制或日誌記錄
+                }
+            });
         }
         
         console.log(`💾 訂單創建時間: ${Date.now() - orderCreationStart}ms`);
@@ -513,11 +514,10 @@ router.post('/dine-in', [
             };
         });
 
-        // 創建內用訂單
-        if (process.env.NODE_ENV === 'development') {
-            console.log('🟢 創建訂單時的tableNumber:', tableNumber);
-        }
-        const order = new Order({
+        // 創建內用訂單 - 使用智能保存機制
+        console.log('🍽️ 開始創建內用訂單，桌號:', tableNumber);
+        
+        const orderData = {
             tableNumber,
             area,
             items: orderItems,
@@ -525,16 +525,48 @@ router.post('/dine-in', [
             orderType,
             status,
             deliveryMethod: 'dine-in',
-            paymentMethod: 'cash', // 內用默認現金付款
+            paymentMethod: 'cash',
             notes: '前台結帳',
             orderTime: orderTime ? new Date(orderTime) : new Date()
-        });
-        if (process.env.NODE_ENV === 'development') {
-            console.log('🟢 創建的order物件:', order);
-        }
-        await order.save();
-        if (process.env.NODE_ENV === 'development') {
-            console.log('🟢 儲存後的order物件:', order);
+        };
+        
+        let order = null;
+        
+        // 嘗試快速保存到數據庫
+        try {
+            const dbSavePromise = (async () => {
+                const newOrder = new Order(orderData);
+                await newOrder.save();
+                return newOrder;
+            })();
+            
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('內用訂單數據庫保存超時')), 2000)
+            );
+            
+            order = await Promise.race([dbSavePromise, timeoutPromise]);
+            console.log('✅ 內用訂單已快速保存到數據庫');
+            
+        } catch (dbError) {
+            console.log('⚠️ 內用訂單數據庫保存超時，使用內存模式並後台保存');
+            
+            // 創建內存訂單
+            order = {
+                _id: 'dine_order_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                ...orderData
+            };
+            
+            // 非同步保存到數據庫
+            setImmediate(async () => {
+                try {
+                    console.log('🔄 開始後台保存內用訂單...');
+                    const backgroundOrder = new Order(orderData);
+                    await backgroundOrder.save();
+                    console.log('✅ 內用訂單已成功後台保存到數據庫');
+                } catch (backgroundError) {
+                    console.error('❌ 內用訂單後台保存失敗:', backgroundError.message);
+                }
+            });
         }
 
         res.status(201).json({
