@@ -39,15 +39,7 @@ let currentPage = {
     news: 1
 };
 
-// 初始化
-document.addEventListener('DOMContentLoaded', function() {
-    checkAuth();
-    loadStats();
-    loadProducts();
-    loadOrders(); // 添加載入訂單數據
-    loadUsers(); // 添加載入用戶數據
-    loadNews(); // 添加載入新聞數據
-});
+// 初始化 - 已移除重複的 DOMContentLoaded 監聽器
 
 // 檢查認證
 async function checkAuth() {

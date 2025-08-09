@@ -714,14 +714,28 @@ window.goToDineIn = function() {
 };
 
 // 結帳功能
+let isCheckingOut = false; // 防止重複點擊的標誌
+
 const initCheckout = () => {
     const checkoutBtn = document.querySelector('.checkout-btn');
     if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', () => {
+        checkoutBtn.addEventListener('click', async () => {
+            // 防止重複點擊
+            if (isCheckingOut) {
+                console.log('⚠️ 結帳進行中，忽略重複點擊');
+                return;
+            }
+            
             if (window.cart.length === 0) {
                 showNotification('購物車是空的，無法結帳', 'error');
                 return;
             }
+            
+            // 設置結帳狀態
+            isCheckingOut = true;
+            checkoutBtn.disabled = true;
+            checkoutBtn.textContent = '處理中...';
+            checkoutBtn.style.opacity = '0.6';
             
 
             
@@ -944,6 +958,16 @@ const initCheckout = () => {
             .catch(error => {
                 console.error('❌ 結帳錯誤:', error);
                 showNotification(error.message || '結帳時發生錯誤，請重試', 'error');
+            })
+            .finally(() => {
+                // 重置結帳按鈕狀態
+                isCheckingOut = false;
+                const checkoutBtn = document.querySelector('.checkout-btn');
+                if (checkoutBtn) {
+                    checkoutBtn.disabled = false;
+                    checkoutBtn.textContent = '結帳';
+                    checkoutBtn.style.opacity = '1';
+                }
             });
         });
     }
