@@ -178,24 +178,23 @@ router.post('/checkout', [
                 .replace(/\s*\+[^)]*$/g, '') // 移除 + 开头的加料信息
                 .trim();
             
-            // 優先使用內存數據（更快）
-            let product = memoryProducts.find(p => p.name === baseProductName);
+            // 🔄 修復：優先使用 MongoDB 數據庫（正確的做法）
+            let product = null;
             
-            // 如果內存中沒有，才嘗試數據庫（設置短超時）
-            if (!product) {
-                try {
-                    // 設置較短的查詢超時
-                    const productPromise = getCachedProduct(baseProductName);
-                    const timeoutPromise = new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('數據庫查詢超時')), 1000) // 1秒超時
-                    );
-                    
-                    product = await Promise.race([productPromise, timeoutPromise]);
-                } catch (dbError) {
-                    console.log(`⚠️ 數據庫查詢失敗或超時，使用內存數據: ${baseProductName}`);
-                    // 如果數據庫查詢失敗，再次嘗試內存匹配
-                    product = memoryProducts.find(p => p.name.includes(baseProductName.split(' ')[0]));
-                }
+            try {
+                // 首先嘗試從數據庫獲取（設置合理超時）
+                const productPromise = getCachedProduct(baseProductName);
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('數據庫查詢超時')), 3000) // 增加到3秒
+                );
+                
+                product = await Promise.race([productPromise, timeoutPromise]);
+                console.log(`✅ 從數據庫獲取產品: ${baseProductName}`);
+            } catch (dbError) {
+                console.log(`⚠️ 數據庫查詢失敗，使用內存備用數據: ${baseProductName}`, dbError.message);
+                // 只有在數據庫完全不可用時才使用內存數據
+                product = memoryProducts.find(p => p.name === baseProductName) || 
+                         memoryProducts.find(p => p.name.includes(baseProductName.split(' ')[0]));
             }
             
             console.log(`⏱️ 項目處理時間: ${Date.now() - itemStartTime}ms - ${baseProductName}`);

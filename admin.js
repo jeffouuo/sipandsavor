@@ -9,6 +9,32 @@ console.log('📍 當前環境:', window.location.hostname);
 console.log('🔗 API地址:', API_BASE_URL);
 console.log('🧪 特殊需求邏輯測試: 如果您看到這條消息，說明 admin.js 已正確加載');
 
+// 檢查 token 是否有效（解碼但不驗證簽名）
+function isTokenValid(token) {
+    if (!token) return false;
+    
+    try {
+        // JWT 由三部分組成：header.payload.signature
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        
+        // 解碼 payload
+        const payload = JSON.parse(atob(parts[1]));
+        
+        // 檢查是否過期
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+            console.log('🕐 Token 已過期');
+            return false;
+        }
+        
+        console.log('✅ Token 有效，過期時間:', new Date(payload.exp * 1000));
+        return true;
+    } catch (error) {
+        console.error('❌ Token 解析錯誤:', error);
+        return false;
+    }
+}
+
 // 請求重試機制
 async function fetchWithRetry(url, options = {}, maxRetries = 3) {
     for (let i = 0; i < maxRetries; i++) {
@@ -53,6 +79,15 @@ async function checkAuth() {
     
     if (!token) {
         console.log('🔐 沒有找到token，跳轉到登錄頁面');
+        window.location.replace('login.html');
+        return;
+    }
+
+    // 檢查 token 是否過期（本地檢查）
+    if (!isTokenValid(token)) {
+        console.log('🔐 Token 無效或已過期，清除並跳轉到登錄頁面');
+        localStorage.removeItem('adminToken');
+        document.cookie = 'adminToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         window.location.replace('login.html');
         return;
     }
