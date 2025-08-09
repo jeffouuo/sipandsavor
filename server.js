@@ -105,13 +105,19 @@ app.use(cookieParser());
 
 
 
-// 数据库连接
+// 数据库连接 - 優化 Atlas 連接
 console.log('🔗 嘗試連接數據庫...');
+console.log('🌍 環境:', process.env.NODE_ENV || 'development');
+console.log('🔗 資料庫類型:', process.env.MONGODB_URI?.startsWith('mongodb+srv://') ? 'MongoDB Atlas' : '本地 MongoDB');
+
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/sipandsavor', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000, // 5秒超時
-    socketTimeoutMS: 45000 // 45秒socket超時
+    serverSelectionTimeoutMS: 15000, // 增加到15秒超時（Atlas需要更多時間）
+    socketTimeoutMS: 45000, // 45秒socket超時
+    maxPoolSize: 10, // 最大連接池大小
+    retryWrites: true, // 啟用重試寫入
+    w: 'majority' // 寫入確認
 })
 .then(() => console.log('✅ MongoDB 連接成功'))
 .catch(err => console.error('❌ MongoDB 連接失敗:', err));
