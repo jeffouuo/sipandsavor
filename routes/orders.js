@@ -1078,6 +1078,35 @@ router.put('/admin/:id/status', adminAuth, [
     }
 });
 
+// 查詢最近的訂單（用於調試）
+router.get('/recent', async (req, res) => {
+    try {
+        console.log('🔍 查詢最近的訂單...');
+        
+        // 查詢最近 10 個訂單
+        const recentOrders = await Order.find()
+            .sort({ createdAt: -1 })
+            .limit(10)
+            .select('_id totalAmount items.name createdAt notes')
+            .lean();
+            
+        console.log(`📊 找到 ${recentOrders.length} 個最近訂單`);
+        
+        res.json({
+            success: true,
+            count: recentOrders.length,
+            orders: recentOrders
+        });
+        
+    } catch (error) {
+        console.error('❌ 查詢最近訂單失敗:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 // 測試數據庫連接的簡單端點
 router.get('/test-db', async (req, res) => {
     try {
