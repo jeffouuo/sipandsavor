@@ -53,11 +53,20 @@ app.use(helmet({
 // 动态CORS配置
 const corsOptions = {
     origin: function (origin, callback) {
-        // 允许所有本地端口
-        if (!origin || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+        // 允許的來源列表
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'http://localhost:3001', 
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:3001',
+            'https://sipandsavor.vercel.app'  // 添加生產環境域名
+        ];
+        
+        // 如果沒有 origin（如同域請求）或在允許列表中，則允許
+        if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
-            // 生產環境應該限制特定域名
+            console.error('❌ CORS 錯誤 - 不允許的來源:', origin);
             callback(new Error('不允許的來源'));
         }
     },
