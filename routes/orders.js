@@ -1135,26 +1135,55 @@ router.get('/recent', async (req, res) => {
     try {
         console.log('🔍 查詢最近的訂單...');
         
-        // 查詢最近 10 個訂單
-        const recentOrders = await Order.find()
+        // 檢查資料庫連接狀態
+        const mongoose = require('mongoose');
+        const dbStatus = mongoose.connection.readyState;
+        
+        if (dbStatus !== 1) {
+            console.warn('⚠️ 資料庫未連接，狀態:', dbStatus);
+            return res.status(503).json({
+                success: false,
+                error: '資料庫連接失敗',
+                dbStatus: dbStatus
+            });
+        }
+        
+        // 查詢最近 10 個訂單，增加超時處理
+        const queryPromise = Order.find()
             .sort({ createdAt: -1 })
             .limit(10)
             .select('_id totalAmount items.name createdAt notes')
             .lean();
+            
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('查詢超時')), 5000)
+        );
+        
+        const recentOrders = await Promise.race([queryPromise, timeoutPromise]);
             
         console.log(`📊 找到 ${recentOrders.length} 個最近訂單`);
         
         res.json({
             success: true,
             count: recentOrders.length,
-            orders: recentOrders
+            data: recentOrders // 修正：使用 data 字段，與前端一致
         });
         
     } catch (error) {
         console.error('❌ 查詢最近訂單失敗:', error);
+        
+        // 提供更詳細的錯誤信息
+        let errorMessage = error.message;
+        if (error.message.includes('buffering')) {
+            errorMessage = '資料庫連接中，請稍後重試';
+        } else if (error.message.includes('timeout')) {
+            errorMessage = '查詢超時，請檢查網路連接';
+        }
+        
         res.status(500).json({
             success: false,
-            error: error.message
+            error: errorMessage,
+            timestamp: new Date().toISOString()
         });
     }
 });

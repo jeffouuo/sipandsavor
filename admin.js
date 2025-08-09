@@ -13,33 +13,64 @@ console.log('🧪 特殊需求邏輯測試: 如果您看到這條消息，說明
 let autoRefreshInterval = null;
 
 function startAutoRefresh() {
-    // 每30秒自動檢查新訂單
+    // 每60秒自動檢查新訂單（降低頻率，減少服務器壓力）
     autoRefreshInterval = setInterval(async () => {
         try {
             const token = localStorage.getItem('adminToken');
-            if (!token) return;
+            if (!token) {
+                console.log('⚠️ 自動刷新：沒有 token，跳過');
+                return;
+            }
             
             console.log('🔄 自動檢查新訂單...');
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超時
+            
             const response = await fetch(`${API_BASE_URL}/orders/recent`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${token}` },
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
             
             if (response.ok) {
                 const data = await response.json();
                 if (data.success && data.data?.length > 0) {
                     console.log(`✅ 發現 ${data.data.length} 個最新訂單`);
+                    
                     // 如果當前在訂單頁面，自動刷新
                     const ordersSection = document.getElementById('orders-section');
                     if (ordersSection && ordersSection.classList.contains('active')) {
                         console.log('🔄 自動刷新訂單列表...');
                         loadOrders(1, '', '');
                     }
+                } else {
+                    console.log('📋 沒有發現新訂單');
+                }
+            } else {
+                console.warn(`⚠️ 自動刷新 API 回應錯誤: ${response.status}`);
+                
+                // 如果是 500 錯誤，可能是資料庫問題，暫時停用自動刷新
+                if (response.status === 500) {
+                    console.warn('🚨 檢測到服務器錯誤，暫時停用自動刷新');
+                    stopAutoRefresh();
+                    
+                    // 5分鐘後重新啟動
+                    setTimeout(() => {
+                        console.log('🔄 重新啟動自動刷新...');
+                        startAutoRefresh();
+                    }, 300000); // 5分鐘
                 }
             }
         } catch (error) {
-            console.warn('⚠️ 自動刷新失敗:', error.message);
+            if (error.name === 'AbortError') {
+                console.warn('⚠️ 自動刷新請求超時');
+            } else {
+                console.warn('⚠️ 自動刷新失敗:', error.message);
+            }
         }
-    }, 30000); // 30秒間隔
+    }, 60000); // 改為60秒間隔
 }
 
 function stopAutoRefresh() {
