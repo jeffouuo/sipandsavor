@@ -114,6 +114,11 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/news', require('./routes/news'));
 app.use('/api/users', require('./routes/users'));
 
+// Favicon 路由 - 使用品牌 logo 作为 favicon
+app.get('/favicon.ico', (req, res) => {
+    res.sendFile(path.join(__dirname, 'images', 'sipandsavor.webp'));
+});
+
 // 静态文件服务（除了admin.html和admin.js）
 app.use(express.static(path.join(__dirname), {
     setHeaders: (res, path) => {
