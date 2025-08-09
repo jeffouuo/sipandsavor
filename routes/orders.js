@@ -272,10 +272,14 @@ router.post('/checkout', [
         console.error('創建訂單錯誤:', error);
         console.error('錯誤詳情:', error.message);
         console.error('錯誤堆疊:', error.stack);
+        // 在生產環境也顯示詳細錯誤信息以便調試
         res.status(500).json({
             success: false,
             message: '創建訂單失敗',
-            error: error.message
+            error: error.message,
+            errorType: error.constructor.name,
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV || 'unknown'
         });
     }
 });
@@ -382,10 +386,14 @@ router.post('/', auth, [
         console.error('創建訂單錯誤:', error);
         console.error('錯誤詳情:', error.message);
         console.error('錯誤堆疊:', error.stack);
+        // 在生產環境也顯示詳細錯誤信息以便調試
         res.status(500).json({
             success: false,
             message: '創建訂單失敗',
-            error: error.message
+            error: error.message,
+            errorType: error.constructor.name,
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV || 'unknown'
         });
     }
 });

@@ -245,10 +245,28 @@ app.get('/admin.js', async (req, res) => {
 
 // 健康检查
 app.get('/api/health', (req, res) => {
+    const mongoose = require('mongoose');
+    const dbStatus = mongoose.connection.readyState;
+    const dbStatusText = {
+        0: 'disconnected',
+        1: 'connected',
+        2: 'connecting',
+        3: 'disconnecting'
+    };
+    
     res.json({ 
         status: 'OK', 
         message: '飲茶趣API運行正常',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        database: {
+            status: dbStatusText[dbStatus] || 'unknown',
+            readyState: dbStatus
+        },
+        environment: {
+            NODE_ENV: process.env.NODE_ENV || 'unknown',
+            MONGODB_URI: process.env.MONGODB_URI ? '已設置' : '未設置',
+            JWT_SECRET: process.env.JWT_SECRET ? '已設置' : '未設置'
+        }
     });
 });
 
@@ -283,9 +301,22 @@ app.use('*', (req, res) => {
 // 错误处理中间件
 app.use((err, req, res, next) => {
     console.error('❌ 服務器錯誤:', err);
+    console.error('❌ 錯誤詳情:', {
+        message: err.message,
+        stack: err.stack,
+        url: req.url,
+        method: req.method,
+        body: req.body,
+        headers: req.headers,
+        timestamp: new Date().toISOString()
+    });
+    
     res.status(500).json({ 
         error: '內部服務器錯誤',
-        message: process.env.NODE_ENV === 'development' ? err.message : '請稍後再試'
+        message: err.message, // 暫時在生產環境也顯示詳細錯誤
+        errorType: err.constructor.name,
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'unknown'
     });
 });
 
