@@ -166,6 +166,10 @@ router.post('/checkout', [
         // 快速驗證產品並更新庫存 - 優先使用內存數據
         const orderItems = [];
         let calculatedTotal = 0;
+        
+        // ⚡ 環境檢測 - 在外部定義一次
+        const isProduction = process.env.NODE_ENV === 'production';
+        console.log(`🌍 當前環境: ${isProduction ? '生產環境（極速模式）' : '開發環境'}`);
 
         console.log(`⚡ 開始處理 ${items.length} 個訂單項目`);
 
@@ -180,7 +184,6 @@ router.post('/checkout', [
             
             // ⚡ 超高速產品查詢 - 生產環境優化
             let product = null;
-            const isProduction = process.env.NODE_ENV === 'production';
             
             if (isProduction) {
                 // 🚀 生產環境：優先使用內存數據（極速模式）
