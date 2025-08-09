@@ -6,6 +6,32 @@ const { auth, adminAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// 產品查詢緩存
+const productCache = new Map();
+const PRODUCT_CACHE_DURATION = 5 * 60 * 1000; // 5分鐘緩存
+
+// 緩存產品查詢
+async function getCachedProduct(name) {
+    const now = Date.now();
+    const cached = productCache.get(name);
+    
+    if (cached && (now - cached.timestamp) < PRODUCT_CACHE_DURATION) {
+        return cached.product;
+    }
+    
+    try {
+        const product = await Product.findOne({ name });
+        productCache.set(name, {
+            product,
+            timestamp: now
+        });
+        return product;
+    } catch (error) {
+        console.error('產品查詢失敗:', error);
+        return null;
+    }
+}
+
 // 内存中的产品数据（当MongoDB不可用时使用）
 const memoryProducts = [
     {
@@ -128,9 +154,12 @@ router.post('/checkout', [
         let calculatedTotal = 0;
 
         for (const item of items) {
-            console.log('🔍 處理訂單項目:', item);
-            console.log('🔍 項目客制化信息:', item.customizations);
-            console.log('🔍 項目特殊需求:', item.specialRequest);
+            // 只在開發環境輸出詳細日誌
+            if (process.env.NODE_ENV === 'development') {
+                console.log('🔍 處理訂單項目:', item);
+                console.log('🔍 項目客制化信息:', item.customizations);
+                console.log('🔍 項目特殊需求:', item.specialRequest);
+            }
             
             // 首先嘗試從數據庫查找產品
             let product = null;
@@ -145,12 +174,16 @@ router.post('/checkout', [
                     .replace(/\s*\+[^)]*$/g, '') // 移除 + 开头的加料信息
                     .trim();
                 
-                console.log(`🔍 原始商品名稱: "${item.name}"`);
-                console.log(`🔍 提取的基礎名稱: "${baseProductName}"`);
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`🔍 原始商品名稱: "${item.name}"`);
+                    console.log(`🔍 提取的基礎名稱: "${baseProductName}"`);
+                }
                 
-                product = await Product.findOne({ name: baseProductName });
+                product = await getCachedProduct(baseProductName);
             } catch (dbError) {
-                console.log('數據庫查詢失敗，使用內存數據:', dbError.message);
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('數據庫查詢失敗，使用內存數據:', dbError.message);
+                }
             }
             
             // 如果數據庫查詢失敗，使用內存數據
@@ -442,9 +475,11 @@ router.post('/dine-in', [
 
         // 創建訂單項目
         const orderItems = items.map(item => {
-            console.log('🔍 內用訂單項目:', item);
-            console.log('🔍 內用訂單客制化信息:', item.customizations);
-            console.log('🔍 內用訂單特殊需求:', item.specialRequest);
+            if (process.env.NODE_ENV === 'development') {
+                console.log('🔍 內用訂單項目:', item);
+                console.log('🔍 內用訂單客制化信息:', item.customizations);
+                console.log('🔍 內用訂單特殊需求:', item.specialRequest);
+            }
             
             return {
                 name: item.name,
@@ -457,7 +492,9 @@ router.post('/dine-in', [
         });
 
         // 創建內用訂單
-        console.log('🟢 創建訂單時的tableNumber:', tableNumber);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🟢 創建訂單時的tableNumber:', tableNumber);
+        }
         const order = new Order({
             tableNumber,
             area,
@@ -470,9 +507,13 @@ router.post('/dine-in', [
             notes: '前台結帳',
             orderTime: orderTime ? new Date(orderTime) : new Date()
         });
-        console.log('🟢 創建的order物件:', order);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🟢 創建的order物件:', order);
+        }
         await order.save();
-        console.log('🟢 儲存後的order物件:', order);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🟢 儲存後的order物件:', order);
+        }
 
         res.status(201).json({
             success: true,
@@ -850,11 +891,13 @@ router.get('/admin/all', adminAuth, [
             Order.countDocuments(query)
         ]);
 
-        console.log('🟢 後台API回傳的訂單資料:', orders.map(order => ({
-            _id: order._id,
-            tableNumber: order.tableNumber,
-            orderType: order.orderType
-        })));
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🟢 後台API回傳的訂單資料:', orders.map(order => ({
+                _id: order._id,
+                tableNumber: order.tableNumber,
+                orderType: order.orderType
+            })));
+        }
 
         // 計算分頁信息
         const totalPages = Math.ceil(total / parseInt(limit));
