@@ -120,8 +120,19 @@ router.post('/login', [
 
         const { email, password } = req.body;
 
-        // 查找用戶（包含密碼）
-        const user = await User.findOne({ email }).select('+password');
+        // 查找用戶（包含密碼）- 增強錯誤處理
+        let user;
+        try {
+            user = await User.findOne({ email }).select('+password');
+        } catch (dbError) {
+            console.error('❌ 登入時資料庫查詢失敗:', dbError.message);
+            return res.status(500).json({
+                success: false,
+                message: '資料庫連接失敗，請稍後再試',
+                error: dbError.message,
+                timestamp: new Date().toISOString()
+            });
+        }
 
         if (!user) {
             return res.status(401).json({
