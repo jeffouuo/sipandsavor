@@ -133,6 +133,18 @@ router.post('/checkout', [
 ], async (req, res) => {
     console.log('🚀 結帳請求開始:', new Date().toISOString());
     const startTime = Date.now();
+    
+    // 檢查數據庫連接狀態
+    const mongoose = require('mongoose');
+    const dbStatus = mongoose.connection.readyState;
+    const dbStatusText = {
+        0: 'disconnected',
+        1: 'connected',
+        2: 'connecting',
+        3: 'disconnecting'
+    };
+    console.log('📊 數據庫連接狀態:', dbStatusText[dbStatus] || 'unknown', `(${dbStatus})`);
+    
     try {
         // 驗證輸入
         const errors = validationResult(req);
@@ -274,23 +286,42 @@ router.post('/checkout', [
         
         let order = null;
         
-        // 先嘗試快速數據庫保存（設置短超時）
+        // 強化的訂單保存機制 - 多次重試
+        const saveOrderWithRetry = async (orderData, maxRetries = 3) => {
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    console.log(`💾 嘗試保存訂單 (第 ${attempt}/${maxRetries} 次)...`);
+                    const saveStart = Date.now();
+                    
+                    const newOrder = new Order(orderData);
+                    const savedOrder = await newOrder.save();
+                    
+                    console.log(`✅ 訂單保存成功！耗時: ${Date.now() - saveStart}ms`);
+                    return savedOrder;
+                    
+                } catch (error) {
+                    console.error(`❌ 第 ${attempt} 次保存失敗:`, error.message);
+                    
+                    if (attempt === maxRetries) {
+                        throw error; // 最後一次嘗試失敗，拋出錯誤
+                    }
+                    
+                    // 等待一段時間後重試
+                    const waitTime = attempt * 500; // 500ms, 1000ms, 1500ms
+                    console.log(`⏳ 等待 ${waitTime}ms 後重試...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
+            }
+        };
+        
         try {
-            const dbSavePromise = (async () => {
-                const newOrder = new Order(orderData);
-                await newOrder.save();
-                return newOrder;
-            })();
-            
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('數據庫保存超時')), 2000) // 2秒超時
-            );
-            
-            order = await Promise.race([dbSavePromise, timeoutPromise]);
-            console.log('✅ 訂單已快速保存到數據庫');
+            // 嘗試保存到數據庫（帶重試機制）
+            order = await saveOrderWithRetry(orderData);
+            console.log('🎉 訂單已成功保存到數據庫');
             
         } catch (dbError) {
-            console.log('⚠️ 數據庫保存超時或失敗，使用內存訂單並啟動後台保存');
+            console.error('💥 所有數據庫保存嘗試都失敗了:', dbError.message);
+            console.log('🔄 啟動強化後台保存機制...');
             
             // 創建內存訂單以便立即響應
             order = {
@@ -298,16 +329,30 @@ router.post('/checkout', [
                 ...orderData
             };
             
-            // 非同步保存到數據庫（不阻塞響應）
+            // 強化的後台保存（多次重試 + 更長時間間隔）
             setImmediate(async () => {
-                try {
-                    console.log('🔄 開始後台保存訂單...');
-                    const backgroundOrder = new Order(orderData);
-                    await backgroundOrder.save();
-                    console.log('✅ 訂單已成功後台保存到數據庫');
-                } catch (backgroundError) {
-                    console.error('❌ 後台訂單保存失敗:', backgroundError.message);
-                    // 可以在這裡添加重試機制或日誌記錄
+                console.log('🔄 開始強化後台保存...');
+                
+                for (let retry = 1; retry <= 10; retry++) { // 最多重試 10 次
+                    try {
+                        console.log(`🔄 後台保存重試 ${retry}/10...`);
+                        const backgroundOrder = new Order(orderData);
+                        await backgroundOrder.save();
+                        console.log(`🎉 後台保存成功！(第 ${retry} 次嘗試)`);
+                        return; // 成功後退出
+                        
+                    } catch (retryError) {
+                        console.error(`❌ 後台保存第 ${retry} 次失敗:`, retryError.message);
+                        
+                        if (retry < 10) {
+                            const waitTime = Math.min(retry * 2000, 30000); // 最多等待 30 秒
+                            console.log(`⏳ 等待 ${waitTime}ms 後重試...`);
+                            await new Promise(resolve => setTimeout(resolve, waitTime));
+                        } else {
+                            console.error('💥 所有後台保存嘗試都失敗了！訂單可能丟失！');
+                            // 這裡可以添加其他處理，比如發送警告郵件等
+                        }
+                    }
                 }
             });
         }
@@ -1029,6 +1074,62 @@ router.put('/admin/:id/status', adminAuth, [
         res.status(500).json({
             success: false,
             message: '更新訂單狀態失敗'
+        });
+    }
+});
+
+// 測試數據庫連接的簡單端點
+router.get('/test-db', async (req, res) => {
+    try {
+        console.log('🧪 開始測試數據庫連接...');
+        
+        const mongoose = require('mongoose');
+        const dbStatus = mongoose.connection.readyState;
+        const dbStatusText = {
+            0: 'disconnected',
+            1: 'connected',
+            2: 'connecting',
+            3: 'disconnecting'
+        };
+        
+        // 嘗試創建一個測試訂單
+        const testOrder = new Order({
+            user: null,
+            items: [{
+                name: '測試商品',
+                price: 1,
+                quantity: 1,
+                subtotal: 1
+            }],
+            totalAmount: 1,
+            paymentMethod: 'cash',
+            deliveryMethod: 'pickup',
+            notes: '數據庫連接測試 - ' + new Date().toISOString()
+        });
+        
+        const savedOrder = await testOrder.save();
+        console.log('✅ 測試訂單保存成功:', savedOrder._id);
+        
+        res.json({
+            success: true,
+            message: '數據庫連接正常',
+            database: {
+                status: dbStatusText[dbStatus],
+                readyState: dbStatus
+            },
+            testOrder: {
+                id: savedOrder._id,
+                createdAt: savedOrder.createdAt
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ 數據庫測試失敗:', error);
+        res.status(500).json({
+            success: false,
+            message: '數據庫連接失敗',
+            error: error.message,
+            stack: error.stack
         });
     }
 });
