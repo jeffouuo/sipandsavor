@@ -17,11 +17,18 @@
 
 ### 步驟2：正確的環境變數值
 
+**使用用戶指定的最小修正版本 URI**：
+
 ```
 MONGODB_URI=mongodb+srv://jeffouuo:ou2128211@cluster0.o4rppyz.mongodb.net/sipandsavor?retryWrites=true&w=majority
 JWT_SECRET=your-super-secret-jwt-key-here-at-least-32-characters-long
 NODE_ENV=production
 ```
+
+**修正說明**：
+- 保持您的認證資訊完全不變
+- 僅添加必需的資料庫名稱 `/sipandsavor`
+- 確保連接參數正確有效
 
 ### 步驟3：重新部署
 
