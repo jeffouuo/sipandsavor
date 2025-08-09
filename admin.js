@@ -1,10 +1,19 @@
 // 管理員後台 JavaScript
-// 動態獲取當前端口
-const currentPort = window.location.port || '3001';
-const API_BASE_URL = `http://localhost:${currentPort}/api`;
+// 動態獲取 API 基礎 URL - 支持本地開發和生產環境
+const getApiBaseUrl = () => {
+    // 如果是本地開發環境
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const currentPort = window.location.port || '3001';
+        return `http://localhost:${currentPort}/api`;
+    }
+    // 生產環境使用相對路徑
+    return '/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 console.log('🔧 管理後台已加載');
-console.log('📍 當前端口:', currentPort);
+console.log('📍 當前環境:', window.location.hostname);
 console.log('🔗 API地址:', API_BASE_URL);
 console.log('🧪 特殊需求邏輯測試: 如果您看到這條消息，說明 admin.js 已正確加載');
 
