@@ -9,6 +9,46 @@ console.log('📍 當前環境:', window.location.hostname);
 console.log('🔗 API地址:', API_BASE_URL);
 console.log('🧪 特殊需求邏輯測試: 如果您看到這條消息，說明 admin.js 已正確加載');
 
+// 自動刷新最新訂單
+let autoRefreshInterval = null;
+
+function startAutoRefresh() {
+    // 每30秒自動檢查新訂單
+    autoRefreshInterval = setInterval(async () => {
+        try {
+            const token = localStorage.getItem('adminToken');
+            if (!token) return;
+            
+            console.log('🔄 自動檢查新訂單...');
+            const response = await fetch(`${API_BASE_URL}/orders/recent`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data?.length > 0) {
+                    console.log(`✅ 發現 ${data.data.length} 個最新訂單`);
+                    // 如果當前在訂單頁面，自動刷新
+                    const ordersSection = document.getElementById('orders-section');
+                    if (ordersSection && ordersSection.classList.contains('active')) {
+                        console.log('🔄 自動刷新訂單列表...');
+                        loadOrders(1, '', '');
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('⚠️ 自動刷新失敗:', error.message);
+        }
+    }, 30000); // 30秒間隔
+}
+
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+}
+
 // 檢查 token 是否有效（解碼但不驗證簽名）
 function isTokenValid(token) {
     if (!token) return false;
@@ -215,21 +255,31 @@ async function loadStats(forceRefresh = false) {
         
         console.log('📡 發送統計數據請求...');
         
-        // 並行請求以提高效率
-        const [productsResponse, ordersStatsResponse, ordersResponse, usersResponse] = await Promise.all([
+        // ⚡ 優化並行請求 - 減少同時請求數量
+        console.log('📡 載入核心統計數據...');
+        
+        const [productsResponse, ordersStatsResponse, usersResponse] = await Promise.all([
             fetchWithRetry(`${API_BASE_URL}/products/admin/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             }),
             fetchWithRetry(`${API_BASE_URL}/orders/admin/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             }),
-            fetchWithRetry(`${API_BASE_URL}/orders/admin/all`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            }),
             fetchWithRetry(`${API_BASE_URL}/users/admin/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
         ]);
+        
+        // 單獨載入最新訂單（非阻塞）
+        let ordersResponse = null;
+        try {
+            console.log('📡 載入最新訂單...');
+            ordersResponse = await fetchWithRetry(`${API_BASE_URL}/orders/admin/all?limit=5`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        } catch (ordersError) {
+            console.warn('⚠️ 訂單載入失敗，將稍後重試:', ordersError.message);
+        }
 
         console.log('📥 統計數據回應狀態:', {
             products: productsResponse?.status,
@@ -602,14 +652,22 @@ function filterOrders() {
 
 // 載入訂單（支援篩選）
 async function loadOrders(page = 1, statusFilter = '', notesFilter = '') {
+    console.log('📋 載入訂單列表（優化版）...');
+    const startTime = Date.now();
+    
     try {
         const token = localStorage.getItem('adminToken');
-        let url = `${API_BASE_URL}/orders/admin/all?page=${page}&limit=10`;
+        let url = `${API_BASE_URL}/orders/admin/all?page=${page}&limit=20`; // 增加每頁數量
         
         // 添加篩選參數
         if (statusFilter) {
             url += `&status=${statusFilter}`;
         }
+        
+        // 添加排序參數，確保最新的訂單在前面
+        url += '&sort=-createdAt';
+        
+        console.log('📡 訂單請求 URL:', url);
         
         const response = await fetch(url, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -631,11 +689,15 @@ async function loadOrders(page = 1, statusFilter = '', notesFilter = '') {
             );
         }
         
+        const loadTime = Date.now() - startTime;
+        console.log(`⚡ 訂單載入完成，耗時: ${loadTime}ms，共 ${filteredOrders?.length || 0} 筆訂單`);
+        
         renderOrdersTable(filteredOrders, data.data.pagination);
         currentPage.orders = page;
 
     } catch (error) {
-        console.error('載入訂單失敗:', error);
+        const loadTime = Date.now() - startTime;
+        console.error(`❌ 載入訂單失敗 (耗時: ${loadTime}ms):`, error);
         showAlert('載入訂單失敗', 'error');
     }
 }
@@ -1128,8 +1190,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 載入產品列表
         await loadProducts();
         
+        // 啟動自動刷新
+        startAutoRefresh();
+        console.log('🔄 已啟動自動刷新（每30秒檢查新訂單）');
+        
         console.log('✅ 後台頁面初始化完成');
     } catch (error) {
         console.error('❌ 後台頁面初始化失敗:', error);
     }
+});
+
+// 頁面卸載時停止自動刷新
+window.addEventListener('beforeunload', () => {
+    stopAutoRefresh();
 }); 
