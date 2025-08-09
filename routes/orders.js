@@ -120,7 +120,7 @@ const memoryProducts = [
     }
 ];
 
-// 前台結帳（無需登入）
+// 前台結帳（無需登入） - 高優先級路由
 router.post('/checkout', [
     body('items').isArray({ min: 1 }).withMessage('訂單必須包含至少一個商品'),
     body('items.*.name').notEmpty().withMessage('商品名稱不能為空'),
@@ -131,6 +131,8 @@ router.post('/checkout', [
     body('deliveryMethod').optional().isIn(['pickup', 'delivery']).withMessage('無效的取餐方式'),
     body('notes').optional().isLength({ max: 200 }).withMessage('備註不能超過200個字符')
 ], async (req, res) => {
+    console.log('🚀 結帳請求開始:', new Date().toISOString());
+    const startTime = Date.now();
     try {
         // 驗證輸入
         const errors = validationResult(req);
@@ -149,53 +151,42 @@ router.post('/checkout', [
             notes = '前台結帳'
         } = req.body;
 
-        // 驗證產品並更新庫存
+        // 快速驗證產品並更新庫存 - 優先使用內存數據
         const orderItems = [];
         let calculatedTotal = 0;
 
+        console.log(`⚡ 開始處理 ${items.length} 個訂單項目`);
+
         for (const item of items) {
-            // 只在開發環境輸出詳細日誌
-            if (process.env.NODE_ENV === 'development') {
-                console.log('🔍 處理訂單項目:', item);
-                console.log('🔍 項目客制化信息:', item.customizations);
-                console.log('🔍 項目特殊需求:', item.specialRequest);
-            }
+            const itemStartTime = Date.now();
             
-            // 首先嘗試從數據庫查找產品
-            let product = null;
-            try {
-                // 提取基礎產品名稱（移除客制化信息）
-                let baseProductName = item.name;
-                
-                // 移除客制化信息，如 "(全糖)", "(正常冰)", "+珍珠,椰果" 等
-                // 匹配模式：移除括号内的内容，以及 + 开头的加料信息
-                baseProductName = baseProductName
-                    .replace(/\s*\([^)]*\)/g, '') // 移除括号及其内容
-                    .replace(/\s*\+[^)]*$/g, '') // 移除 + 开头的加料信息
-                    .trim();
-                
-                if (process.env.NODE_ENV === 'development') {
-                    console.log(`🔍 原始商品名稱: "${item.name}"`);
-                    console.log(`🔍 提取的基礎名稱: "${baseProductName}"`);
-                }
-                
-                product = await getCachedProduct(baseProductName);
-            } catch (dbError) {
-                if (process.env.NODE_ENV === 'development') {
-                    console.log('數據庫查詢失敗，使用內存數據:', dbError.message);
-                }
-            }
+            // 提取基礎產品名稱（移除客制化信息）
+            let baseProductName = item.name
+                .replace(/\s*\([^)]*\)/g, '') // 移除括号及其内容
+                .replace(/\s*\+[^)]*$/g, '') // 移除 + 开头的加料信息
+                .trim();
             
-            // 如果數據庫查詢失敗，使用內存數據
+            // 優先使用內存數據（更快）
+            let product = memoryProducts.find(p => p.name === baseProductName);
+            
+            // 如果內存中沒有，才嘗試數據庫（設置短超時）
             if (!product) {
-                // 同樣提取基礎產品名稱
-                let baseProductName = item.name
-                    .replace(/\s*\([^)]*\)/g, '')
-                    .replace(/\s*\+[^)]*$/g, '')
-                    .trim();
-                
-                product = memoryProducts.find(p => p.name === baseProductName);
+                try {
+                    // 設置較短的查詢超時
+                    const productPromise = getCachedProduct(baseProductName);
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('數據庫查詢超時')), 1000) // 1秒超時
+                    );
+                    
+                    product = await Promise.race([productPromise, timeoutPromise]);
+                } catch (dbError) {
+                    console.log(`⚠️ 數據庫查詢失敗或超時，使用內存數據: ${baseProductName}`);
+                    // 如果數據庫查詢失敗，再次嘗試內存匹配
+                    product = memoryProducts.find(p => p.name.includes(baseProductName.split(' ')[0]));
+                }
             }
+            
+            console.log(`⏱️ 項目處理時間: ${Date.now() - itemStartTime}ms - ${baseProductName}`);
             
             if (!product) {
                 return res.status(400).json({
@@ -263,28 +254,22 @@ router.post('/checkout', [
             });
         }
 
-        // 創建訂單（如果數據庫可用）
+        // 快速創建訂單 - 優先使用內存模式以提升速度
+        console.log('💾 開始創建訂單...');
+        const orderCreationStart = Date.now();
+        
         let order = null;
-        try {
-            order = new Order({
-                user: null, // 匿名訂單
-                items: orderItems,
-                totalAmount: totalAmount, // 使用前端发送的总金额
-                paymentMethod,
-                deliveryMethod,
-                notes
-            });
-
-            await order.save();
-            await order.populate('user', 'username email phone');
-        } catch (orderError) {
-            console.log('訂單保存失敗，創建內存訂單:', orderError.message);
-            // 創建內存訂單
+        
+        // 在生產環境優先使用內存訂單，避免數據庫延遲
+        const useMemoryOrder = process.env.NODE_ENV === 'production';
+        
+        if (useMemoryOrder) {
+            // 直接創建內存訂單（更快）
             order = {
-                _id: 'order_' + Date.now(),
+                _id: 'order_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
                 user: null,
                 items: orderItems,
-                totalAmount: totalAmount, // 使用前端发送的总金额
+                totalAmount: totalAmount,
                 paymentMethod,
                 deliveryMethod,
                 notes,
@@ -293,12 +278,49 @@ router.post('/checkout', [
                 createdAt: new Date(),
                 updatedAt: new Date()
             };
+            console.log('⚡ 使用內存訂單模式，跳過數據庫操作');
+        } else {
+            // 開發環境仍使用數據庫
+            try {
+                order = new Order({
+                    user: null,
+                    items: orderItems,
+                    totalAmount: totalAmount,
+                    paymentMethod,
+                    deliveryMethod,
+                    notes
+                });
+
+                await order.save();
+                await order.populate('user', 'username email phone');
+            } catch (orderError) {
+                console.log('訂單保存失敗，創建內存訂單:', orderError.message);
+                order = {
+                    _id: 'order_' + Date.now(),
+                    user: null,
+                    items: orderItems,
+                    totalAmount: totalAmount,
+                    paymentMethod,
+                    deliveryMethod,
+                    notes,
+                    status: 'pending',
+                    paymentStatus: 'pending',
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                };
+            }
         }
+        
+        console.log(`💾 訂單創建時間: ${Date.now() - orderCreationStart}ms`);
+        
+        const totalTime = Date.now() - startTime;
+        console.log(`🎉 結帳完成，總處理時間: ${totalTime}ms`);
 
         res.status(201).json({
             success: true,
             message: '訂單創建成功',
-            data: { order }
+            data: { order },
+            processingTime: totalTime // 添加處理時間信息
         });
 
     } catch (error) {
