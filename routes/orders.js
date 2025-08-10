@@ -751,6 +751,8 @@ router.get('/my-orders', auth, [
     }
 });
 
+
+
 // 獲取單個訂單詳情
 router.get('/:id', auth, async (req, res) => {
     try {
@@ -1130,21 +1132,33 @@ router.put('/admin/:id/status', adminAuth, [
     }
 });
 
-// 查詢最近的訂單（用於調試）
+// 查詢最近的訂單（用於自動刷新）- 無需認證
 router.get('/recent', async (req, res) => {
+    console.log('🔍 /recent 端點被調用，無認證要求');
     try {
         console.log('🔍 查詢最近的訂單...');
         
         // 檢查資料庫連接狀態
         const mongoose = require('mongoose');
         const dbStatus = mongoose.connection.readyState;
+        const dbStatusText = {
+            0: 'disconnected',
+            1: 'connected',
+            2: 'connecting',
+            3: 'disconnecting'
+        };
         
+        console.log(`📊 資料庫狀態: ${dbStatusText[dbStatus]} (${dbStatus})`);
+        
+        // 如果資料庫未連接，返回空數據而不是錯誤
         if (dbStatus !== 1) {
-            console.warn('⚠️ 資料庫未連接，狀態:', dbStatus);
-            return res.status(503).json({
-                success: false,
-                error: '資料庫連接失敗',
-                dbStatus: dbStatus
+            console.warn('⚠️ 資料庫未連接，返回空數據');
+            return res.json({
+                success: true,
+                count: 0,
+                data: [],
+                databaseStatus: dbStatusText[dbStatus],
+                message: '資料庫連接中，暫時無訂單數據'
             });
         }
         
@@ -1152,11 +1166,11 @@ router.get('/recent', async (req, res) => {
         const queryPromise = Order.find()
             .sort({ createdAt: -1 })
             .limit(10)
-            .select('_id totalAmount items.name createdAt notes')
+            .select('_id totalAmount items.name createdAt notes tableNumber orderType')
             .lean();
             
         const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('查詢超時')), 5000)
+            setTimeout(() => reject(new Error('查詢超時')), 3000) // 減少超時時間
         );
         
         const recentOrders = await Promise.race([queryPromise, timeoutPromise]);
@@ -1166,7 +1180,8 @@ router.get('/recent', async (req, res) => {
         res.json({
             success: true,
             count: recentOrders.length,
-            data: recentOrders // 修正：使用 data 字段，與前端一致
+            data: recentOrders,
+            databaseStatus: 'connected'
         });
         
     } catch (error) {
@@ -1178,11 +1193,19 @@ router.get('/recent', async (req, res) => {
             errorMessage = '資料庫連接中，請稍後重試';
         } else if (error.message.includes('timeout')) {
             errorMessage = '查詢超時，請檢查網路連接';
+        } else if (error.message.includes('ECONNREFUSED')) {
+            errorMessage = '無法連接到資料庫服務器';
+        } else if (error.message.includes('ENOTFOUND')) {
+            errorMessage = '資料庫主機名無法解析';
         }
         
-        res.status(500).json({
+        // 返回200狀態碼而不是500，避免前端停止自動刷新
+        res.json({
             success: false,
+            count: 0,
+            data: [],
             error: errorMessage,
+            databaseStatus: 'error',
             timestamp: new Date().toISOString()
         });
     }

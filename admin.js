@@ -34,9 +34,10 @@ function startAutoRefresh() {
             
             clearTimeout(timeoutId);
             
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.data?.length > 0) {
+            const data = await response.json();
+            
+            if (data.success) {
+                if (data.data?.length > 0) {
                     console.log(`✅ 發現 ${data.data.length} 個最新訂單`);
                     
                     // 如果當前在訂單頁面，自動刷新
@@ -47,20 +48,28 @@ function startAutoRefresh() {
                     }
                 } else {
                     console.log('📋 沒有發現新訂單');
+                    
+                    // 如果資料庫狀態有問題，顯示提示
+                    if (data.databaseStatus && data.databaseStatus !== 'connected') {
+                        console.log(`⚠️ 資料庫狀態: ${data.databaseStatus}`);
+                        if (data.message) {
+                            console.log(`💡 ${data.message}`);
+                        }
+                    }
                 }
             } else {
-                console.warn(`⚠️ 自動刷新 API 回應錯誤: ${response.status}`);
+                console.warn(`⚠️ 自動刷新 API 回應錯誤: ${data.error || '未知錯誤'}`);
                 
-                // 如果是 500 錯誤，可能是資料庫問題，暫時停用自動刷新
-                if (response.status === 500) {
-                    console.warn('🚨 檢測到服務器錯誤，暫時停用自動刷新');
+                // 檢查資料庫狀態
+                if (data.databaseStatus === 'error') {
+                    console.warn('🚨 檢測到資料庫錯誤，暫時停用自動刷新');
                     stopAutoRefresh();
                     
-                    // 5分鐘後重新啟動
+                    // 3分鐘後重新啟動
                     setTimeout(() => {
                         console.log('🔄 重新啟動自動刷新...');
                         startAutoRefresh();
-                    }, 300000); // 5分鐘
+                    }, 180000); // 3分鐘
                 }
             }
         } catch (error) {
