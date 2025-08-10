@@ -1280,8 +1280,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 檢查認證
         await checkAuth();
         
-        // 只載入統計數據（首頁顯示）
+        // 載入統計數據（首頁顯示）
         await loadStats();
+        
+        // 載入產品數據（產品管理頁面默認顯示）
+        await loadProducts();
         
         // 啟動自動刷新
         startAutoRefresh();
