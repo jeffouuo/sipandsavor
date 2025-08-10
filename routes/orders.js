@@ -6,6 +6,13 @@ const { auth, adminAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// 生成訂單號碼的函數
+function generateOrderNumber() {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    return `${timestamp}${random}`;
+}
+
 // 產品查詢緩存
 const productCache = new Map();
 const PRODUCT_CACHE_DURATION = 5 * 60 * 1000; // 5分鐘緩存
@@ -376,6 +383,9 @@ router.post('/checkout', [
         console.log('💾 開始創建訂單...');
         const orderCreationStart = Date.now();
         
+        // 生成訂單號碼（如果沒有提供）
+        const finalOrderNumber = orderNumber || generateOrderNumber();
+        
         // 創建訂單數據
         const orderData = {
             user: null,
@@ -384,7 +394,7 @@ router.post('/checkout', [
             paymentMethod,
             deliveryMethod,
             notes,
-            orderNumber: orderNumber || '',
+            orderNumber: finalOrderNumber,
             status: 'pending',
             paymentStatus: 'pending',
             createdAt: new Date(),
@@ -615,7 +625,10 @@ router.post('/', auth, [
         res.status(201).json({
             success: true,
             message: '訂單創建成功',
-            data: { order }
+            data: { 
+                order,
+                orderNumber: finalOrderNumber
+            }
         });
 
     } catch (error) {

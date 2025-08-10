@@ -382,12 +382,6 @@ window.renderCartItems = () => {
             displayName += ` (${customizations.trim()})`;
         }
         
-        // 如果有訂單號碼，添加到顯示名稱中
-        if (item.orderNumber && item.orderNumber.trim()) {
-            const orderNumberLast4 = item.orderNumber.slice(-4);
-            displayName += ` [${orderNumberLast4}]`;
-        }
-        
         return `
             <div class="cart-item" data-index="${index}">
                 <div class="cart-item-info">
@@ -445,7 +439,7 @@ window.updateQuantity = (index, change) => {
 
 // 添加商品到購物車
 // 全局購物車函數
-window.addToCart = (name, price, customizations = '', specialRequest = '', showNotificationFlag = true, orderNumber = '') => {
+window.addToCart = (name, price, customizations = '', specialRequest = '', showNotificationFlag = true) => {
     console.log('🔍 全局購物車 - 添加商品:', { name, price, customizations, showNotificationFlag });
     console.log('🔍 參數類型:', { 
         nameType: typeof name, 
@@ -485,8 +479,7 @@ window.addToCart = (name, price, customizations = '', specialRequest = '', showN
             price: parseFloat(price) || 0,
             quantity: 1,
             customizations: customizations,
-            specialRequest: specialRequest && specialRequest.trim() ? specialRequest.trim() : '',
-            orderNumber: orderNumber || ''
+            specialRequest: specialRequest && specialRequest.trim() ? specialRequest.trim() : ''
         });
         console.log('添加新商品到購物車:', itemName);
         console.log('🔍 商品客制化信息:', customizations);
@@ -771,11 +764,6 @@ const initCheckout = () => {
             
 
             
-            // 檢查是否有外帶訂單號碼
-            const orderNumbers = window.cart
-                .map(item => item.orderNumber)
-                .filter(orderNumber => orderNumber && orderNumber.trim());
-            
             // 準備訂單數據
             let orderData = {
                 items: window.cart.map(item => {
@@ -802,12 +790,6 @@ const initCheckout = () => {
                 deliveryMethod: 'pickup',
                 notes: '前台結帳'
             };
-            
-            // 如果有訂單號碼，添加到訂單數據中
-            if (orderNumbers.length > 0) {
-                orderData.orderNumber = orderNumbers[0]; // 使用第一個訂單號碼
-                console.log('🔍 外帶訂單號碼:', orderData.orderNumber);
-            }
             
             // 驗證數據格式
             console.log('🔍 購物車原始數據:', window.cart);
@@ -985,6 +967,15 @@ const initCheckout = () => {
                 console.log('✅ 後端回應數據:', data);
                 if (data.success) {
                     showNotification('訂單已成功提交！', 'success');
+                    
+                    // 如果是外帶訂單，顯示訂單號碼
+                    if (!isDineInPage && data.data && data.data.orderNumber) {
+                        const orderNumberLast4 = data.data.orderNumber.slice(-4);
+                        setTimeout(() => {
+                            showNotification(`您的訂單號碼：${orderNumberLast4}`, 'info');
+                        }, 1500);
+                    }
+                    
                     // 清空購物車
                     window.cart.length = 0;
                     localStorage.removeItem('cart');
