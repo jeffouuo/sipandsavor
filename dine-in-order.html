@@ -926,8 +926,33 @@
                 // 添加到購物車
                 addToCartLocal(displayName, parseFloat(totalPrice), customizations, specialRequest && specialRequest.trim() ? specialRequest.trim() : '');
                 
+                // 構建完整的顯示訊息
+                let displayMessage = `${displayName}`;
+                
+                // 添加糖量資訊
+                if (sugar) {
+                    displayMessage += ` ${sugar}`;
+                }
+                
+                // 添加冰量資訊
+                if (ice) {
+                    displayMessage += ` ${ice}`;
+                }
+                
+                // 添加加料資訊
+                if (selectedToppings.length > 0) {
+                    displayMessage += ` +${selectedToppings.join(',')}`;
+                }
+                
+                // 添加特殊要求（如果有）
+                if (specialRequest && specialRequest.trim()) {
+                    displayMessage += ` (${specialRequest.trim()})`;
+                }
+                
+                displayMessage += ` 已加入購物車!`;
+                
                 // 顯示成功訊息
-                showNotification(`${displayName} 已加入購物車!`, 'success');
+                showNotification(displayMessage, 'success');
                 
                 // 關閉模態框
                 closeModal();

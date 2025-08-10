@@ -376,10 +376,16 @@ window.renderCartItems = () => {
                 }
                 
                 console.log(`渲染購物車項目 ${index}:`, { name, price, quantity, customizations, originalItem: item });
+        // 構建完整的商品顯示名稱
+        let displayName = name;
+        if (customizations && customizations.trim()) {
+            displayName += ` (${customizations.trim()})`;
+        }
+        
         return `
             <div class="cart-item" data-index="${index}">
                 <div class="cart-item-info">
-                    <div class="cart-item-title">${name}</div>
+                    <div class="cart-item-title">${displayName}</div>
                     <div class="cart-item-price">NT$ ${price}</div>
                 </div>
                 <div class="cart-item-quantity">
