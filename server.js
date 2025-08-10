@@ -76,22 +76,42 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// 設置 trust proxy 以支持 Vercel 環境
+app.set('trust proxy', 1);
+
 // 速率限制
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15分鐘
-    max: 1000 // 增加限制，避免误判
+    max: 1000, // 增加限制，避免误判
+    standardHeaders: true, // 返回標準的 RateLimit-* 頭部
+    legacyHeaders: false, // 禁用 X-RateLimit-* 頭部
+    // 自定義 key 生成器，避免 X-Forwarded-For 問題
+    keyGenerator: (req) => {
+        // 在 Vercel 環境中使用真實 IP
+        return req.ip || req.connection.remoteAddress || 'unknown';
+    }
 });
 
 // 为登录端点设置更宽松的限制
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15分鐘
-    max: 100 // 增加登录限制
+    max: 100, // 增加登录限制
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        return req.ip || req.connection.remoteAddress || 'unknown';
+    }
 });
 
 // 为结账端点设置更宽松的限制
 const checkoutLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15分鐘
-    max: 200 // 结账端点限制更宽松
+    max: 200, // 结账端点限制更宽松
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        return req.ip || req.connection.remoteAddress || 'unknown';
+    }
 });
 
 app.use('/api/auth/login', loginLimiter);
