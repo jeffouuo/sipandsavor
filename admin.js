@@ -15,7 +15,6 @@ const cache = {
     products: null,
     orders: null,
     users: null,
-    news: null,
     lastUpdate: {}
 };
 
@@ -168,8 +167,7 @@ let currentUser = null;
 let currentPage = {
     products: 1,
     orders: 1,
-    users: 1,
-    news: 1
+    users: 1
 };
 
 // 初始化 - 已移除重複的 DOMContentLoaded 監聽器
@@ -288,9 +286,6 @@ function showSection(sectionName) {
             break;
         case 'users':
             loadUsers();
-            break;
-        case 'news':
-            loadNews();
             break;
     }
 }
@@ -946,161 +941,7 @@ async function toggleUserStatus(userId, currentStatus) {
 }
 
 // 新聞管理功能
-async function loadNews(page = 1) {
-    try {
-        // 檢查緩存（僅對第一頁）
-        if (page === 1 && cache.news && isCacheValid('news')) {
-            console.log('📰 使用緩存的新聞數據');
-            renderNewsTable(cache.news.data.news, cache.news.data.pagination);
-            return;
-        }
 
-        showLoading('newsTable', '載入新聞列表中...');
-        
-        const token = localStorage.getItem('adminToken');
-        const response = await fetchWithRetry(`${API_BASE_URL}/news/admin/all?page=${page}&limit=10`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) throw new Error('獲取新聞失敗');
-
-        const data = await response.json();
-        
-        // 更新緩存（僅對第一頁）
-        if (page === 1) {
-            cache.news = data;
-            cache.lastUpdate.news = Date.now();
-        }
-        
-        renderNewsTable(data.data.news, data.data.pagination);
-        currentPage.news = page;
-
-    } catch (error) {
-        console.error('載入新聞失敗:', error);
-        showAlert('載入新聞失敗', 'error');
-    }
-}
-
-function renderNewsTable(news, pagination) {
-    const tableContainer = document.getElementById('newsTable');
-    
-    let html = `
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>標題</th>
-                    <th>內容</th>
-                    <th>特色</th>
-                    <th>發布日期</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
-    news.forEach(item => {
-        const content = item.content.length > 50 ? item.content.substring(0, 50) + '...' : item.content;
-        
-        html += `
-            <tr>
-                <td>${item.title}</td>
-                <td>${content}</td>
-                <td>${item.featured ? '是' : '否'}</td>
-                <td>${item.date}</td>
-                <td>
-                    <button class="action-btn edit-btn" onclick="editNews('${item.id}')">編輯</button>
-                    <button class="action-btn delete-btn" onclick="deleteNews('${item.id}')">刪除</button>
-                </td>
-            </tr>
-        `;
-    });
-
-    html += `
-            </tbody>
-        </table>
-    `;
-
-    if (pagination) {
-        html += renderPagination(pagination, 'news');
-    }
-
-    tableContainer.innerHTML = html;
-}
-
-// 顯示新聞編輯模態框
-function showNewsModal(newsId = null) {
-    const modal = document.getElementById('newsModal');
-    const title = document.getElementById('newsModalTitle');
-    const form = document.getElementById('newsForm');
-
-    if (newsId) {
-        title.textContent = '編輯新聞';
-        // 載入新聞數據
-        loadNewsData(newsId);
-    } else {
-        title.textContent = '新增新聞';
-        form.reset();
-    }
-
-    modal.style.display = 'block';
-}
-
-// 關閉新聞編輯模態框
-function closeNewsModal() {
-    document.getElementById('newsModal').style.display = 'none';
-}
-
-// 載入新聞數據
-async function loadNewsData(newsId) {
-    try {
-        const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${API_BASE_URL}/news/${newsId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) throw new Error('獲取新聞數據失敗');
-
-        const data = await response.json();
-        const news = data.data.news;
-
-        // 填充表單
-        document.getElementById('newsTitle').value = news.title;
-        document.getElementById('newsContent').value = news.content;
-        document.getElementById('newsImage').value = news.image;
-        document.getElementById('newsFeatured').checked = news.featured;
-
-    } catch (error) {
-        console.error('載入新聞數據失敗:', error);
-        showAlert('載入新聞數據失敗', 'error');
-    }
-}
-
-// 編輯新聞
-function editNews(newsId) {
-    showNewsModal(newsId);
-}
-
-// 刪除新聞
-async function deleteNews(newsId) {
-    if (!confirm('確定要刪除此新聞嗎？')) return;
-
-    try {
-        const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${API_BASE_URL}/news/${newsId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) throw new Error('刪除新聞失敗');
-
-        showAlert('新聞刪除成功', 'success');
-        loadNews(currentPage.news);
-
-    } catch (error) {
-        console.error('刪除新聞失敗:', error);
-        showAlert('刪除新聞失敗', 'error');
-    }
-}
 
 // 通用功能
 function renderPagination(pagination, section) {
@@ -1132,9 +973,6 @@ function changePage(section, page) {
             break;
         case 'users':
             loadUsers(page);
-            break;
-        case 'news':
-            loadNews(page);
             break;
     }
 }
@@ -1226,49 +1064,14 @@ document.getElementById('productForm').addEventListener('submit', async function
     }
 });
 
-document.getElementById('newsForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = {
-        title: document.getElementById('newsTitle').value,
-        content: document.getElementById('newsContent').value,
-        image: document.getElementById('newsImage').value,
-        featured: document.getElementById('newsFeatured').checked
-    };
 
-    try {
-        const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${API_BASE_URL}/news`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        });
-
-        if (!response.ok) throw new Error('保存新聞失敗');
-
-        showAlert('新聞保存成功', 'success');
-        closeNewsModal();
-        loadNews(currentPage.news);
-
-    } catch (error) {
-        console.error('保存新聞失敗:', error);
-        showAlert('保存新聞失敗', 'error');
-    }
-});
 
 // 點擊模態框外部關閉
 window.onclick = function(event) {
     const productModal = document.getElementById('productModal');
-    const newsModal = document.getElementById('newsModal');
     
     if (event.target === productModal) {
         closeProductModal();
-    }
-    if (event.target === newsModal) {
-        closeNewsModal();
     }
 }
 
