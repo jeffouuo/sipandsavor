@@ -286,12 +286,18 @@ const initCart = () => {
 // 關閉購物車側邊欄
 // 關閉購物車側邊欄
 window.closeCartSidebar = () => {
+    console.log('🚪 closeCartSidebar 被調用');
+    console.trace('調用堆疊:'); // 顯示調用堆疊
+    
     const cartSidebar = document.getElementById('cartSidebar');
     if (cartSidebar) {
         cartSidebar.classList.remove('active');
         cartSidebar.style.right = '-100%';
         cartSidebar.style.transform = 'translateX(100%)';
         document.body.style.overflow = '';
+        console.log('✅ 購物車側邊欄已關閉');
+    } else {
+        console.error('❌ 找不到購物車側邊欄元素');
     }
 };
 
@@ -391,24 +397,37 @@ window.renderCartItems = () => {
 
 // 更新商品數量
 window.updateQuantity = (index, change) => {
+    console.log('🔄 updateQuantity 被調用:', { index, change, cartLength: window.cart.length });
+    
     if (window.cart[index]) {
         // 確保數量是數字類型
         const currentQuantity = parseInt(window.cart[index].quantity) || 0;
         const newQuantity = currentQuantity + change;
         
+        console.log('📊 數量更新:', { currentQuantity, newQuantity });
+        
         if (newQuantity <= 0) {
             // 移除商品
+            console.log('🗑️ 移除商品:', window.cart[index].name);
             window.cart.splice(index, 1);
+            console.log('📦 移除後購物車長度:', window.cart.length);
+            
             // 只有在購物車完全為空時才關閉側邊欄
             if (window.cart.length === 0) {
+                console.log('🚪 購物車為空，關閉側邊欄');
                 closeCartSidebar();
+            } else {
+                console.log('📦 購物車還有商品，保持開啟');
             }
         } else {
             window.cart[index].quantity = newQuantity;
+            console.log('✅ 更新商品數量:', newQuantity);
         }
         
         localStorage.setItem('cart', JSON.stringify(window.cart));
         updateCartDisplay();
+    } else {
+        console.error('❌ 找不到購物車項目:', index);
     }
 };
 
