@@ -382,6 +382,12 @@ window.renderCartItems = () => {
             displayName += ` (${customizations.trim()})`;
         }
         
+        // 如果有訂單號碼，添加到顯示名稱中
+        if (item.orderNumber && item.orderNumber.trim()) {
+            const orderNumberLast4 = item.orderNumber.slice(-4);
+            displayName += ` [${orderNumberLast4}]`;
+        }
+        
         return `
             <div class="cart-item" data-index="${index}">
                 <div class="cart-item-info">
@@ -439,7 +445,7 @@ window.updateQuantity = (index, change) => {
 
 // 添加商品到購物車
 // 全局購物車函數
-window.addToCart = (name, price, customizations = '', specialRequest = '', showNotificationFlag = true) => {
+window.addToCart = (name, price, customizations = '', specialRequest = '', showNotificationFlag = true, orderNumber = '') => {
     console.log('🔍 全局購物車 - 添加商品:', { name, price, customizations, showNotificationFlag });
     console.log('🔍 參數類型:', { 
         nameType: typeof name, 
@@ -479,7 +485,8 @@ window.addToCart = (name, price, customizations = '', specialRequest = '', showN
             price: parseFloat(price) || 0,
             quantity: 1,
             customizations: customizations,
-            specialRequest: specialRequest && specialRequest.trim() ? specialRequest.trim() : ''
+            specialRequest: specialRequest && specialRequest.trim() ? specialRequest.trim() : '',
+            orderNumber: orderNumber || ''
         });
         console.log('添加新商品到購物車:', itemName);
         console.log('🔍 商品客制化信息:', customizations);

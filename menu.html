@@ -604,8 +604,12 @@
                     quantity: 1
                 };
                 
+                // 生成訂單號碼
+                const orderNumber = generateOrderNumber();
+                const orderNumberLast4 = orderNumber.slice(-4);
+                
                 // 添加到購物車（需要與現有購物車整合）
-                addToCart(customizedItem);
+                addToCart(customizedItem, orderNumber);
                 
                 // 構建完整的顯示訊息
                 let displayMessage = `${currentDrink}`;
@@ -635,12 +639,17 @@
                 // 顯示成功訊息
                 showNotification(displayMessage, 'success');
                 
+                // 延遲顯示訂單號碼
+                setTimeout(() => {
+                    showNotification(`您的訂單號碼：${orderNumberLast4}`, 'info');
+                }, 1500);
+                
                 // 關閉面板
                 closeCustomizeModal();
             });
             
             // 添加到購物車的函數（需要與現有購物車整合）
-            function addToCart(item) {
+            function addToCart(item, orderNumber) {
                 // 與現有購物車功能整合
                 const id = Date.now().toString(); // 生成唯一ID
                 
@@ -665,7 +674,8 @@
                         customizations = parts.join(', ');
                         console.log('🔍 最終客制化字符串:', customizations);
                         
-                        window.addToCart(displayName, item.totalPrice, customizations, item.specialRequest || '', true);
+                        // 將訂單號碼添加到購物車項目中
+                        window.addToCart(displayName, item.totalPrice, customizations, item.specialRequest || '', true, orderNumber);
                     } else {
                         console.log('⏳ 等待全局購物車系統初始化...');
                         setTimeout(waitForGlobalCart, 100);
@@ -673,6 +683,13 @@
                 };
                 
                 waitForGlobalCart();
+            }
+            
+            // 生成訂單號碼的函數
+            function generateOrderNumber() {
+                const timestamp = Date.now();
+                const random = Math.floor(Math.random() * 1000);
+                return `${timestamp}${random}`;
             }
             
             // 使用全局的 showNotification 函數

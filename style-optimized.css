@@ -1006,6 +1006,10 @@ footer {
 
 .notification.success {
     background-color: #2ed573;
+}
+
+.notification.info {
+    background-color: #3742fa;
 } 
 
 /* 產品模態框樣式 */
