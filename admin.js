@@ -9,6 +9,16 @@ console.log('📍 當前環境:', window.location.hostname);
 console.log('🔗 API地址:', API_BASE_URL);
 console.log('🧪 特殊需求邏輯測試: 如果您看到這條消息，說明 admin.js 已正確加載');
 
+// 性能優化：添加緩存機制
+const cache = {
+    stats: null,
+    products: null,
+    orders: null,
+    users: null,
+    news: null,
+    lastUpdate: {}
+};
+
 // 自動刷新最新訂單
 let autoRefreshInterval = null;
 
@@ -103,39 +113,55 @@ function isTokenValid(token) {
         
         // 檢查是否過期
         if (payload.exp && payload.exp * 1000 < Date.now()) {
-            console.log('🕐 Token 已過期');
             return false;
         }
         
-        console.log('✅ Token 有效，過期時間:', new Date(payload.exp * 1000));
         return true;
     } catch (error) {
-        console.error('❌ Token 解析錯誤:', error);
+        console.error('Token 解析失敗:', error);
         return false;
     }
 }
 
-// 請求重試機制
+// 帶重試的 fetch 函數
 async function fetchWithRetry(url, options = {}, maxRetries = 3) {
     for (let i = 0; i < maxRetries; i++) {
         try {
-            const response = await fetch(url, options);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超時
             
-            if (response.status === 429) {
-                // 如果是429錯誤，等待後重試
-                const retryAfter = response.headers.get('Retry-After') || 5;
-                console.log(`請求過於頻繁，等待 ${retryAfter} 秒後重試...`);
-                await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-                continue;
-            }
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
             
+            clearTimeout(timeoutId);
             return response;
         } catch (error) {
             if (i === maxRetries - 1) throw error;
-            console.log(`請求失敗，${i + 1}/${maxRetries} 次重試...`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+            console.warn(`請求失敗，重試 ${i + 1}/${maxRetries}:`, error.message);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // 指數退避
         }
     }
+}
+
+// 顯示載入指示器
+function showLoading(elementId, message = '載入中...') {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #4CAF50; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="margin-top: 20px; color: #666;">${message}</p>
+            </div>
+        `;
+    }
+}
+
+// 檢查緩存是否有效（5分鐘內）
+function isCacheValid(key) {
+    const lastUpdate = cache.lastUpdate[key];
+    return lastUpdate && (Date.now() - lastUpdate) < 5 * 60 * 1000; // 5分鐘
 }
 
 let currentUser = null;
@@ -175,7 +201,7 @@ async function checkAuth() {
     try {
         console.log('📡 發送認證請求到:', `${API_BASE_URL}/auth/me`);
         
-        const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        const response = await fetchWithRetry(`${API_BASE_URL}/auth/me`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -249,13 +275,16 @@ function showSection(sectionName) {
     // 設置對應標籤為active
     event.target.classList.add('active');
 
-    // 載入對應數據
-    switch(sectionName) {
+    // 根據選中的區塊載入對應數據
+    switch (sectionName) {
+        case 'stats':
+            loadStats();
+            break;
         case 'products':
             loadProducts();
             break;
         case 'orders':
-            loadOrders(1, '', '');
+            loadOrders();
             break;
         case 'users':
             loadUsers();
@@ -266,143 +295,131 @@ function showSection(sectionName) {
     }
 }
 
-// 統計數據緩存
-let statsCache = null;
-let statsCacheTime = 0;
-const STATS_CACHE_DURATION = 30 * 1000; // 30秒緩存
-
-// 載入統計數據
+// 載入統計數據（帶緩存）
 async function loadStats(forceRefresh = false) {
-    console.log('📊 開始載入統計數據...');
-    console.log('🔗 使用API地址:', API_BASE_URL);
-    
     try {
-        // 檢查緩存（除非強制刷新）
-        const now = Date.now();
-        if (!forceRefresh && statsCache && (now - statsCacheTime) < STATS_CACHE_DURATION) {
-            console.log('📋 使用緩存的統計數據');
-            updateStatsDisplay(statsCache);
+        // 檢查緩存
+        if (!forceRefresh && cache.stats && isCacheValid('stats')) {
+            console.log('📊 使用緩存的統計數據');
+            updateStatsDisplay(cache.stats);
             return;
         }
 
+        showLoading('statsContent', '載入統計數據中...');
+        
         const token = localStorage.getItem('adminToken');
-        console.log('🎫 Token狀態:', token ? '已找到' : '未找到');
         
-        if (!token) {
-            console.error('❌ 沒有token，無法載入統計數據');
-            return;
-        }
-        
-        console.log('📡 發送統計數據請求...');
-        
-        // ⚡ 優化並行請求 - 減少同時請求數量
-        console.log('📡 載入核心統計數據...');
-        
-        const [productsResponse, ordersStatsResponse, usersResponse] = await Promise.all([
-            fetchWithRetry(`${API_BASE_URL}/products/admin/stats`, {
+        // 並行請求多個統計數據
+        const [productsResponse, ordersResponse, usersResponse] = await Promise.all([
+            fetchWithRetry(`${API_BASE_URL}/products/count`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             }),
-            fetchWithRetry(`${API_BASE_URL}/orders/admin/stats`, {
+            fetchWithRetry(`${API_BASE_URL}/orders/admin/all?limit=5`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             }),
-            fetchWithRetry(`${API_BASE_URL}/users/admin/stats`, {
+            fetchWithRetry(`${API_BASE_URL}/users/count`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
         ]);
-        
-        // 單獨載入最新訂單（非阻塞）
-        let ordersResponse = null;
-        try {
-            console.log('📡 載入最新訂單...');
-            ordersResponse = await fetchWithRetry(`${API_BASE_URL}/orders/admin/all?limit=5`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-        } catch (ordersError) {
-            console.warn('⚠️ 訂單載入失敗，將稍後重試:', ordersError.message);
-        }
 
-        console.log('📥 統計數據回應狀態:', {
-            products: productsResponse?.status,
-            ordersStats: ordersStatsResponse?.status,
-            orders: ordersResponse?.status,
-            users: usersResponse?.status
-        });
-
-        const [productsData, ordersStatsData, ordersData, usersData] = await Promise.all([
+        const [productsData, ordersData, usersData] = await Promise.all([
             productsResponse.json(),
-            ordersStatsResponse.json(),
             ordersResponse.json(),
             usersResponse.json()
         ]);
 
-        console.log('📊 後台統計數據:', {
-            productsData,
-            ordersStatsData,
-            ordersData,
-            usersData
-        });
+        // 計算統計數據
+        const stats = {
+            totalProducts: productsData.success ? productsData.data.total : 0,
+            totalOrders: ordersData.success ? ordersData.data.pagination.total : 0,
+            totalUsers: usersData.success ? usersData.data.total : 0,
+            recentOrders: ordersData.success ? ordersData.data.orders : [],
+            databaseStatus: 'connected'
+        };
 
-        // 緩存結果
-        statsCache = { productsData, ordersStatsData, ordersData, usersData };
-        statsCacheTime = now;
+        // 更新緩存
+        cache.stats = stats;
+        cache.lastUpdate.stats = Date.now();
 
-        updateStatsDisplay(statsCache);
-
+        updateStatsDisplay(stats);
+        
     } catch (error) {
         console.error('載入統計數據失敗:', error);
+        showAlert('載入統計數據失敗', 'error');
     }
 }
 
-// 更新統計顯示
 function updateStatsDisplay(cache) {
-    const { productsData, ordersStatsData, ordersData, usersData } = cache;
+    const statsContent = document.getElementById('statsContent');
     
-    document.getElementById('totalProducts').textContent = productsData.data?.totalProducts || 0;
-    document.getElementById('totalOrders').textContent = ordersStatsData.data?.totalOrders || 0;
-    document.getElementById('totalUsers').textContent = usersData.data?.totalUsers || 0;
-    
-    // 計算待處理訂單（使用統計數據）
-    const pendingOrders = (ordersStatsData.data?.statusCounts?.pending || 0) + 
-                         (ordersStatsData.data?.statusCounts?.confirmed || 0);
-    document.getElementById('pendingOrders').textContent = pendingOrders;
-    
-    // 使用統計數據中的特殊需求訂單數量
-    const ordersWithNotes = ordersStatsData.data?.ordersWithNotes || 0;
-    
-    // 如果有特殊需求統計元素存在，則更新它
-    const notesStatsElement = document.getElementById('ordersWithNotes');
-    if (notesStatsElement) {
-        notesStatsElement.textContent = ordersWithNotes;
-    }
-    
-    // 添加更多統計信息（如果HTML中有對應元素）
-    const todayOrdersElement = document.getElementById('todayOrders');
-    if (todayOrdersElement) {
-        todayOrdersElement.textContent = ordersStatsData.data?.todayOrders || 0;
-    }
-    
-    const thisMonthOrdersElement = document.getElementById('thisMonthOrders');
-    if (thisMonthOrdersElement) {
-        thisMonthOrdersElement.textContent = ordersStatsData.data?.thisMonthOrders || 0;
-    }
-    
-    const totalRevenueElement = document.getElementById('totalRevenue');
-    if (totalRevenueElement) {
-        totalRevenueElement.textContent = `NT$ ${(ordersStatsData.data?.totalRevenue || 0).toLocaleString()}`;
-    }
+    statsContent.innerHTML = `
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-info">
+                    <h3>${cache.totalProducts}</h3>
+                    <p>總產品數</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📋</div>
+                <div class="stat-info">
+                    <h3>${cache.totalOrders}</h3>
+                    <p>總訂單數</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-info">
+                    <h3>${cache.totalUsers}</h3>
+                    <p>總用戶數</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="recent-orders">
+            <h3>最近訂單</h3>
+            ${cache.recentOrders.length > 0 ? 
+                cache.recentOrders.map(order => `
+                    <div class="order-item">
+                        <span>${order.orderNumber}</span>
+                        <span>${order.status}</span>
+                        <span>NT$ ${order.totalAmount}</span>
+                    </div>
+                `).join('') : 
+                '<p>暫無訂單</p>'
+            }
+        </div>
+    `;
 }
 
-// 產品管理功能
+// 載入產品列表（帶緩存和載入指示器）
 async function loadProducts(page = 1) {
     try {
+        // 檢查緩存（僅對第一頁）
+        if (page === 1 && cache.products && isCacheValid('products')) {
+            console.log('📦 使用緩存的產品數據');
+            renderProductsTable(cache.products.data.products, cache.products.data.pagination);
+            return;
+        }
+
+        showLoading('productsTable', '載入產品列表中...');
+        
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${API_BASE_URL}/products/admin/all?page=${page}&limit=10`, {
+        const response = await fetchWithRetry(`${API_BASE_URL}/products/admin/all?page=${page}&limit=10`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!response.ok) throw new Error('獲取產品失敗');
 
         const data = await response.json();
+        
+        // 更新緩存（僅對第一頁）
+        if (page === 1) {
+            cache.products = data;
+            cache.lastUpdate.products = Date.now();
+        }
+        
         renderProductsTable(data.data.products, data.data.pagination);
         currentPage.products = page;
 
@@ -550,16 +567,42 @@ async function deleteProduct(productId) {
 }
 
 // 訂單管理功能
-async function loadOrders(page = 1) {
+async function loadOrders(page = 1, statusFilter = '', notesFilter = '') {
     try {
+        // 檢查緩存（僅對第一頁且無過濾條件）
+        if (page === 1 && !statusFilter && !notesFilter && cache.orders && isCacheValid('orders')) {
+            console.log('📋 使用緩存的訂單數據');
+            renderOrdersTable(cache.orders.data.orders, cache.orders.data.pagination);
+            return;
+        }
+
+        showLoading('ordersTable', '載入訂單列表中...');
+        
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${API_BASE_URL}/orders/admin/all?page=${page}&limit=10`, {
+        let url = `${API_BASE_URL}/orders/admin/all?page=${page}&limit=20`; // 增加每頁數量
+        
+        // 添加過濾條件
+        if (statusFilter) {
+            url += `&status=${statusFilter}`;
+        }
+        if (notesFilter) {
+            url += `&hasNotes=true`;
+        }
+        
+        const response = await fetchWithRetry(url, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!response.ok) throw new Error('獲取訂單失敗');
 
         const data = await response.json();
+        
+        // 更新緩存（僅對第一頁且無過濾條件）
+        if (page === 1 && !statusFilter && !notesFilter) {
+            cache.orders = data;
+            cache.lastUpdate.orders = Date.now();
+        }
+        
         renderOrdersTable(data.data.orders, data.data.pagination);
         currentPage.orders = page;
 
@@ -591,9 +634,53 @@ function renderOrdersTable(orders, pagination) {
     `;
 
     orders.forEach(order => {
-        console.log('🟢 後台渲染桌號:', order.tableNumber);
-        const itemsText = order.items.map(item => `${item.name} x${item.quantity}`).join(', ');
+        console.log('🟢 後台渲染訂單:', order._id);
+        console.log('🟢 訂單項目:', order.items);
+        
+        // 正確顯示商品和數量
+        const itemsText = order.items.map(item => {
+            const quantity = item.quantity || 1;
+            return `${item.name} x${quantity}`;
+        }).join(', ');
+        
         const statusClass = `status-${order.status}`;
+        
+        // 簡化特殊需求顯示邏輯
+        const getSpecialRequests = () => {
+            const specialRequests = [];
+            
+            order.items.forEach(item => {
+                // 檢查 specialRequest 字段
+                if (item.specialRequest && item.specialRequest.trim() !== '') {
+                    specialRequests.push(`${item.name}: ${item.specialRequest.trim()}`);
+                }
+                // 檢查 customizations 字段（只顯示非標準客製化）
+                else if (item.customizations && item.customizations.trim() !== '') {
+                    const customizations = item.customizations.trim();
+                    const standardCustomizations = ['無糖', '微糖', '半糖', '少糖', '全糖', '去冰', '微冰', '少冰', '正常冰', '熱飲'];
+                    
+                    // 檢查是否有加料或其他特殊需求
+                    const hasToppings = customizations.includes('+');
+                    const hasOtherSpecialRequests = customizations.split(',').some(part => {
+                        const trimmedPart = part.trim();
+                        return trimmedPart && 
+                               !standardCustomizations.some(standard => trimmedPart.includes(standard)) &&
+                               !trimmedPart.includes('+');
+                    });
+                    
+                    if (hasToppings || hasOtherSpecialRequests) {
+                        specialRequests.push(`${item.name}: ${customizations}`);
+                    }
+                }
+            });
+            
+            return specialRequests;
+        };
+        
+        const specialRequests = getSpecialRequests();
+        const specialRequestsText = specialRequests.length > 0 
+            ? specialRequests.join('; ')
+            : '無';
         
         html += `
             <tr>
@@ -603,57 +690,11 @@ function renderOrdersTable(orders, pagination) {
                     (order.user?.username || 'N/A')}</td>
                 <td>${itemsText}</td>
                 <td>NT$ ${order.totalAmount}</td>
-                <td style="max-width: 200px; word-wrap: break-word; line-height: 1.3; max-height: 2.6em; overflow: hidden;">
-                    ${(() => {
-                        console.log('🔍 處理訂單特殊需求:', order._id);
-                        console.log('🔍 訂單項目:', order.items);
-                        
-                        // 首先檢查是否有來自 specialRequest 字段的特殊需求
-                        const specialRequestsFromItems = order.items
-                            .filter(item => item.specialRequest && item.specialRequest.trim() !== '')
-                            .map(item => `${item.name}: ${item.specialRequest.trim()}`)
-                            .join(', ');
-                        
-                        console.log('🔍 找到的特殊需求:', specialRequestsFromItems);
-                        
-                        if (specialRequestsFromItems) {
-                            return `<span style="color: #e74c3c; font-weight: 500; font-size: 14px; display: block; word-break: break-all; white-space: normal;">${specialRequestsFromItems.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
-                        }
-                        
-                        // 如果沒有 specialRequest，則檢查 customizations 字段中是否有真正的特殊需求
-                        const customizationsWithSpecialRequests = order.items
-                            .filter(item => {
-                                if (!item.customizations || item.customizations.trim() === '') return false;
-                                
-                                // 檢查是否包含真正的特殊需求（不是標準客製化）
-                                const customizations = item.customizations.trim();
-                                const standardCustomizations = ['無糖', '微糖', '半糖', '少糖', '全糖', '去冰', '微冰', '少冰', '正常冰', '熱飲'];
-                                
-                                // 檢查是否有加料（+號）
-                                const hasToppings = customizations.includes('+');
-                                
-                                // 檢查是否有其他特殊需求（非標準客製化且非加料）
-                                const hasOtherSpecialRequests = customizations.split(',').some(part => {
-                                    const trimmedPart = part.trim();
-                                    return trimmedPart && 
-                                           !standardCustomizations.some(standard => trimmedPart.includes(standard)) &&
-                                           !trimmedPart.includes('+');
-                                });
-                                
-                                return hasToppings || hasOtherSpecialRequests;
-                            })
-                            .map(item => `${item.name}: ${item.customizations.trim()}`)
-                            .join(', ');
-                        
-                        console.log('🔍 找到的客制化特殊需求:', customizationsWithSpecialRequests);
-                        
-                        if (customizationsWithSpecialRequests) {
-                            return `<span style="color: #e74c3c; font-weight: 500; font-size: 14px; display: block; word-break: break-all; white-space: normal;">${customizationsWithSpecialRequests.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
-                        }
-                        
-                        // 如果沒有特殊需求，顯示"無"
-                        return '<span style="color: #95a5a6; font-size: 14px;">無</span>';
-                    })()}
+                <td style="max-width: 200px; word-wrap: break-word; line-height: 1.3;">
+                    ${specialRequests.length > 0 
+                        ? `<span style="color: #e74c3c; font-weight: 500; font-size: 14px; display: block; word-break: break-all; white-space: normal;">${specialRequestsText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`
+                        : '<span style="color: #95a5a6; font-size: 14px;">無</span>'
+                    }
                 </td>
                 <td><span class="status-badge ${statusClass}">${getStatusText(order.status)}</span></td>
                 <td>${getPaymentStatusText(order.paymentStatus)}</td>
@@ -787,8 +828,8 @@ async function deleteOrder(orderId) {
         showAlert('訂單刪除成功', 'success');
         
         // 清除統計數據緩存
-        statsCache = null;
-        statsCacheTime = 0;
+        cache.stats = null;
+        cache.lastUpdate.stats = 0;
         
         // 重新載入訂單列表和統計數據
         await Promise.all([
@@ -805,14 +846,30 @@ async function deleteOrder(orderId) {
 // 用戶管理功能
 async function loadUsers(page = 1) {
     try {
+        // 檢查緩存（僅對第一頁）
+        if (page === 1 && cache.users && isCacheValid('users')) {
+            console.log('👥 使用緩存的用戶數據');
+            renderUsersTable(cache.users.data.users, cache.users.data.pagination);
+            return;
+        }
+
+        showLoading('usersTable', '載入用戶列表中...');
+        
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${API_BASE_URL}/users/admin/all?page=${page}&limit=10`, {
+        const response = await fetchWithRetry(`${API_BASE_URL}/users/admin/all?page=${page}&limit=10`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!response.ok) throw new Error('獲取用戶失敗');
 
         const data = await response.json();
+        
+        // 更新緩存（僅對第一頁）
+        if (page === 1) {
+            cache.users = data;
+            cache.lastUpdate.users = Date.now();
+        }
+        
         renderUsersTable(data.data.users, data.data.pagination);
         currentPage.users = page;
 
@@ -908,14 +965,30 @@ async function toggleUserStatus(userId, currentStatus) {
 // 新聞管理功能
 async function loadNews(page = 1) {
     try {
+        // 檢查緩存（僅對第一頁）
+        if (page === 1 && cache.news && isCacheValid('news')) {
+            console.log('📰 使用緩存的新聞數據');
+            renderNewsTable(cache.news.data.news, cache.news.data.pagination);
+            return;
+        }
+
+        showLoading('newsTable', '載入新聞列表中...');
+        
         const token = localStorage.getItem('adminToken');
-        const response = await fetch(`${API_BASE_URL}/news?page=${page}&limit=10`, {
+        const response = await fetchWithRetry(`${API_BASE_URL}/news/admin/all?page=${page}&limit=10`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!response.ok) throw new Error('獲取新聞失敗');
 
         const data = await response.json();
+        
+        // 更新緩存（僅對第一頁）
+        if (page === 1) {
+            cache.news = data;
+            cache.lastUpdate.news = Date.now();
+        }
+        
         renderNewsTable(data.data.news, data.data.pagination);
         currentPage.news = page;
 
@@ -1224,15 +1297,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 檢查認證
         await checkAuth();
         
-        // 載入統計數據
+        // 只載入統計數據（首頁顯示）
         await loadStats();
-        
-        // 載入產品列表
-        await loadProducts();
         
         // 啟動自動刷新
         startAutoRefresh();
-        console.log('🔄 已啟動自動刷新（每30秒檢查新訂單）');
+        console.log('🔄 已啟動自動刷新（每60秒檢查新訂單）');
         
         console.log('✅ 後台頁面初始化完成');
     } catch (error) {

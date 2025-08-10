@@ -165,35 +165,70 @@ router.put('/change-password', auth, [
     }
 });
 
-// 獲取用戶統計信息
+// 獲取用戶統計（管理員專用）
 router.get('/admin/stats', adminAuth, async (req, res) => {
     try {
-        const [totalUsers, activeUsers, adminUsers, newUsersThisMonth] = await Promise.all([
-            User.countDocuments(),
-            User.countDocuments({ isActive: true }),
-            User.countDocuments({ role: 'admin' }),
-            User.countDocuments({
-                createdAt: {
-                    $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-                }
-            })
-        ]);
-
+        console.log('📊 開始獲取用戶統計...');
+        
+        let totalUsers, activeUsers, inactiveUsers;
+        
+        try {
+            totalUsers = await User.countDocuments({});
+            activeUsers = await User.countDocuments({ isActive: true });
+            inactiveUsers = await User.countDocuments({ isActive: false });
+        } catch (dbError) {
+            console.log('數據庫查詢失敗，使用內存數據統計:', dbError.message);
+            totalUsers = memoryUsers.length;
+            activeUsers = memoryUsers.filter(u => u.isActive).length;
+            inactiveUsers = memoryUsers.filter(u => !u.isActive).length;
+        }
+        
+        console.log('📊 用戶統計結果:', {
+            totalUsers,
+            activeUsers,
+            inactiveUsers
+        });
+        
         res.json({
             success: true,
             data: {
                 totalUsers,
                 activeUsers,
-                adminUsers,
-                newUsersThisMonth
+                inactiveUsers
             }
         });
-
     } catch (error) {
         console.error('獲取用戶統計錯誤:', error);
         res.status(500).json({
             success: false,
             message: '獲取用戶統計失敗'
+        });
+    }
+});
+
+// 獲取用戶總數（快速統計）
+router.get('/count', adminAuth, async (req, res) => {
+    try {
+        let total;
+        
+        try {
+            total = await User.countDocuments({});
+        } catch (dbError) {
+            console.log('數據庫查詢失敗，使用內存數據:', dbError.message);
+            total = memoryUsers.length;
+        }
+        
+        res.json({
+            success: true,
+            data: {
+                total
+            }
+        });
+    } catch (error) {
+        console.error('獲取用戶總數錯誤:', error);
+        res.status(500).json({
+            success: false,
+            message: '獲取用戶總數失敗'
         });
     }
 });

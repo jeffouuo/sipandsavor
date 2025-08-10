@@ -371,6 +371,33 @@ router.get('/admin/stats', adminAuth, async (req, res) => {
     }
 });
 
+// 獲取產品總數（快速統計）
+router.get('/count', adminAuth, async (req, res) => {
+    try {
+        let total;
+        
+        try {
+            total = await Product.countDocuments({});
+        } catch (dbError) {
+            console.log('數據庫查詢失敗，使用內存數據:', dbError.message);
+            total = memoryProducts.length;
+        }
+        
+        res.json({
+            success: true,
+            data: {
+                total
+            }
+        });
+    } catch (error) {
+        console.error('獲取產品總數錯誤:', error);
+        res.status(500).json({
+            success: false,
+            message: '獲取產品總數失敗'
+        });
+    }
+});
+
 // 獲取產品列表
 router.get('/', [
     query('page').optional().isInt({ min: 1 }).withMessage('頁碼必須是正整數'),

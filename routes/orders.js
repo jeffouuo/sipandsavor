@@ -608,14 +608,17 @@ router.post('/dine-in', [
                 console.log('🔍 內用訂單特殊需求:', item.specialRequest);
             }
             
-            return {
+            const orderItem = {
                 name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                subtotal: item.price * item.quantity,
+                price: parseFloat(item.price) || 0,
+                quantity: parseInt(item.quantity) || 1,
+                subtotal: (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1),
                 customizations: item.customizations || '', // 保存客制化信息
                 specialRequest: item.specialRequest || '' // 保存特殊需求
             };
+            
+            console.log('📝 創建的訂單項目:', orderItem);
+            return orderItem;
         });
 
         // 創建內用訂單 - 使用智能保存機制
@@ -625,7 +628,7 @@ router.post('/dine-in', [
             tableNumber,
             area,
             items: orderItems,
-            totalAmount: total,
+            totalAmount: parseFloat(total) || 0,
             orderType,
             status,
             deliveryMethod: 'dine-in',
@@ -634,30 +637,30 @@ router.post('/dine-in', [
             orderTime: orderTime ? new Date(orderTime) : new Date()
         };
         
+        console.log('📤 準備保存的訂單數據:', JSON.stringify(orderData, null, 2));
+        
         let order = null;
         
         // 嘗試快速保存到數據庫
         try {
-            const dbSavePromise = (async () => {
-                const newOrder = new Order(orderData);
-                await newOrder.save();
-                return newOrder;
-            })();
+            const newOrder = new Order(orderData);
+            console.log('📝 創建的 Order 實例:', newOrder);
             
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('內用訂單數據庫保存超時')), 2000)
-            );
-            
-            order = await Promise.race([dbSavePromise, timeoutPromise]);
+            const savedOrder = await newOrder.save();
             console.log('✅ 內用訂單已快速保存到數據庫');
+            console.log('📥 保存後的數據:', JSON.stringify(savedOrder.toObject(), null, 2));
+            
+            order = savedOrder;
             
         } catch (dbError) {
-            console.log('⚠️ 內用訂單數據庫保存超時，使用內存模式並後台保存');
+            console.log('⚠️ 內用訂單數據庫保存失敗:', dbError.message);
             
-            // 創建內存訂單
+            // 創建內存訂單（包含完整數據）
             order = {
                 _id: 'dine_order_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                ...orderData
+                ...orderData,
+                createdAt: new Date(),
+                updatedAt: new Date()
             };
             
             // 非同步保存到數據庫
@@ -665,8 +668,9 @@ router.post('/dine-in', [
                 try {
                     console.log('🔄 開始後台保存內用訂單...');
                     const backgroundOrder = new Order(orderData);
-                    await backgroundOrder.save();
+                    const savedOrder = await backgroundOrder.save();
                     console.log('✅ 內用訂單已成功後台保存到數據庫');
+                    console.log('📥 後台保存的數據:', JSON.stringify(savedOrder.toObject(), null, 2));
                 } catch (backgroundError) {
                     console.error('❌ 內用訂單後台保存失敗:', backgroundError.message);
                 }
@@ -792,11 +796,10 @@ router.get('/recent', async (req, res) => {
             });
         }
         
-        // 查詢最近 10 個訂單，增加超時處理
+        // 查詢最近 10 個訂單，返回完整數據用於分析
         const queryPromise = Order.find()
             .sort({ createdAt: -1 })
             .limit(10)
-            .select('_id totalAmount items.name createdAt notes tableNumber orderType')
             .lean();
             
         const timeoutPromise = new Promise((_, reject) => 
