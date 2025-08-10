@@ -510,7 +510,10 @@ router.post('/checkout', [
         res.status(201).json({
             success: true,
             message: '訂單創建成功',
-            data: { order },
+            data: { 
+                order,
+                orderNumber: finalOrderNumber
+            },
             processingTime: totalTime // 添加處理時間信息
         });
 

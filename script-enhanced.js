@@ -965,15 +965,29 @@ const initCheckout = () => {
             })
             .then(data => {
                 console.log('✅ 後端回應數據:', data);
+                console.log('🔍 檢查訂單號碼:', {
+                    isDineInPage,
+                    hasData: !!data.data,
+                    orderNumber: data.data?.orderNumber,
+                    fullData: data.data
+                });
+                
                 if (data.success) {
                     showNotification('訂單已成功提交！', 'success');
                     
                     // 如果是外帶訂單，顯示訂單號碼
                     if (!isDineInPage && data.data && data.data.orderNumber) {
                         const orderNumberLast4 = data.data.orderNumber.slice(-4);
+                        console.log('🔍 準備顯示訂單號碼:', orderNumberLast4);
                         setTimeout(() => {
                             showNotification(`您的訂單號碼：${orderNumberLast4}`, 'info');
                         }, 1500);
+                    } else {
+                        console.log('⚠️ 未顯示訂單號碼的原因:', {
+                            isDineInPage,
+                            hasData: !!data.data,
+                            orderNumber: data.data?.orderNumber
+                        });
                     }
                     
                     // 清空購物車
