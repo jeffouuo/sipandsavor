@@ -790,12 +790,21 @@ function renderOrdersTable(orders, pagination) {
             ? specialRequests.join('; ')
             : '無';
         
+        // 構建用戶/桌號/訂單號顯示
+        let userDisplay = '';
+        if (order.orderType === 'dine-in') {
+            userDisplay = `<span style="color: #4CAF50; font-weight: bold; background: #e8f5e8; padding: 4px 8px; border-radius: 4px;">桌號: ${order.tableNumber || 'N/A'}</span>`;
+        } else if (order.orderNumber && order.orderNumber.trim()) {
+            const orderNumberLast4 = order.orderNumber.slice(-4);
+            userDisplay = `<span style="color: #2196F3; font-weight: bold; background: #e3f2fd; padding: 4px 8px; border-radius: 4px;">外帶: ${orderNumberLast4}</span>`;
+        } else {
+            userDisplay = order.user?.username || 'N/A';
+        }
+        
         html += `
             <tr>
                 <td>${order._id}</td>
-                <td>${order.orderType === 'dine-in' ? 
-                    `桌號: ${order.tableNumber || 'N/A'}` : 
-                    (order.user?.username || 'N/A')}</td>
+                <td>${userDisplay}</td>
                 <td>${itemsText}</td>
                 <td>NT$ ${order.totalAmount}</td>
                 <td style="max-width: 200px; word-wrap: break-word; line-height: 1.3;">

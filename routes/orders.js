@@ -160,7 +160,8 @@ router.post('/checkout', [
             totalAmount,
             paymentMethod = 'cash',
             deliveryMethod = 'pickup',
-            notes = '前台結帳'
+            notes = '前台結帳',
+            orderNumber = ''
         } = req.body;
 
         // 快速驗證產品並更新庫存 - 優先使用內存數據
@@ -383,6 +384,7 @@ router.post('/checkout', [
             paymentMethod,
             deliveryMethod,
             notes,
+            orderNumber: orderNumber || '',
             status: 'pending',
             paymentStatus: 'pending',
             createdAt: new Date(),

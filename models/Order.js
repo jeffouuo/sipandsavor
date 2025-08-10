@@ -92,6 +92,11 @@ const orderSchema = new mongoose.Schema({
         enum: ['regular', 'dine-in'],
         default: 'regular'
     },
+    // 外帶訂單號碼
+    orderNumber: {
+        type: String,
+        required: false
+    },
     orderTime: {
         type: Date,
         default: Date.now

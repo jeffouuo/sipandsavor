@@ -771,6 +771,11 @@ const initCheckout = () => {
             
 
             
+            // 檢查是否有外帶訂單號碼
+            const orderNumbers = window.cart
+                .map(item => item.orderNumber)
+                .filter(orderNumber => orderNumber && orderNumber.trim());
+            
             // 準備訂單數據
             let orderData = {
                 items: window.cart.map(item => {
@@ -797,6 +802,12 @@ const initCheckout = () => {
                 deliveryMethod: 'pickup',
                 notes: '前台結帳'
             };
+            
+            // 如果有訂單號碼，添加到訂單數據中
+            if (orderNumbers.length > 0) {
+                orderData.orderNumber = orderNumbers[0]; // 使用第一個訂單號碼
+                console.log('🔍 外帶訂單號碼:', orderData.orderNumber);
+            }
             
             // 驗證數據格式
             console.log('🔍 購物車原始數據:', window.cart);
