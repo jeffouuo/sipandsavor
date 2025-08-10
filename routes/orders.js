@@ -265,19 +265,93 @@ router.post('/checkout', [
             
             orderItems.push(orderItem);
 
-            // 更新庫存（如果使用數據庫）
-            if (product.save) {
-                try {
+            // 更新庫存
+            try {
+                if (product._id && typeof product._id === 'object' && product._id.toString().length === 24) {
+                    // 數據庫產品：直接更新資料庫
+                    console.log(`📦 更新資料庫庫存: ${baseProductName}, 當前庫存: ${product.stock}, 減少: ${item.quantity}`);
+                    
+                    // 使用 findOneAndUpdate 確保原子性操作
+                    const updatedProduct = await Product.findOneAndUpdate(
+                        { _id: product._id },
+                        { 
+                            $inc: { 
+                                stock: -item.quantity,
+                                salesCount: item.quantity 
+                            }
+                        },
+                        { new: true, runValidators: true }
+                    );
+                    
+                    if (updatedProduct) {
+                        console.log(`✅ 資料庫庫存更新成功: ${baseProductName}, 新庫存: ${updatedProduct.stock}`);
+                        // 更新內存中的產品數據
+                        product.stock = updatedProduct.stock;
+                        product.salesCount = updatedProduct.salesCount;
+                        
+                        // 發送庫存變更通知到後台
+                        try {
+                            const serverModule = require('../server');
+                            if (serverModule && typeof serverModule.notifyStockChange === 'function') {
+                                serverModule.notifyStockChange(
+                                    product._id,
+                                    baseProductName,
+                                    product.stock + item.quantity, // 舊庫存
+                                    updatedProduct.stock, // 新庫存
+                                    'decrease'
+                                );
+                            }
+                        } catch (notifyError) {
+                            console.log('⚠️ 庫存通知發送失敗:', notifyError.message);
+                        }
+                    } else {
+                        console.error(`❌ 資料庫庫存更新失敗: ${baseProductName}`);
+                    }
+                } else {
+                    // 內存產品：更新內存數據
+                    console.log(`📦 更新內存庫存: ${baseProductName}, 當前庫存: ${product.stock}, 減少: ${item.quantity}`);
                     product.stock -= item.quantity;
-                    product.salesCount += item.quantity;
-                    await product.save();
-                } catch (saveError) {
-                    console.log('庫存更新失敗:', saveError.message);
+                    product.salesCount = (product.salesCount || 0) + item.quantity;
+                    
+                                            // 嘗試同步到資料庫（如果產品名稱匹配）
+                        try {
+                            const dbProduct = await Product.findOne({ name: baseProductName });
+                            if (dbProduct) {
+                                const updatedDbProduct = await Product.findOneAndUpdate(
+                                    { _id: dbProduct._id },
+                                    { 
+                                        $inc: { 
+                                            stock: -item.quantity,
+                                            salesCount: item.quantity 
+                                        }
+                                    },
+                                    { new: true, runValidators: true }
+                                );
+                                console.log(`✅ 內存產品同步到資料庫成功: ${baseProductName}`);
+                                
+                                // 發送庫存變更通知到後台
+                                try {
+                                    const serverModule = require('../server');
+                                    if (serverModule && typeof serverModule.notifyStockChange === 'function') {
+                                        serverModule.notifyStockChange(
+                                            dbProduct._id,
+                                            baseProductName,
+                                            dbProduct.stock, // 舊庫存
+                                            updatedDbProduct.stock, // 新庫存
+                                            'decrease'
+                                        );
+                                    }
+                                } catch (notifyError) {
+                                    console.log('⚠️ 內存產品庫存通知發送失敗:', notifyError.message);
+                                }
+                            }
+                        } catch (syncError) {
+                            console.log(`⚠️ 內存產品同步到資料庫失敗: ${baseProductName}`, syncError.message);
+                        }
                 }
-            } else {
-                // 更新內存中的庫存
-                product.stock -= item.quantity;
-                product.salesCount = (product.salesCount || 0) + item.quantity;
+            } catch (stockError) {
+                console.error(`❌ 庫存更新失敗: ${baseProductName}`, stockError.message);
+                // 不中斷訂單流程，只記錄錯誤
             }
         }
 
@@ -600,12 +674,34 @@ router.post('/dine-in', [
             });
         }
 
-        // 創建訂單項目
-        const orderItems = items.map(item => {
+        // 創建訂單項目並更新庫存
+        const orderItems = [];
+        
+        for (const item of items) {
             if (process.env.NODE_ENV === 'development') {
                 console.log('🔍 內用訂單項目:', item);
                 console.log('🔍 內用訂單客制化信息:', item.customizations);
                 console.log('🔍 內用訂單特殊需求:', item.specialRequest);
+            }
+            
+            // 提取基礎產品名稱（移除客制化信息）
+            let baseProductName = item.name
+                .replace(/\s*\([^)]*\)/g, '') // 移除括号及其内容
+                .replace(/\s*\+[^)]*$/g, '') // 移除 + 开头的加料信息
+                .trim();
+            
+            // 查找產品
+            let product = null;
+            try {
+                product = await getCachedProduct(baseProductName);
+                if (!product) {
+                    product = memoryProducts.find(p => p.name === baseProductName) || 
+                             memoryProducts.find(p => p.name.includes(baseProductName.split(' ')[0]));
+                }
+            } catch (error) {
+                console.log(`⚠️ 產品查詢失敗: ${baseProductName}`, error.message);
+                product = memoryProducts.find(p => p.name === baseProductName) || 
+                         memoryProducts.find(p => p.name.includes(baseProductName.split(' ')[0]));
             }
             
             const orderItem = {
@@ -617,9 +713,103 @@ router.post('/dine-in', [
                 specialRequest: item.specialRequest || '' // 保存特殊需求
             };
             
+            // 只有當產品有有效的ObjectId時才設置product字段
+            if (product && product._id && typeof product._id === 'object' && product._id.toString().length === 24) {
+                orderItem.product = product._id;
+            }
+            
+            orderItems.push(orderItem);
+            
+            // 更新庫存
+            if (product) {
+                try {
+                    if (product._id && typeof product._id === 'object' && product._id.toString().length === 24) {
+                        // 數據庫產品：直接更新資料庫
+                        console.log(`📦 內用訂單更新資料庫庫存: ${baseProductName}, 當前庫存: ${product.stock}, 減少: ${item.quantity}`);
+                        
+                        const updatedProduct = await Product.findOneAndUpdate(
+                            { _id: product._id },
+                            { 
+                                $inc: { 
+                                    stock: -item.quantity,
+                                    salesCount: item.quantity 
+                                }
+                            },
+                            { new: true, runValidators: true }
+                        );
+                        
+                        if (updatedProduct) {
+                            console.log(`✅ 內用訂單資料庫庫存更新成功: ${baseProductName}, 新庫存: ${updatedProduct.stock}`);
+                            product.stock = updatedProduct.stock;
+                            product.salesCount = updatedProduct.salesCount;
+                            
+                            // 發送庫存變更通知到後台
+                            try {
+                                const serverModule = require('../server');
+                                if (serverModule && typeof serverModule.notifyStockChange === 'function') {
+                                    serverModule.notifyStockChange(
+                                        product._id,
+                                        baseProductName,
+                                        product.stock + item.quantity, // 舊庫存
+                                        updatedProduct.stock, // 新庫存
+                                        'decrease'
+                                    );
+                                }
+                            } catch (notifyError) {
+                                console.log('⚠️ 內用訂單庫存通知發送失敗:', notifyError.message);
+                            }
+                        } else {
+                            console.error(`❌ 內用訂單資料庫庫存更新失敗: ${baseProductName}`);
+                        }
+                    } else {
+                        // 內存產品：更新內存數據
+                        console.log(`📦 內用訂單更新內存庫存: ${baseProductName}, 當前庫存: ${product.stock}, 減少: ${item.quantity}`);
+                        product.stock -= item.quantity;
+                        product.salesCount = (product.salesCount || 0) + item.quantity;
+                        
+                                                        // 嘗試同步到資料庫
+                                try {
+                                    const dbProduct = await Product.findOne({ name: baseProductName });
+                                    if (dbProduct) {
+                                        const updatedDbProduct = await Product.findOneAndUpdate(
+                                            { _id: dbProduct._id },
+                                            { 
+                                                $inc: { 
+                                                    stock: -item.quantity,
+                                                    salesCount: item.quantity 
+                                                }
+                                            },
+                                            { new: true, runValidators: true }
+                                        );
+                                        console.log(`✅ 內用訂單內存產品同步到資料庫成功: ${baseProductName}`);
+                                        
+                                        // 發送庫存變更通知到後台
+                                        try {
+                                            const serverModule = require('../server');
+                                            if (serverModule && typeof serverModule.notifyStockChange === 'function') {
+                                                serverModule.notifyStockChange(
+                                                    dbProduct._id,
+                                                    baseProductName,
+                                                    dbProduct.stock, // 舊庫存
+                                                    updatedDbProduct.stock, // 新庫存
+                                                    'decrease'
+                                                );
+                                            }
+                                        } catch (notifyError) {
+                                            console.log('⚠️ 內用訂單內存產品庫存通知發送失敗:', notifyError.message);
+                                        }
+                                    }
+                                } catch (syncError) {
+                                    console.log(`⚠️ 內用訂單內存產品同步到資料庫失敗: ${baseProductName}`, syncError.message);
+                                }
+                    }
+                } catch (stockError) {
+                    console.error(`❌ 內用訂單庫存更新失敗: ${baseProductName}`, stockError.message);
+                }
+            }
+            
             console.log('📝 創建的訂單項目:', orderItem);
-            return orderItem;
-        });
+        }
 
         // 創建內用訂單 - 使用智能保存機制
         console.log('🍽️ 開始創建內用訂單，桌號:', tableNumber);

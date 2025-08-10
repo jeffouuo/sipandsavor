@@ -168,6 +168,70 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/sipandsav
 .then(() => console.log('✅ MongoDB 連接成功'))
 .catch(err => console.error('❌ MongoDB 連接失敗:', err));
 
+// 添加 SSE 客戶端管理
+const sseClients = new Set();
+
+// SSE 端點 - 用於實時推送庫存變更（必須在靜態文件服務之前）
+app.get('/api/sse', (req, res) => {
+    console.log('🔗 新的 SSE 連接建立');
+    
+    // 設置 SSE 頭部
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    // 發送連接確認
+    res.write(`data: ${JSON.stringify({ type: 'connected', message: 'SSE 連接已建立' })}\n\n`);
+
+    // 將客戶端添加到集合中
+    sseClients.add(res);
+
+    // 客戶端斷開連接時的清理
+    req.on('close', () => {
+        console.log('🔌 SSE 連接已斷開');
+        sseClients.delete(res);
+    });
+});
+
+// 廣播函數 - 向所有 SSE 客戶端發送消息
+function broadcastToSSE(data) {
+    const message = `data: ${JSON.stringify(data)}\n\n`;
+    sseClients.forEach(client => {
+        try {
+            client.write(message);
+        } catch (error) {
+            console.error('SSE 發送失敗:', error);
+            sseClients.delete(client);
+        }
+    });
+}
+
+// 庫存變更通知函數
+function notifyStockChange(productId, productName, oldStock, newStock, changeType = 'decrease') {
+    const notification = {
+        type: 'stock_change',
+        productId,
+        productName,
+        oldStock,
+        newStock,
+        changeType,
+        timestamp: new Date().toISOString()
+    };
+    
+    console.log('📦 發送庫存變更通知:', notification);
+    broadcastToSSE(notification);
+}
+
+// 導出函數供其他模塊使用
+module.exports = {
+    notifyStockChange,
+    broadcastToSSE
+};
+
 // API 路由（在静态文件服务之前）
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));

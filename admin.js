@@ -18,6 +18,136 @@ const cache = {
     lastUpdate: {}
 };
 
+// SSE 連接管理
+let sseConnection = null;
+let sseReconnectAttempts = 0;
+const MAX_SSE_RECONNECT_ATTEMPTS = 5;
+
+// 建立 SSE 連接
+function connectSSE() {
+    if (sseConnection) {
+        sseConnection.close();
+    }
+
+    try {
+        console.log('🔗 建立 SSE 連接...');
+        sseConnection = new EventSource(`${API_BASE_URL}/sse`);
+        
+        sseConnection.onopen = function(event) {
+            console.log('✅ SSE 連接已建立');
+            sseReconnectAttempts = 0;
+        };
+        
+        sseConnection.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                handleSSEMessage(data);
+            } catch (error) {
+                console.error('SSE 消息解析失敗:', error);
+            }
+        };
+        
+        sseConnection.onerror = function(event) {
+            console.error('❌ SSE 連接錯誤:', event);
+            sseConnection.close();
+            
+            // 自動重連
+            if (sseReconnectAttempts < MAX_SSE_RECONNECT_ATTEMPTS) {
+                sseReconnectAttempts++;
+                console.log(`🔄 SSE 重連嘗試 ${sseReconnectAttempts}/${MAX_SSE_RECONNECT_ATTEMPTS}...`);
+                setTimeout(connectSSE, 3000); // 3秒後重連
+            } else {
+                console.error('💥 SSE 重連失敗，停止嘗試');
+            }
+        };
+        
+    } catch (error) {
+        console.error('SSE 連接建立失敗:', error);
+    }
+}
+
+// 處理 SSE 消息
+function handleSSEMessage(data) {
+    console.log('📨 收到 SSE 消息:', data);
+    
+    switch (data.type) {
+        case 'connected':
+            console.log('✅ SSE 連接確認:', data.message);
+            break;
+            
+        case 'stock_change':
+            handleStockChange(data);
+            break;
+            
+        default:
+            console.log('📨 未知 SSE 消息類型:', data.type);
+    }
+}
+
+// 處理庫存變更
+function handleStockChange(data) {
+    console.log('📦 處理庫存變更:', data);
+    
+    // 更新產品表格中的庫存顯示
+    updateProductStockInTable(data.productId, data.newStock, data.changeType);
+    
+    // 如果當前在產品頁面，刷新產品列表
+    const productsSection = document.getElementById('products-section');
+    if (productsSection && productsSection.classList.contains('active')) {
+        console.log('🔄 刷新產品列表...');
+        loadProducts(currentPage.products);
+    }
+    
+    // 顯示庫存變更通知
+    showStockChangeNotification(data);
+}
+
+// 更新產品表格中的庫存顯示
+function updateProductStockInTable(productId, newStock, changeType) {
+    const table = document.querySelector('#productsTable .data-table');
+    if (!table) return;
+    
+    // 使用 data-product-id 屬性查找對應的行
+    const row = table.querySelector(`tr[data-product-id="${productId}"]`);
+    if (row) {
+        const stockCell = row.querySelector('.stock-cell');
+        if (stockCell) {
+            const oldStock = parseInt(stockCell.textContent);
+            stockCell.textContent = newStock;
+            
+            // 添加視覺效果
+            stockCell.style.transition = 'background-color 0.5s ease';
+            stockCell.style.backgroundColor = changeType === 'decrease' ? '#ffebee' : '#e8f5e8';
+            
+            setTimeout(() => {
+                stockCell.style.backgroundColor = '';
+            }, 2000);
+            
+            console.log(`📦 產品 ${productId} 庫存已更新: ${oldStock} → ${newStock}`);
+        }
+    } else {
+        console.log(`⚠️ 未找到產品 ${productId} 的表格行`);
+    }
+}
+
+// 顯示庫存變更通知
+function showStockChangeNotification(data) {
+    const changeType = data.changeType === 'decrease' ? '減少' : '增加';
+    const changeAmount = Math.abs(data.newStock - data.oldStock);
+    const message = `商品「${data.productName}」庫存${changeType}了 ${changeAmount} 個，當前庫存: ${data.newStock}`;
+    
+    // 使用現有的通知系統
+    showAlert(message, 'success');
+    
+    // 也可以添加桌面通知（如果瀏覽器支持）
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('庫存變更通知', {
+            body: message,
+            icon: '/images/sipandsavor.webp'
+        });
+    }
+}
+
 // 自動刷新最新訂單
 let autoRefreshInterval = null;
 
@@ -428,12 +558,12 @@ function renderProductsTable(products, pagination) {
 
     products.forEach(product => {
         html += `
-            <tr>
+            <tr data-product-id="${product._id}">
                 <td><img src="${product.image}" alt="${product.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;"></td>
                 <td>${product.name}</td>
                 <td>${product.category}</td>
                 <td>NT$ ${product.price}</td>
-                <td>${product.stock}</td>
+                <td class="stock-cell">${product.stock}</td>
                 <td>${product.isAvailable ? '上架' : '下架'}</td>
                 <td>
                     <button class="action-btn edit-btn" onclick="editProduct('${product._id}')">編輯</button>
@@ -1092,6 +1222,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 啟動自動刷新
         startAutoRefresh();
         console.log('🔄 已啟動自動刷新（每60秒檢查新訂單）');
+        
+        // 建立 SSE 連接
+        connectSSE();
+        console.log('🔗 已建立 SSE 連接');
+        
+        // 請求桌面通知權限
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
         
         console.log('✅ 後台頁面初始化完成');
     } catch (error) {

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>庫存同步測試 - 飲茶趣</title>
+    <link rel="icon" type="image/webp" href="/images/sipandsavor.webp">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: #45a049;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .log-entry.success {
+            color: #28a745;
+        }
+        
+        .log-entry.error {
+            color: #dc3545;
+        }
+        
+        .log-entry.info {
+            color: #17a2b8;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📦 庫存同步功能測試</h1>
+        
+        <div class="test-section">
+            <h3>🔗 SSE 連接測試</h3>
+            <button class="btn" onclick="testSSEConnection()">測試 SSE 連接</button>
+            <button class="btn btn-secondary" onclick="disconnectSSE()">斷開 SSE 連接</button>
+            <div id="sseStatus" class="status info">等待測試...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🛒 模擬下單測試</h3>
+            <div class="form-group">
+                <label>選擇商品:</label>
+                <select id="productSelect">
+                    <option value="">請選擇商品</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>數量:</label>
+                <input type="number" id="quantityInput" value="1" min="1" max="10">
+            </div>
+            <button class="btn" onclick="simulateOrder()">模擬下單</button>
+            <div id="orderStatus" class="status info">等待測試...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 庫存變更記錄</h3>
+            <button class="btn btn-secondary" onclick="clearLog()">清除記錄</button>
+            <div id="stockLog" class="log">
+                <div class="log-entry info">等待庫存變更...</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔧 後台管理測試</h3>
+            <button class="btn" onclick="openAdmin()">打開後台管理</button>
+            <button class="btn btn-secondary" onclick="testManualStockUpdate()">模擬手動更新庫存</button>
+            <div id="adminStatus" class="status info">等待測試...</div>
+        </div>
+    </div>
+
+    <script>
+        // 測試配置
+        const API_BASE_URL = window.location.hostname.includes('localhost') 
+            ? `http://localhost:${window.location.port || '3001'}/api`
+            : '/api';
+        
+        let sseConnection = null;
+        let products = [];
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 庫存同步測試頁面初始化');
+            loadProducts();
+        });
+        
+        // 載入商品列表
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/products`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    products = data.data.products;
+                    const select = document.getElementById('productSelect');
+                    
+                    products.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product._id;
+                        option.textContent = `${product.name} (庫存: ${product.stock})`;
+                        select.appendChild(option);
+                    });
+                    
+                    log('商品列表載入成功', 'success');
+                } else {
+                    log('商品列表載入失敗: ' + data.message, 'error');
+                }
+            } catch (error) {
+                log('商品列表載入錯誤: ' + error.message, 'error');
+            }
+        }
+        
+        // 測試 SSE 連接
+        function testSSEConnection() {
+            const statusDiv = document.getElementById('sseStatus');
+            statusDiv.className = 'status info';
+            statusDiv.textContent = '正在建立 SSE 連接...';
+            
+            try {
+                if (sseConnection) {
+                    sseConnection.close();
+                }
+                
+                sseConnection = new EventSource(`${API_BASE_URL}/sse`);
+                
+                sseConnection.onopen = function(event) {
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = '✅ SSE 連接已建立';
+                    log('SSE 連接已建立', 'success');
+                };
+                
+                sseConnection.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        log('收到 SSE 消息: ' + JSON.stringify(data), 'info');
+                        
+                        if (data.type === 'stock_change') {
+                            log(`📦 庫存變更: ${data.productName} ${data.oldStock} → ${data.newStock}`, 'success');
+                        }
+                    } catch (error) {
+                        log('SSE 消息解析失敗: ' + error.message, 'error');
+                    }
+                };
+                
+                sseConnection.onerror = function(event) {
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = '❌ SSE 連接錯誤';
+                    log('SSE 連接錯誤', 'error');
+                };
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ SSE 連接建立失敗: ' + error.message;
+                log('SSE 連接建立失敗: ' + error.message, 'error');
+            }
+        }
+        
+        // 斷開 SSE 連接
+        function disconnectSSE() {
+            if (sseConnection) {
+                sseConnection.close();
+                sseConnection = null;
+                
+                const statusDiv = document.getElementById('sseStatus');
+                statusDiv.className = 'status info';
+                statusDiv.textContent = 'SSE 連接已斷開';
+                
+                log('SSE 連接已斷開', 'info');
+            }
+        }
+        
+        // 模擬下單
+        async function simulateOrder() {
+            const productId = document.getElementById('productSelect').value;
+            const quantity = parseInt(document.getElementById('quantityInput').value);
+            
+            if (!productId) {
+                alert('請選擇商品');
+                return;
+            }
+            
+            const product = products.find(p => p._id === productId);
+            if (!product) {
+                alert('商品不存在');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('orderStatus');
+            statusDiv.className = 'status info';
+            statusDiv.textContent = '正在模擬下單...';
+            
+            try {
+                const orderData = {
+                    items: [{
+                        name: product.name,
+                        price: product.price,
+                        quantity: quantity
+                    }],
+                    totalAmount: product.price * quantity,
+                    paymentMethod: 'cash',
+                    deliveryMethod: 'pickup',
+                    notes: '庫存同步測試訂單'
+                };
+                
+                const response = await fetch(`${API_BASE_URL}/orders/checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(orderData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = '✅ 下單成功！訂單ID: ' + data.data.order._id;
+                    log(`下單成功: ${product.name} x${quantity}`, 'success');
+                    
+                    // 更新商品列表
+                    setTimeout(loadProducts, 1000);
+                } else {
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = '❌ 下單失敗: ' + data.message;
+                    log('下單失敗: ' + data.message, 'error');
+                }
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ 下單錯誤: ' + error.message;
+                log('下單錯誤: ' + error.message, 'error');
+            }
+        }
+        
+        // 模擬手動更新庫存
+        async function testManualStockUpdate() {
+            const productId = document.getElementById('productSelect').value;
+            
+            if (!productId) {
+                alert('請選擇商品');
+                return;
+            }
+            
+            const newStock = prompt('請輸入新的庫存數量:');
+            if (newStock === null) return;
+            
+            const stock = parseInt(newStock);
+            if (isNaN(stock) || stock < 0) {
+                alert('請輸入有效的庫存數量');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('adminStatus');
+            statusDiv.className = 'status info';
+            statusDiv.textContent = '正在更新庫存...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify({ stock: stock })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = '✅ 庫存更新成功！';
+                    log(`手動更新庫存成功: ${stock}`, 'success');
+                    
+                    // 更新商品列表
+                    setTimeout(loadProducts, 1000);
+                } else {
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = '❌ 庫存更新失敗: ' + data.message;
+                    log('庫存更新失敗: ' + data.message, 'error');
+                }
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ 庫存更新錯誤: ' + error.message;
+                log('庫存更新錯誤: ' + error.message, 'error');
+            }
+        }
+        
+        // 打開後台管理
+        function openAdmin() {
+            window.open('admin.html', '_blank');
+        }
+        
+        // 清除記錄
+        function clearLog() {
+            const logDiv = document.getElementById('stockLog');
+            logDiv.innerHTML = '<div class="log-entry info">記錄已清除...</div>';
+        }
+        
+        // 記錄日誌
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('stockLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            
+            // 自動滾動到底部
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>

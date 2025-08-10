@@ -744,6 +744,10 @@ router.put('/:id', adminAuth, [
             }
         }
 
+        // 記錄舊的庫存值（用於通知）
+        const oldStock = product.stock;
+        const oldSalesCount = product.salesCount;
+
         // 更新產品
         Object.keys(req.body).forEach(key => {
             if (req.body[key] !== undefined) {
@@ -752,6 +756,25 @@ router.put('/:id', adminAuth, [
         });
 
         await product.save();
+
+        // 如果庫存有變更，發送通知
+        if (oldStock !== product.stock) {
+            try {
+                const serverModule = require('../server');
+                if (serverModule && typeof serverModule.notifyStockChange === 'function') {
+                    const changeType = product.stock > oldStock ? 'increase' : 'decrease';
+                    serverModule.notifyStockChange(
+                        product._id,
+                        product.name,
+                        oldStock,
+                        product.stock,
+                        changeType
+                    );
+                }
+            } catch (notifyError) {
+                console.log('⚠️ 產品更新庫存通知發送失敗:', notifyError.message);
+            }
+        }
 
         res.json({
             success: true,
