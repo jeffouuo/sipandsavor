@@ -527,8 +527,8 @@
         
         // 頁面載入時初始化
         document.addEventListener('DOMContentLoaded', function() {
-            // 初始化購物車側邊欄功能
-            initCartSidebar();
+            // 使用全局購物車邏輯，不需要額外初始化
+            // script-enhanced.js 會自動處理購物車功能
             
             // 確保購物車側邊欄初始狀態正確
             const cartSidebar = document.getElementById('cartSidebar');
@@ -537,43 +537,6 @@
                 cartSidebar.classList.remove('active');
             }
         });
-        
-        // 初始化購物車側邊欄功能
-        function initCartSidebar() {
-            const cartIcon = document.getElementById('cartIcon');
-            const cartSidebar = document.getElementById('cartSidebar');
-            const closeCartBtn = document.getElementById('closeCart');
-            
-            // 購物車圖標點擊事件
-            if (cartIcon) {
-                cartIcon.addEventListener('click', function() {
-                    if (cartSidebar) {
-                        cartSidebar.style.right = '0';
-                        cartSidebar.classList.add('active');
-                    }
-                });
-            }
-            
-            // 關閉購物車按鈕事件
-            if (closeCartBtn) {
-                closeCartBtn.addEventListener('click', function() {
-                    if (cartSidebar) {
-                        cartSidebar.style.right = '-100%';
-                        cartSidebar.classList.remove('active');
-                    }
-                });
-            }
-            
-            // 點擊外部關閉購物車
-            if (cartSidebar) {
-                cartSidebar.addEventListener('click', function(e) {
-                    if (e.target === cartSidebar) {
-                        cartSidebar.style.right = '-100%';
-                        cartSidebar.classList.remove('active');
-                    }
-                });
-            }
-        }
 
         // 桌號輸入處理
         document.getElementById('tableInputForm').addEventListener('submit', function(e) {

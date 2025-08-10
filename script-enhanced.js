@@ -399,7 +399,7 @@ window.updateQuantity = (index, change) => {
         if (newQuantity <= 0) {
             // 移除商品
             window.cart.splice(index, 1);
-            // 如果購物車為空，關閉側邊欄
+            // 只有在購物車完全為空時才關閉側邊欄
             if (window.cart.length === 0) {
                 closeCartSidebar();
             }
