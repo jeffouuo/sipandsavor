@@ -248,15 +248,22 @@ router.post('/checkout', [
             const subtotal = product.price * item.quantity;
             calculatedTotal += subtotal;
 
-            orderItems.push({
-                product: product._id,
+            // 處理產品ID - 如果是內存產品（字符串ID），則不設置product字段
+            const orderItem = {
                 name: item.name, // 保留原始名称（包含客制化信息）
                 price: item.price, // 使用前端发送的价格（可能包含加料费用）
                 quantity: item.quantity,
                 subtotal,
                 customizations: item.customizations || '', // 保存客制化信息
                 specialRequest: item.specialRequest || '' // 保存特殊需求
-            });
+            };
+            
+            // 只有當產品有有效的ObjectId時才設置product字段
+            if (product._id && typeof product._id === 'object' && product._id.toString().length === 24) {
+                orderItem.product = product._id;
+            }
+            
+            orderItems.push(orderItem);
 
             // 更新庫存（如果使用數據庫）
             if (product.save) {
