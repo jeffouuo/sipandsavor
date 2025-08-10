@@ -305,16 +305,17 @@ async function loadStats(forceRefresh = false) {
             return;
         }
 
-        showLoading('statsContent', '載入統計數據中...');
+        // 移除對不存在的 statsContent 元素的引用
+        console.log('📊 載入統計數據中...');
         
         const token = localStorage.getItem('adminToken');
         
         // 並行請求多個統計數據
-        const [productsResponse, ordersResponse, usersResponse] = await Promise.all([
+        const [productsResponse, ordersStatsResponse, usersResponse] = await Promise.all([
             fetchWithRetry(`${API_BASE_URL}/products/count`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             }),
-            fetchWithRetry(`${API_BASE_URL}/orders/admin/all?limit=5`, {
+            fetchWithRetry(`${API_BASE_URL}/orders/admin/stats`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             }),
             fetchWithRetry(`${API_BASE_URL}/users/count`, {
@@ -322,18 +323,22 @@ async function loadStats(forceRefresh = false) {
             })
         ]);
 
-        const [productsData, ordersData, usersData] = await Promise.all([
+        const [productsData, ordersStatsData, usersData] = await Promise.all([
             productsResponse.json(),
-            ordersResponse.json(),
+            ordersStatsResponse.json(),
             usersResponse.json()
         ]);
 
         // 計算統計數據
         const stats = {
             totalProducts: productsData.success ? productsData.data.total : 0,
-            totalOrders: ordersData.success ? ordersData.data.pagination.total : 0,
+            totalOrders: ordersStatsData.success ? ordersStatsData.data.totalOrders : 0,
             totalUsers: usersData.success ? usersData.data.total : 0,
-            recentOrders: ordersData.success ? ordersData.data.orders : [],
+            pendingOrders: ordersStatsData.success ? (ordersStatsData.data.statusCounts?.pending || 0) : 0,
+            ordersWithNotes: ordersStatsData.success ? ordersStatsData.data.ordersWithNotes : 0,
+            todayOrders: ordersStatsData.success ? ordersStatsData.data.todayOrders : 0,
+            thisMonthOrders: ordersStatsData.success ? ordersStatsData.data.thisMonthOrders : 0,
+            totalRevenue: ordersStatsData.success ? ordersStatsData.data.totalRevenue : 0,
             databaseStatus: 'connected'
         };
 
@@ -349,48 +354,26 @@ async function loadStats(forceRefresh = false) {
     }
 }
 
-function updateStatsDisplay(cache) {
-    const statsContent = document.getElementById('statsContent');
+function updateStatsDisplay(stats) {
+    // 更新統計數據到對應的元素
+    const totalProductsEl = document.getElementById('totalProducts');
+    const totalOrdersEl = document.getElementById('totalOrders');
+    const totalUsersEl = document.getElementById('totalUsers');
+    const pendingOrdersEl = document.getElementById('pendingOrders');
+    const ordersWithNotesEl = document.getElementById('ordersWithNotes');
+    const todayOrdersEl = document.getElementById('todayOrders');
+    const thisMonthOrdersEl = document.getElementById('thisMonthOrders');
+    const totalRevenueEl = document.getElementById('totalRevenue');
     
-    statsContent.innerHTML = `
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">📦</div>
-                <div class="stat-info">
-                    <h3>${cache.totalProducts}</h3>
-                    <p>總產品數</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">📋</div>
-                <div class="stat-info">
-                    <h3>${cache.totalOrders}</h3>
-                    <p>總訂單數</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">👥</div>
-                <div class="stat-info">
-                    <h3>${cache.totalUsers}</h3>
-                    <p>總用戶數</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="recent-orders">
-            <h3>最近訂單</h3>
-            ${cache.recentOrders.length > 0 ? 
-                cache.recentOrders.map(order => `
-                    <div class="order-item">
-                        <span>${order.orderNumber}</span>
-                        <span>${order.status}</span>
-                        <span>NT$ ${order.totalAmount}</span>
-                    </div>
-                `).join('') : 
-                '<p>暫無訂單</p>'
-            }
-        </div>
-    `;
+    // 檢查元素是否存在並更新內容
+    if (totalProductsEl) totalProductsEl.textContent = stats.totalProducts || 0;
+    if (totalOrdersEl) totalOrdersEl.textContent = stats.totalOrders || 0;
+    if (totalUsersEl) totalUsersEl.textContent = stats.totalUsers || 0;
+    if (pendingOrdersEl) pendingOrdersEl.textContent = stats.pendingOrders || 0;
+    if (ordersWithNotesEl) ordersWithNotesEl.textContent = stats.ordersWithNotes || 0;
+    if (todayOrdersEl) todayOrdersEl.textContent = stats.todayOrders || 0;
+    if (thisMonthOrdersEl) thisMonthOrdersEl.textContent = stats.thisMonthOrders || 0;
+    if (totalRevenueEl) totalRevenueEl.textContent = `NT$ ${stats.totalRevenue || 0}`;
 }
 
 // 載入產品列表（帶緩存和載入指示器）
