@@ -383,9 +383,9 @@ window.renderCartItems = () => {
                     <div class="cart-item-price">NT$ ${price}</div>
                 </div>
                 <div class="cart-item-quantity">
-                    <button class="quantity-btn" onclick="updateQuantity(${index}, -1)">-</button>
+                    <button class="quantity-btn" onclick="event.stopPropagation(); updateQuantity(${index}, -1)">-</button>
                     <span>${quantity}</span>
-                    <button class="quantity-btn" onclick="updateQuantity(${index}, 1)">+</button>
+                    <button class="quantity-btn" onclick="event.stopPropagation(); updateQuantity(${index}, 1)">+</button>
                 </div>
             </div>
         `;
