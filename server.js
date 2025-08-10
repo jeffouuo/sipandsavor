@@ -77,18 +77,29 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // 設置 trust proxy 以支持 Vercel 環境
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 
-// 速率限制
+// 速率限制 - 完全禁用以避免 Vercel 環境問題
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15分鐘
     max: 1000, // 增加限制，避免误判
     standardHeaders: true, // 返回標準的 RateLimit-* 頭部
     legacyHeaders: false, // 禁用 X-RateLimit-* 頭部
-    // 自定義 key 生成器，避免 X-Forwarded-For 問題
+    // 完全自定義 key 生成器，避免所有 X-Forwarded-For 問題
     keyGenerator: (req) => {
-        // 在 Vercel 環境中使用真實 IP
-        return req.ip || req.connection.remoteAddress || 'unknown';
+        // 在 Vercel 環境中，直接使用請求頭中的真實 IP
+        const forwardedFor = req.headers['x-forwarded-for'];
+        if (forwardedFor) {
+            // 取第一個 IP（真實客戶端 IP）
+            return forwardedFor.split(',')[0].trim();
+        }
+        // 如果沒有 X-Forwarded-For，使用其他方法
+        return req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown';
+    },
+    // 禁用 X-Forwarded-For 驗證
+    skip: (req) => {
+        // 在 Vercel 環境中跳過某些驗證
+        return process.env.NODE_ENV === 'production' && req.headers['x-vercel-id'];
     }
 });
 
@@ -99,7 +110,14 @@ const loginLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req) => {
-        return req.ip || req.connection.remoteAddress || 'unknown';
+        const forwardedFor = req.headers['x-forwarded-for'];
+        if (forwardedFor) {
+            return forwardedFor.split(',')[0].trim();
+        }
+        return req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown';
+    },
+    skip: (req) => {
+        return process.env.NODE_ENV === 'production' && req.headers['x-vercel-id'];
     }
 });
 
@@ -110,13 +128,21 @@ const checkoutLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req) => {
-        return req.ip || req.connection.remoteAddress || 'unknown';
+        const forwardedFor = req.headers['x-forwarded-for'];
+        if (forwardedFor) {
+            return forwardedFor.split(',')[0].trim();
+        }
+        return req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown';
+    },
+    skip: (req) => {
+        return process.env.NODE_ENV === 'production' && req.headers['x-vercel-id'];
     }
 });
 
-app.use('/api/auth/login', loginLimiter);
-app.use('/api/orders/checkout', checkoutLimiter);
-app.use('/api', limiter);
+// 暫時禁用速率限制以避免 Vercel 環境問題
+// app.use('/api/auth/login', loginLimiter);
+// app.use('/api/orders/checkout', checkoutLimiter);
+// app.use('/api', limiter);
 
 // 解析JSON和URL编码的数据
 app.use(express.json({ limit: '10mb' }));
