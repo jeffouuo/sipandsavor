@@ -7,8 +7,7 @@ router.get('/product/:productName', async (req, res) => {
     try {
         const { productName } = req.params;
         const reviews = await Review.find({ productName })
-            .sort({ date: -1 })
-            .limit(50); // 限制返回數量
+            .sort({ date: -1 });
 
         res.json({
             success: true,

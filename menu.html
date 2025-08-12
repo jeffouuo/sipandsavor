@@ -1296,9 +1296,19 @@
             const product = menuData.find(item => item.name === productName);
             if (!product) return;
             
-            // 從後端獲取該產品的評價
-            const reviews = await loadProductReviews(productName);
+            // 從後端獲取該產品的評價和統計
+            const [reviews, stats] = await Promise.all([
+                loadProductReviews(productName),
+                fetch(`/api/reviews/stats/${encodeURIComponent(productName)}`).then(res => res.json())
+            ]);
+            
             product.reviews = reviews;
+            
+            // 更新產品的實際評價數量
+            if (stats.success) {
+                product.reviewCount = stats.data.totalReviews;
+                product.rating = stats.data.averageRating;
+            }
             
             const modal = document.createElement('div');
             modal.className = 'review-modal';
@@ -1316,7 +1326,7 @@
                             <p>${product.description}</p>
                             <div class="product-rating">
                                 <div class="star-rating">${generateStars(product.rating)}</div>
-                                <span class="rating-text">${product.rating} / 5 (${product.reviewCount} 則評價)</span>
+                                <span class="rating-text">${product.rating} / 5 (${product.reviews.length} 則評價)</span>
                             </div>
                         </div>
                     </div>
