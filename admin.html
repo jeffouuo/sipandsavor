@@ -204,6 +204,18 @@
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+        
+        /* 确保状态列和操作列有足够宽度 */
+        .data-table th:nth-child(6),
+        .data-table td:nth-child(6),
+        .data-table th:nth-child(7),
+        .data-table td:nth-child(7),
+        .data-table th:nth-child(9),
+        .data-table td:nth-child(9) {
+            min-width: 80px;
+            white-space: nowrap;
         }
 
         .data-table th {
@@ -225,6 +237,9 @@
             margin-right: 5px;
             font-size: 12px;
             transition: all 0.3s ease;
+            writing-mode: horizontal-tb;
+            text-orientation: mixed;
+            white-space: nowrap;
         }
 
         .edit-btn {
@@ -252,6 +267,12 @@
             border-radius: 12px;
             font-size: 12px;
             font-weight: 500;
+            writing-mode: horizontal-tb;
+            text-orientation: mixed;
+            display: inline-block;
+            white-space: nowrap;
+            min-width: 60px;
+            text-align: center;
         }
 
         .status-pending {
@@ -536,6 +557,18 @@
             .data-table th,
             .data-table td {
                 padding: 8px 4px;
+            }
+            
+            /* 移动端状态栏样式调整 */
+            .status-badge {
+                font-size: 10px;
+                padding: 2px 6px;
+                min-width: 50px;
+            }
+            
+            .action-btn {
+                font-size: 10px;
+                padding: 4px 8px;
             }
             
             .modal-content {
