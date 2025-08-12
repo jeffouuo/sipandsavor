@@ -1410,9 +1410,33 @@
                 return;
             }
             
-            // 這裡可以添加提交到後端的邏輯
-            // 目前先模擬成功提交
-            alert('評價提交成功！感謝您的回饋。');
+            // 更新產品數據
+            const product = menuData.find(item => item.name === productName);
+            if (product) {
+                // 添加新評價
+                const newReview = {
+                    name: '匿名用戶', // 可以根據登入狀態顯示用戶名
+                    rating: rating,
+                    text: text,
+                    date: new Date().toISOString().split('T')[0] // 當前日期
+                };
+                
+                product.reviews.push(newReview);
+                product.reviewCount++;
+                
+                // 重新計算平均評分
+                const totalRating = product.reviews.reduce((sum, review) => sum + review.rating, 0);
+                product.rating = Math.round((totalRating / product.reviews.length) * 10) / 10;
+                
+                // 更新菜單顯示
+                updateMenuDisplay();
+                
+                // 重新顯示評價模態框（更新後的數據）
+                closeReviewModal();
+                setTimeout(() => {
+                    showReviewModal(productName);
+                }, 300);
+            }
             
             // 清空表單
             form.querySelector('textarea').value = '';
@@ -1420,8 +1444,13 @@
                 star.style.color = '#ddd';
             });
             
-            // 關閉模態框
-            closeReviewModal();
+            alert('評價提交成功！感謝您的回饋。');
+        }
+        
+        // 更新菜單顯示
+        function updateMenuDisplay() {
+            const currentCategory = document.querySelector('.category-btn.active').getAttribute('data-category');
+            showCategoryItems(currentCategory);
         }
         
         // 點擊模態框外部關閉
