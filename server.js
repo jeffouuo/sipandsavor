@@ -238,6 +238,7 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/news', require('./routes/news'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/reviews', require('./routes/reviews'));
 
 // Favicon 路由 - 使用品牌 logo 作为 favicon
 app.get('/favicon.ico', (req, res) => {

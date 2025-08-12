@@ -810,11 +810,56 @@
             loadMenu();
         });
 
+        // 從後端獲取評價數據
+        async function loadReviewData() {
+            try {
+                const response = await fetch('/api/reviews/all-stats');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const reviewStats = {};
+                    result.data.forEach(stat => {
+                        reviewStats[stat.productName] = {
+                            rating: stat.averageRating,
+                            reviewCount: stat.totalReviews
+                        };
+                    });
+                    return reviewStats;
+                }
+            } catch (error) {
+                console.error('獲取評價統計失敗:', error);
+            }
+            return {};
+        }
+        
+        // 從後端獲取指定產品的評價
+        async function loadProductReviews(productName) {
+            try {
+                const response = await fetch(`/api/reviews/product/${encodeURIComponent(productName)}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    return result.data.map(review => ({
+                        name: review.reviewerName,
+                        rating: review.rating,
+                        text: review.text,
+                        date: new Date(review.date).toISOString().split('T')[0]
+                    }));
+                }
+            } catch (error) {
+                console.error('獲取產品評價失敗:', error);
+            }
+            return [];
+        }
+        
         // 載入菜單
         async function loadMenu() {
             try {
                 document.getElementById('loadingMenu').style.display = 'block';
                 document.getElementById('menuGrid').style.display = 'none';
+                
+                // 從後端獲取評價統計
+                const reviewStats = await loadReviewData();
                 
                                  // 使用後端支持的產品列表
                  menuData = [
@@ -824,13 +869,9 @@
                          image: 'images/americano.webp', 
                          description: '香濃美式咖啡，口感醇厚', 
                          category: 'coffee',
-                         rating: 4.2,
-                         reviewCount: 85,
-                         reviews: [
-                             { name: '張小明', rating: 5, text: '咖啡香濃，口感很棒！', date: '2024-01-15' },
-                             { name: '李小華', rating: 4, text: '味道不錯，價格合理', date: '2024-01-10' },
-                             { name: '王大明', rating: 4, text: '每天必喝的美式咖啡', date: '2024-01-08' }
-                         ]
+                         rating: reviewStats['美式咖啡']?.rating || 4.2,
+                         reviewCount: reviewStats['美式咖啡']?.reviewCount || 85,
+                         reviews: []
                      },
                      { 
                          name: '拿鐵咖啡', 
@@ -838,13 +879,9 @@
                          image: 'images/latte.webp', 
                          description: '香滑拿鐵，奶香濃郁', 
                          category: 'coffee',
-                         rating: 4.5,
-                         reviewCount: 120,
-                         reviews: [
-                             { name: '陳小美', rating: 5, text: '奶泡綿密，咖啡香醇', date: '2024-01-16' },
-                             { name: '林小芳', rating: 5, text: '最愛的拿鐵，沒有之一', date: '2024-01-12' },
-                             { name: '黃小強', rating: 4, text: '奶香濃郁，很順口', date: '2024-01-09' }
-                         ]
+                         rating: reviewStats['拿鐵咖啡']?.rating || 4.5,
+                         reviewCount: reviewStats['拿鐵咖啡']?.reviewCount || 120,
+                         reviews: []
                      },
                      { 
                          name: '紅茶', 
@@ -852,12 +889,9 @@
                          image: 'images/blacktea.webp', 
                          description: '經典紅茶，清香回甘', 
                          category: 'tea',
-                         rating: 4.0,
-                         reviewCount: 65,
-                         reviews: [
-                             { name: '劉小紅', rating: 4, text: '茶香濃郁，回甘不錯', date: '2024-01-14' },
-                             { name: '吳小蘭', rating: 4, text: '經典紅茶，值得推薦', date: '2024-01-11' }
-                         ]
+                         rating: reviewStats['紅茶']?.rating || 4.0,
+                         reviewCount: reviewStats['紅茶']?.reviewCount || 65,
+                         reviews: []
                      },
                      { 
                          name: '綠茶', 
@@ -865,12 +899,9 @@
                          image: 'images/greentea.webp', 
                          description: '清新綠茶，自然健康', 
                          category: 'tea',
-                         rating: 4.3,
-                         reviewCount: 78,
-                         reviews: [
-                             { name: '趙小綠', rating: 5, text: '清新自然，很健康', date: '2024-01-13' },
-                             { name: '孫小茶', rating: 4, text: '綠茶清香，很喜歡', date: '2024-01-07' }
-                         ]
+                         rating: reviewStats['綠茶']?.rating || 4.3,
+                         reviewCount: reviewStats['綠茶']?.reviewCount || 78,
+                         reviews: []
                      },
                      { 
                          name: '星辰奶茶', 
@@ -878,12 +909,9 @@
                          image: 'images/milk tea.webp', 
                          description: '香濃奶茶，口感順滑', 
                          category: 'tea',
-                         rating: 4.4,
-                         reviewCount: 95,
-                         reviews: [
-                             { name: '周小星', rating: 5, text: '奶茶香濃，珍珠Q彈', date: '2024-01-15' },
-                             { name: '鄭小辰', rating: 4, text: '味道不錯，甜度剛好', date: '2024-01-10' }
-                         ]
+                         rating: reviewStats['星辰奶茶']?.rating || 4.4,
+                         reviewCount: reviewStats['星辰奶茶']?.reviewCount || 95,
+                         reviews: []
                      },
                      { 
                          name: '夢幻檸茶', 
@@ -891,12 +919,9 @@
                          image: 'images/lemon black tea.webp', 
                          description: '清爽檸檬茶，酸甜可口', 
                          category: 'tea',
-                         rating: 4.1,
-                         reviewCount: 52,
-                         reviews: [
-                             { name: '馮小檸', rating: 4, text: '檸檬清香，很解暑', date: '2024-01-12' },
-                             { name: '朱小檬', rating: 4, text: '酸甜適中，很清爽', date: '2024-01-08' }
-                         ]
+                         rating: reviewStats['夢幻檸茶']?.rating || 4.1,
+                         reviewCount: reviewStats['夢幻檸茶']?.reviewCount || 52,
+                         reviews: []
                      },
                      { 
                          name: '綠霧奶綠', 
@@ -904,12 +929,9 @@
                          image: 'images/milkgreen.webp', 
                          description: '綠茶奶香，清新怡人', 
                          category: 'tea',
-                         rating: 4.6,
-                         reviewCount: 88,
-                         reviews: [
-                             { name: '何小霧', rating: 5, text: '綠茶奶香完美結合', date: '2024-01-14' },
-                             { name: '呂小綠', rating: 5, text: '最愛的奶綠，很順口', date: '2024-01-09' }
-                         ]
+                         rating: reviewStats['綠霧奶綠']?.rating || 4.6,
+                         reviewCount: reviewStats['綠霧奶綠']?.reviewCount || 88,
+                         reviews: []
                      },
                      { 
                          name: '冷萃烏龍', 
@@ -917,12 +939,9 @@
                          image: 'images/coldtea.webp', 
                          description: '冷萃烏龍，香氣四溢', 
                          category: 'tea',
-                         rating: 4.7,
-                         reviewCount: 72,
-                         reviews: [
-                             { name: '羅小烏', rating: 5, text: '冷萃工藝，香氣十足', date: '2024-01-16' },
-                             { name: '梁小龍', rating: 5, text: '烏龍茶香，很特別', date: '2024-01-11' }
-                         ]
+                         rating: reviewStats['冷萃烏龍']?.rating || 4.7,
+                         reviewCount: reviewStats['冷萃烏龍']?.reviewCount || 72,
+                         reviews: []
                      },
                      { 
                          name: '翡翠紅茶', 
@@ -930,12 +949,9 @@
                          image: 'images/blacktea1.webp', 
                          description: '翡翠紅茶，香醇濃郁', 
                          category: 'tea',
-                         rating: 4.2,
-                         reviewCount: 45,
-                         reviews: [
-                             { name: '宋小翠', rating: 4, text: '翡翠紅茶，香醇好喝', date: '2024-01-13' },
-                             { name: '唐小玉', rating: 4, text: '茶香濃郁，值得推薦', date: '2024-01-07' }
-                         ]
+                         rating: reviewStats['翡翠紅茶']?.rating || 4.2,
+                         reviewCount: reviewStats['翡翠紅茶']?.reviewCount || 45,
+                         reviews: []
                      },
                      { 
                          name: '芒果冰茶', 
@@ -943,12 +959,9 @@
                          image: 'images/mango-iced.webp', 
                          description: '芒果冰茶，清涼解暑', 
                          category: 'tea',
-                         rating: 4.3,
-                         reviewCount: 68,
-                         reviews: [
-                             { name: '韓小芒', rating: 4, text: '芒果香濃，很解暑', date: '2024-01-15' },
-                             { name: '董小果', rating: 5, text: '夏天必喝的芒果冰茶', date: '2024-01-10' }
-                         ]
+                         rating: reviewStats['芒果冰茶']?.rating || 4.3,
+                         reviewCount: reviewStats['芒果冰茶']?.reviewCount || 68,
+                         reviews: []
                      },
                      { 
                          name: '桂花烏龍', 
@@ -956,12 +969,9 @@
                          image: 'images/Osmanthus Oolong Tea.webp', 
                          description: '桂花烏龍，花香四溢', 
                          category: 'tea',
-                         rating: 4.4,
-                         reviewCount: 82,
-                         reviews: [
-                             { name: '蕭小桂', rating: 5, text: '桂花香氣，很迷人', date: '2024-01-14' },
-                             { name: '尹小花', rating: 4, text: '花香烏龍，很特別', date: '2024-01-09' }
-                         ]
+                         rating: reviewStats['桂花烏龍']?.rating || 4.4,
+                         reviewCount: reviewStats['桂花烏龍']?.reviewCount || 82,
+                         reviews: []
                      },
                      { 
                          name: '莓果氣泡飲', 
@@ -969,12 +979,9 @@
                          image: 'images/berry-sparkling.webp', 
                          description: '莓果氣泡，清爽怡人', 
                          category: 'tea',
-                         rating: 4.5,
-                         reviewCount: 58,
-                         reviews: [
-                             { name: '姚小莓', rating: 5, text: '莓果香氣，氣泡清爽', date: '2024-01-16' },
-                             { name: '汪小果', rating: 4, text: '很特別的氣泡飲品', date: '2024-01-12' }
-                         ]
+                         rating: reviewStats['莓果氣泡飲']?.rating || 4.5,
+                         reviewCount: reviewStats['莓果氣泡飲']?.reviewCount || 58,
+                         reviews: []
                      }
                  ];
                 
@@ -1403,9 +1410,13 @@
         }
         
         // 顯示評價模態框
-        function showReviewModal(productName) {
+        async function showReviewModal(productName) {
             const product = menuData.find(item => item.name === productName);
             if (!product) return;
+            
+            // 從後端獲取該產品的評價
+            const reviews = await loadProductReviews(productName);
+            product.reviews = reviews;
             
             const modal = document.createElement('div');
             modal.className = 'review-modal';
@@ -1520,7 +1531,7 @@
         }
         
         // 提交評價
-        function submitReview(event, productName) {
+        async function submitReview(event, productName) {
             event.preventDefault();
             
             const form = event.target;
@@ -1545,42 +1556,67 @@
                 return;
             }
             
-            // 更新產品數據
-            const product = menuData.find(item => item.name === productName);
-            if (product) {
-                // 添加新評價
-                const newReview = {
-                    name: '匿名用戶', // 可以根據登入狀態顯示用戶名
-                    rating: rating,
-                    text: text,
-                    date: new Date().toISOString().split('T')[0] // 當前日期
-                };
+            try {
+                // 提交評價到後端
+                const response = await fetch('/api/reviews', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        productName: productName,
+                        rating: rating,
+                        text: text.trim(),
+                        reviewerName: '匿名用戶'
+                    })
+                });
                 
-                product.reviews.push(newReview);
-                product.reviewCount++;
+                const result = await response.json();
                 
-                // 重新計算平均評分
-                const totalRating = product.reviews.reduce((sum, review) => sum + review.rating, 0);
-                product.rating = Math.round((totalRating / product.reviews.length) * 10) / 10;
-                
-                // 更新菜單顯示
-                updateMenuDisplay();
-                
-                // 重新顯示評價模態框（更新後的數據）
-                closeReviewModal();
-                setTimeout(() => {
-                    showReviewModal(productName);
-                }, 300);
+                if (result.success) {
+                    // 更新本地產品數據
+                    const product = menuData.find(item => item.name === productName);
+                    if (product) {
+                        // 添加新評價到本地數據
+                        const newReview = {
+                            name: '匿名用戶',
+                            rating: rating,
+                            text: text.trim(),
+                            date: new Date().toISOString().split('T')[0]
+                        };
+                        
+                        product.reviews.push(newReview);
+                        product.reviewCount++;
+                        
+                        // 重新計算平均評分
+                        const totalRating = product.reviews.reduce((sum, review) => sum + review.rating, 0);
+                        product.rating = Math.round((totalRating / product.reviews.length) * 10) / 10;
+                        
+                        // 更新菜單顯示
+                        updateMenuDisplay();
+                        
+                        // 重新顯示評價模態框（更新後的數據）
+                        closeReviewModal();
+                        setTimeout(() => {
+                            showReviewModal(productName);
+                        }, 300);
+                    }
+                    
+                    // 清空表單
+                    form.querySelector('textarea').value = '';
+                    form.querySelectorAll('.rating-input .star').forEach(star => {
+                        star.style.color = '#ddd';
+                        star.removeAttribute('data-selected');
+                    });
+                    
+                    alert('評價提交成功！感謝您的回饋。');
+                } else {
+                    alert('評價提交失敗：' + result.message);
+                }
+            } catch (error) {
+                console.error('提交評價失敗:', error);
+                alert('評價提交失敗，請稍後重試。');
             }
-            
-            // 清空表單
-            form.querySelector('textarea').value = '';
-            form.querySelectorAll('.rating-input .star').forEach(star => {
-                star.style.color = '#ddd';
-                star.removeAttribute('data-selected');
-            });
-            
-            alert('評價提交成功！感謝您的回饋。');
         }
         
         // 更新菜單顯示
