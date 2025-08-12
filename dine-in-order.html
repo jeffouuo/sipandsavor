@@ -1477,6 +1477,15 @@
                     ratingStars.forEach((s, i) => {
                         s.style.color = i < rating ? '#FFD700' : '#ddd';
                     });
+                    
+                    // 添加選中標記
+                    ratingStars.forEach((s, i) => {
+                        if (i < rating) {
+                            s.setAttribute('data-selected', 'true');
+                        } else {
+                            s.removeAttribute('data-selected');
+                        }
+                    });
                 });
                 
                 star.addEventListener('mouseenter', function() {
@@ -1515,7 +1524,15 @@
             event.preventDefault();
             
             const form = event.target;
-            const rating = form.querySelector('.rating-input').querySelectorAll('.star[style*="FFD700"]').length;
+            // 使用data-selected屬性檢查星級
+            const ratingStars = form.querySelectorAll('.rating-input .star');
+            let rating = 0;
+            ratingStars.forEach((star, index) => {
+                if (star.getAttribute('data-selected') === 'true') {
+                    rating = index + 1;
+                }
+            });
+            
             const text = form.querySelector('textarea').value;
             
             if (rating === 0) {
@@ -1560,6 +1577,7 @@
             form.querySelector('textarea').value = '';
             form.querySelectorAll('.rating-input .star').forEach(star => {
                 star.style.color = '#ddd';
+                star.removeAttribute('data-selected');
             });
             
             alert('評價提交成功！感謝您的回饋。');
