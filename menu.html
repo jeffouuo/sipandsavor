@@ -546,10 +546,9 @@
             border-top: 2px solid #4CAF50;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            z-index: 1;
+            z-index: 2;
         }
         
-        .drink-image.loaded + .drink-image-container::before,
         .drink-image-container:has(.drink-image.loaded)::before {
             display: none;
         }
@@ -1015,13 +1014,28 @@
                 }
                 
                 // 合併產品數據（第一階段使用默認評價數據）
-                // 合併產品數據和評價統計
-                menuData = products.map(product => ({
-                    ...product,
-                    rating: reviewStats && reviewStats[product.name] ? reviewStats[product.name].rating : (product.rating?.average || 4.0),
-                    reviewCount: reviewStats && reviewStats[product.name] ? reviewStats[product.name].reviewCount : (product.rating?.count || 0),
-                    reviews: []
-                }));
+                // 合併產品數據和評價統計，並確保分類正確
+                menuData = products.map(product => {
+                    // 根據產品名稱設置分類
+                    let category = product.category;
+                    if (!category) {
+                        if (product.name.includes('咖啡') || product.name.includes('美式') || product.name.includes('拿鐵')) {
+                            category = 'coffee';
+                        } else {
+                            category = 'tea';
+                        }
+                    }
+                    
+                    return {
+                        ...product,
+                        category: category,
+                        rating: reviewStats && reviewStats[product.name] ? reviewStats[product.name].rating : (product.rating?.average || 4.0),
+                        reviewCount: reviewStats && reviewStats[product.name] ? reviewStats[product.name].reviewCount : (product.rating?.count || 0),
+                        reviews: []
+                    };
+                });
+                
+                console.log('📋 載入的產品數據:', menuData.map(item => ({ name: item.name, category: item.category })));
 
                 displayMenu();
                 document.getElementById('loadingMenu').style.display = 'none';
@@ -1087,11 +1101,16 @@
             const drinksList = document.querySelector('.drinks-list');
             drinksList.innerHTML = '';
             
+            console.log('🔍 顯示分類:', category);
+            console.log('📊 總數據量:', menuData.length);
+            
             let filteredData = menuData;
             if (category === 'coffee') {
                 filteredData = menuData.filter(item => item.category === 'coffee');
+                console.log('☕ 咖啡類別數量:', filteredData.length);
             } else if (category === 'tea') {
                 filteredData = menuData.filter(item => item.category === 'tea');
+                console.log('🍵 茶類別數量:', filteredData.length);
             }
             
             filteredData.forEach(item => {
