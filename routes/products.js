@@ -5,6 +5,31 @@ const { auth, adminAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// 快取機制
+const cache = new Map();
+const CACHE_DURATION = 10 * 60 * 1000; // 10分鐘快取
+
+// 快取工具函數
+function getCachedData(key) {
+    const cached = cache.get(key);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        return cached.data;
+    }
+    return null;
+}
+
+function setCachedData(key, data) {
+    cache.set(key, {
+        data,
+        timestamp: Date.now()
+    });
+}
+
+// 清除快取
+function clearCache() {
+    cache.clear();
+}
+
 // 内存中的产品数据（当MongoDB不可用时使用）
 const memoryProducts = [
     {
@@ -548,6 +573,66 @@ router.get('/', [
 
     } catch (error) {
         console.error('獲取產品列表錯誤:', error);
+        res.status(500).json({
+            success: false,
+            message: '獲取產品列表失敗'
+        });
+    }
+});
+
+// 獲取所有可用產品（優化版本，帶快取）
+router.get('/all', async (req, res) => {
+    try {
+        const cacheKey = 'all_available_products';
+        
+        // 檢查快取
+        const cached = getCachedData(cacheKey);
+        if (cached) {
+            return res.json({
+                success: true,
+                data: cached,
+                fromCache: true
+            });
+        }
+
+        let products;
+        
+        try {
+            // 嘗試從數據庫獲取
+            products = await Product.find({ isAvailable: true })
+                .select('name description price image category tags rating featured sortOrder')
+                .sort({ sortOrder: 1, createdAt: -1 })
+                .lean(); // 使用lean()提升性能
+        } catch (dbError) {
+            console.log('數據庫查詢失敗，使用內存數據:', dbError.message);
+            // 使用內存數據
+            products = memoryProducts
+                .filter(p => p.isAvailable)
+                .map(p => ({
+                    _id: p._id,
+                    name: p.name,
+                    description: p.description,
+                    price: p.price,
+                    image: p.image,
+                    category: p.category,
+                    tags: p.tags,
+                    rating: p.rating,
+                    featured: p.featured,
+                    sortOrder: p.sortOrder
+                }));
+        }
+
+        // 設置快取
+        setCachedData(cacheKey, products);
+
+        res.json({
+            success: true,
+            data: products,
+            fromCache: false
+        });
+
+    } catch (error) {
+        console.error('獲取所有產品錯誤:', error);
         res.status(500).json({
             success: false,
             message: '獲取產品列表失敗'

@@ -727,9 +727,35 @@
                 cartSidebar.classList.remove('active');
             }
             
+            // 預加載關鍵圖片
+            preloadImages();
+            
             // 載入菜單
             loadMenu();
         });
+        
+        // 預加載圖片
+        function preloadImages() {
+            const imageUrls = [
+                'images/americano.webp',
+                'images/latte.webp',
+                'images/blacktea.webp',
+                'images/greentea.webp',
+                'images/milk tea.webp',
+                'images/lemon black tea.webp',
+                'images/milkgreen.webp',
+                'images/coldtea.webp',
+                'images/blacktea1.webp',
+                'images/mango-iced.webp',
+                'images/Osmanthus Oolong Tea.webp',
+                'images/berry-sparkling.webp'
+            ];
+            
+            imageUrls.forEach(url => {
+                const img = new Image();
+                img.src = url;
+            });
+        }
 
         // 從後端獲取評價數據
         async function loadReviewData() {
@@ -779,11 +805,25 @@
                 document.getElementById('loadingMenu').style.display = 'block';
                 document.getElementById('menuGrid').style.display = 'none';
                 
-                // 從後端獲取評價統計
-                const reviewStats = await loadReviewData();
+                // 並行獲取產品數據和評價統計
+                const [productsResponse, reviewStats] = await Promise.all([
+                    fetch('/api/products/all'),
+                    loadReviewData()
+                ]);
                 
-                // 使用後端支持的產品列表
-                menuData = [
+                let products = [];
+                if (productsResponse.ok) {
+                    const result = await productsResponse.json();
+                    if (result.success) {
+                        products = result.data;
+                        console.log(`✅ 產品數據載入成功 (${result.fromCache ? '快取' : '數據庫'})`);
+                    }
+                }
+                
+                // 如果API失敗，使用本地數據
+                if (products.length === 0) {
+                    console.log('⚠️ API載入失敗，使用本地數據');
+                    products = [
                     { 
                         name: '美式咖啡', 
                         price: 45, 
@@ -905,6 +945,15 @@
                         reviews: []
                     }
                 ];
+                }
+                
+                // 合併產品數據和評價統計
+                menuData = products.map(product => ({
+                    ...product,
+                    rating: reviewStats[product.name]?.rating || product.rating?.average || 4.0,
+                    reviewCount: reviewStats[product.name]?.reviewCount || product.rating?.count || 0,
+                    reviews: []
+                }));
                 
                 displayMenu();
                 
@@ -995,7 +1044,9 @@
                         <p class="drink-price">NT$ ${item.price}</p>
                     </div>
                     <div class="drink-image-container">
-                        <img src="${item.image}" alt="${item.name}" loading="lazy" class="drink-image" onerror="this.style.display='none'">
+                        <img src="${item.image}" alt="${item.name}" loading="lazy" class="drink-image" 
+                             onerror="this.style.display='none'" 
+                             onload="this.style.opacity='1'">
                     </div>
                 `;
                 
