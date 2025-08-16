@@ -74,6 +74,12 @@
             display: block;
         }
         
+        .menu-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
         .loading {
             text-align: center;
             padding: 50px;
@@ -99,14 +105,8 @@
         }
         
         .menu-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
+            display: block;
             margin-bottom: 30px;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-            padding: 0 20px;
         }
         
         /* 分類導航樣式 */
@@ -743,8 +743,10 @@
             <div class="error-message" id="errorMessage" style="display: none;"></div>
             <div class="success-message" id="successMessage" style="display: none;"></div>
 
-            <div class="menu-grid" id="menuGrid" style="display: none;">
-                <!-- 菜單項目將通過 JavaScript 動態載入 -->
+            <div class="menu-container">
+                <div class="menu-grid" id="menuGrid" style="display: none;">
+                    <!-- 菜單項目將通過 JavaScript 動態載入 -->
+                </div>
             </div>
         </div>
     </main>
@@ -1023,7 +1025,7 @@
 
                 displayMenu();
                 document.getElementById('loadingMenu').style.display = 'none';
-                document.getElementById('menuGrid').style.display = 'grid';
+                document.getElementById('menuGrid').style.display = 'block';
 
             } catch (error) {
                 console.error('載入菜單失敗:', error);
@@ -1072,7 +1074,7 @@
             menuContainer.appendChild(drinksList);
             menuGrid.appendChild(menuContainer);
             
-            menuGrid.style.display = 'grid';
+            menuGrid.style.display = 'block';
             
             // 預設顯示全部飲料
             showCategoryItems('all');
