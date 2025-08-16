@@ -756,8 +756,6 @@
         
         // 頁面載入時初始化
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 頁面開始載入:', new Date().toLocaleTimeString());
-            
             // 使用全局購物車邏輯，不需要額外初始化
             // script-enhanced.js 會自動處理購物車功能
             
@@ -790,11 +788,6 @@
                 } else {
                     img.addEventListener('load', () => {
                         loadedCount++;
-                        console.log(`📸 圖片載入完成: ${loadedCount}/${totalImages}`);
-                        
-                        if (loadedCount === totalImages) {
-                            console.log('✅ 所有圖片載入完成:', new Date().toLocaleTimeString());
-                        }
                     });
                 }
             });
@@ -1075,16 +1068,11 @@
             const drinksList = document.querySelector('.drinks-list');
             drinksList.innerHTML = '';
             
-            console.log('🔍 顯示分類:', category);
-            console.log('📊 總數據量:', menuData.length);
-            
             let filteredData = menuData;
             if (category === 'coffee') {
                 filteredData = menuData.filter(item => item.category === 'coffee');
-                console.log('☕ 咖啡類別數量:', filteredData.length);
             } else if (category === 'tea') {
                 filteredData = menuData.filter(item => item.category === 'tea');
-                console.log('🍵 茶類別數量:', filteredData.length);
             }
             
             filteredData.forEach(item => {
