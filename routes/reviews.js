@@ -2,16 +2,98 @@ const express = require('express');
 const router = express.Router();
 const Review = require('../models/Review');
 
-// 獲取指定產品的所有評價
+// 简单的内存缓存
+const cache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+
+// 缓存工具函数
+function getCachedData(key) {
+    const cached = cache.get(key);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        return cached.data;
+    }
+    return null;
+}
+
+function setCachedData(key, data) {
+    cache.set(key, {
+        data,
+        timestamp: Date.now()
+    });
+}
+
+// 获取指定产品的评价和统计（合并查询，提升性能）
 router.get('/product/:productName', async (req, res) => {
     try {
         const { productName } = req.params;
-        const reviews = await Review.find({ productName })
-            .sort({ date: -1 });
+        const cacheKey = `product_${productName}`;
+        
+        // 检查缓存
+        const cached = getCachedData(cacheKey);
+        if (cached) {
+            return res.json({
+                success: true,
+                data: cached
+            });
+        }
+
+        // 使用聚合管道一次性获取评价和统计
+        const result = await Review.aggregate([
+            { $match: { productName } },
+            {
+                $facet: {
+                    reviews: [
+                        { $sort: { date: -1 } },
+                        {
+                            $project: {
+                                reviewerName: 1,
+                                rating: 1,
+                                text: 1,
+                                date: 1
+                            }
+                        }
+                    ],
+                    stats: [
+                        {
+                            $group: {
+                                _id: null,
+                                totalReviews: { $sum: 1 },
+                                averageRating: { $avg: '$rating' },
+                                ratingDistribution: { $push: '$rating' }
+                            }
+                        }
+                    ]
+                }
+            }
+        ]);
+
+        const data = {
+            reviews: result[0].reviews.map(review => ({
+                name: review.reviewerName,
+                rating: review.rating,
+                text: review.text,
+                date: new Date(review.date).toISOString().split('T')[0]
+            })),
+            stats: result[0].stats.length > 0 ? {
+                totalReviews: result[0].stats[0].totalReviews,
+                averageRating: Math.round(result[0].stats[0].averageRating * 10) / 10,
+                ratingDistribution: result[0].stats[0].ratingDistribution.reduce((acc, rating) => {
+                    acc[rating] = (acc[rating] || 0) + 1;
+                    return acc;
+                }, { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 })
+            } : {
+                totalReviews: 0,
+                averageRating: 0,
+                ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+            }
+        };
+
+        // 设置缓存
+        setCachedData(cacheKey, data);
 
         res.json({
             success: true,
-            data: reviews
+            data
         });
     } catch (error) {
         console.error('獲取評價失敗:', error);
@@ -22,10 +104,20 @@ router.get('/product/:productName', async (req, res) => {
     }
 });
 
-// 獲取指定產品的評價統計
+// 獲取指定產品的評價統計（保留原有接口以兼容）
 router.get('/stats/:productName', async (req, res) => {
     try {
         const { productName } = req.params;
+        const cacheKey = `stats_${productName}`;
+        
+        // 检查缓存
+        const cached = getCachedData(cacheKey);
+        if (cached) {
+            return res.json({
+                success: true,
+                data: cached
+            });
+        }
         
         // 獲取評價統計
         const stats = await Review.aggregate([
@@ -42,32 +134,35 @@ router.get('/stats/:productName', async (req, res) => {
             }
         ]);
 
+        let data;
         if (stats.length === 0) {
-            return res.json({
-                success: true,
-                data: {
-                    totalReviews: 0,
-                    averageRating: 0,
-                    ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-                }
+            data = {
+                totalReviews: 0,
+                averageRating: 0,
+                ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+            };
+        } else {
+            const stat = stats[0];
+            const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+            
+            // 計算評分分佈
+            stat.ratingDistribution.forEach(rating => {
+                ratingDistribution[rating]++;
             });
-        }
 
-        const stat = stats[0];
-        const ratingDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-        
-        // 計算評分分佈
-        stat.ratingDistribution.forEach(rating => {
-            ratingDistribution[rating]++;
-        });
-
-        res.json({
-            success: true,
-            data: {
+            data = {
                 totalReviews: stat.totalReviews,
                 averageRating: Math.round(stat.averageRating * 10) / 10,
                 ratingDistribution
-            }
+            };
+        }
+
+        // 设置缓存
+        setCachedData(cacheKey, data);
+
+        res.json({
+            success: true,
+            data
         });
     } catch (error) {
         console.error('獲取評價統計失敗:', error);
@@ -115,6 +210,11 @@ router.post('/', async (req, res) => {
 
         await newReview.save();
 
+        // 清除相关缓存
+        cache.delete(`product_${productName}`);
+        cache.delete(`stats_${productName}`);
+        cache.delete('all_stats');
+
         res.json({
             success: true,
             message: '評價提交成功',
@@ -132,6 +232,17 @@ router.post('/', async (req, res) => {
 // 獲取所有產品的評價統計
 router.get('/all-stats', async (req, res) => {
     try {
+        const cacheKey = 'all_stats';
+        
+        // 检查缓存
+        const cached = getCachedData(cacheKey);
+        if (cached) {
+            return res.json({
+                success: true,
+                data: cached
+            });
+        }
+
         const stats = await Review.aggregate([
             {
                 $group: {
@@ -149,6 +260,9 @@ router.get('/all-stats', async (req, res) => {
             },
             { $sort: { productName: 1 } }
         ]);
+
+        // 设置缓存
+        setCachedData(cacheKey, stats);
 
         res.json({
             success: true,

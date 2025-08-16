@@ -290,6 +290,42 @@
             transform: scale(1);
         }
         
+        /* 加载状态样式 */
+        .review-modal.loading .review-content {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 300px;
+        }
+        
+        .loading-spinner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-spinner p {
+            margin: 0;
+            color: #666;
+            font-size: 16px;
+        }
+        
         .review-header {
             display: flex;
             justify-content: space-between;
@@ -1296,18 +1332,45 @@
             const product = menuData.find(item => item.name === productName);
             if (!product) return;
             
-            // 從後端獲取該產品的評價和統計
-            const [reviews, stats] = await Promise.all([
-                loadProductReviews(productName),
-                fetch(`/api/reviews/stats/${encodeURIComponent(productName)}`).then(res => res.json())
-            ]);
+            // 显示加载状态
+            const loadingModal = document.createElement('div');
+            loadingModal.className = 'review-modal loading';
+            loadingModal.innerHTML = `
+                <div class="review-content">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                        <p>載入評價中...</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(loadingModal);
+            setTimeout(() => loadingModal.classList.add('active'), 10);
             
-            product.reviews = reviews;
-            
-            // 更新產品的實際評價數量
-            if (stats.success) {
-                product.reviewCount = stats.data.totalReviews;
-                product.rating = stats.data.averageRating;
+            try {
+                // 使用新的合并API，一次性获取评价和统计
+                const response = await fetch(`/api/reviews/product/${encodeURIComponent(productName)}`);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error('獲取評價失敗');
+                }
+                
+                const { reviews, stats } = result.data;
+                product.reviews = reviews;
+                
+                // 更新產品的實際評價數量
+                product.reviewCount = stats.totalReviews;
+                product.rating = stats.averageRating;
+                
+                // 移除加载状态
+                loadingModal.classList.remove('active');
+                setTimeout(() => loadingModal.remove(), 300);
+            } catch (error) {
+                console.error('載入評價失敗:', error);
+                alert('載入評價失敗，請稍後再試');
+                loadingModal.classList.remove('active');
+                setTimeout(() => loadingModal.remove(), 300);
+                return;
             }
             
             const modal = document.createElement('div');
