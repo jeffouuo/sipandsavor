@@ -852,12 +852,23 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    return result.data.map(review => ({
-                        name: review.reviewerName,
-                        rating: review.rating,
-                        text: review.text,
-                        date: new Date(review.date).toISOString().split('T')[0]
-                    }));
+                    // 檢查result.data的結構
+                    console.log('📋 API返回數據結構:', result.data);
+                    
+                    // 如果result.data有reviews屬性，使用它
+                    const reviews = result.data.reviews || result.data;
+                    
+                    if (Array.isArray(reviews)) {
+                        return reviews.map(review => ({
+                            name: review.reviewerName,
+                            rating: review.rating,
+                            text: review.text,
+                            date: new Date(review.date).toISOString().split('T')[0]
+                        }));
+                    } else {
+                        console.error('評價數據格式錯誤:', reviews);
+                        return [];
+                    }
                 }
             } catch (error) {
                 console.error('獲取產品評價失敗:', error);
@@ -870,26 +881,12 @@
             try {
                 document.getElementById('loadingMenu').style.display = 'block';
                 document.getElementById('menuGrid').style.display = 'none';
-
-                // 並行載入產品數據和評價數據
-                const [productsResponse, reviewStats] = await Promise.all([
-                    fetch('/api/products/all'),
-                    loadReviewData()
-                ]);
                 
-                let products = [];
-                if (productsResponse.ok) {
-                    const result = await productsResponse.json();
-                    if (result.success) {
-                        products = result.data;
-                        console.log(`✅ 產品數據載入成功 (${result.fromCache ? '快取' : '數據庫'})`);
-                    }
-                }
+                // 從後端獲取評價統計
+                const reviewStats = await loadReviewData();
                 
-                // 如果API載入失敗，使用本地數據
-                if (products.length === 0) {
-                    console.log('⚠️ API載入失敗，使用本地數據');
-                    products = [
+                // 使用後端支持的產品列表
+                menuData = [
                     { 
                         name: '美式咖啡', 
                         price: 45, 
@@ -1011,32 +1008,7 @@
                         reviews: []
                     }
                 ];
-                }
                 
-                // 合併產品數據（第一階段使用默認評價數據）
-                // 合併產品數據和評價統計，並確保分類正確
-                menuData = products.map(product => {
-                    // 根據產品名稱設置分類
-                    let category = product.category;
-                    if (!category) {
-                        if (product.name.includes('咖啡') || product.name.includes('美式') || product.name.includes('拿鐵')) {
-                            category = 'coffee';
-                        } else {
-                            category = 'tea';
-                        }
-                    }
-                    
-                    return {
-                        ...product,
-                        category: category,
-                        rating: reviewStats && reviewStats[product.name] ? reviewStats[product.name].rating : (product.rating?.average || 4.0),
-                        reviewCount: reviewStats && reviewStats[product.name] ? reviewStats[product.name].reviewCount : (product.rating?.count || 0),
-                        reviews: []
-                    };
-                });
-                
-                console.log('📋 載入的產品數據:', menuData.map(item => ({ name: item.name, category: item.category })));
-
                 displayMenu();
                 document.getElementById('loadingMenu').style.display = 'none';
                 document.getElementById('menuGrid').style.display = 'block';
@@ -1487,20 +1459,16 @@
             setTimeout(() => loadingModal.classList.add('active'), 10);
             
             try {
-                // 使用新的合并API，一次性获取评价和统计
-                const response = await fetch(`/api/reviews/product/${encodeURIComponent(productName)}`);
-                const result = await response.json();
-                
-                if (!result.success) {
-                    throw new Error('獲取評價失敗');
-                }
-                
-                const { reviews, stats } = result.data;
+                // 從後端獲取該產品的評價
+                const reviews = await loadProductReviews(productName);
                 product.reviews = reviews;
                 
                 // 更新產品的實際評價數量
-                product.reviewCount = stats.totalReviews;
-                product.rating = stats.averageRating;
+                product.reviewCount = reviews.length;
+                if (reviews.length > 0) {
+                    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+                    product.rating = (totalRating / reviews.length).toFixed(1);
+                }
                 
                 // 移除加载状态
                 loadingModal.classList.remove('active');
