@@ -525,6 +525,18 @@
         .drink-image.loaded {
             opacity: 1;
         }
+
+        /* 懶加載佔位符效果 */
+        .drink-image.lazy {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading-shimmer 1.5s infinite;
+        }
+
+        @keyframes loading-shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
         
         .drink-image-container::before {
             content: '';
@@ -791,7 +803,7 @@
             });
         }
         
-        // 預加載圖片（優化版本）
+        // 智能圖片載入策略（改善版本）
         function preloadImages() {
             const imageUrls = [
                 'images/americano.webp',
@@ -817,16 +829,45 @@
                 img.src = url;
             });
             
-            // 延遲載入其他圖片
-            setTimeout(() => {
-                const remainingImages = imageUrls.slice(4);
-                console.log('📦 延遲載入其他圖片:', remainingImages.length, '張');
-                
-                remainingImages.forEach(url => {
-                    const img = new Image();
-                    img.src = url;
+            // 使用IntersectionObserver實現真正的懶加載
+            setupLazyLoading();
+        }
+
+        // 設置真正的懶加載
+        function setupLazyLoading() {
+            // 創建圖片觀察器
+            const imageObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        const dataSrc = img.getAttribute('data-src');
+                        
+                        if (dataSrc) {
+                            // 載入圖片
+                            img.src = dataSrc;
+                            img.removeAttribute('data-src');
+                            img.classList.remove('lazy');
+                            
+                            // 添加載入完成類
+                            img.onload = () => {
+                                img.classList.add('loaded');
+                                console.log('✅ 圖片懶加載完成:', dataSrc);
+                            };
+                            
+                            // 停止觀察
+                            imageObserver.unobserve(img);
+                        }
+                    }
                 });
-            }, 3000); // 3秒後載入
+            }, {
+                rootMargin: '50px 0px', // 提前50px開始載入
+                threshold: 0.1 // 10%可見時開始載入
+            });
+
+            // 觀察所有懶加載圖片
+            document.querySelectorAll('img[data-src]').forEach(img => {
+                imageObserver.observe(img);
+            });
         }
 
         // 從後端獲取評價數據
@@ -871,28 +912,31 @@
             return [];
         }
         
-        // 載入菜單
+        // 載入菜單（改善版本 - 分階段載入）
         async function loadMenu() {
             try {
                 document.getElementById('loadingMenu').style.display = 'block';
                 document.getElementById('menuGrid').style.display = 'none';
                 
-                // 並行獲取產品數據和評價統計
-                const [productsResponse, reviewStats] = await Promise.all([
-                    fetch('/api/products/all'),
-                    loadReviewData()
-                ]);
+                // 第一階段：快速載入基本產品數據
+                console.log('🚀 第一階段：載入基本產品數據');
+                const productsResponse = await fetch('/api/products/basic');
                 
                 let products = [];
                 if (productsResponse.ok) {
                     const result = await productsResponse.json();
                     if (result.success) {
                         products = result.data;
-                        console.log(`✅ 產品數據載入成功 (${result.fromCache ? '快取' : '數據庫'})`);
+                        console.log(`✅ 基本產品數據載入成功 (${result.fromCache ? '快取' : '數據庫'})`);
+                        
+                        // 立即顯示基本產品
+                        displayMenu(products);
+                        document.getElementById('loadingMenu').style.display = 'none';
+                        document.getElementById('menuGrid').style.display = 'grid';
                     }
                 }
                 
-                // 如果API失敗，使用本地數據
+                // 如果第一階段失敗，使用本地數據
                 if (products.length === 0) {
                     console.log('⚠️ API載入失敗，使用本地數據');
                     products = [
@@ -1029,6 +1073,28 @@
                 
                 displayMenu();
                 
+                // 第二階段：異步載入完整數據和評價
+                console.log('📦 第二階段：載入完整數據和評價');
+                Promise.all([
+                    fetch('/api/products/all'),
+                    loadReviewData()
+                ]).then(async ([fullProductsResponse, reviewStats]) => {
+                    if (fullProductsResponse.ok) {
+                        const result = await fullProductsResponse.json();
+                        if (result.success && result.data.length > products.length) {
+                            console.log('🔄 更新為完整產品數據');
+                            displayMenu(result.data);
+                        }
+                    }
+                    
+                    // 更新評價數據
+                    if (reviewStats) {
+                        updateMenuWithReviews(reviewStats);
+                    }
+                }).catch(error => {
+                    console.log('⚠️ 第二階段載入失敗，使用基本數據:', error);
+                });
+                
             } catch (error) {
                 console.error('載入菜單失敗:', error);
                 document.getElementById('errorMessage').textContent = '載入菜單失敗，請重試';
@@ -1084,6 +1150,25 @@
             showCategoryItems('all');
         }
         
+        // 更新菜單評價數據
+        function updateMenuWithReviews(reviewStats) {
+            console.log('🔄 更新評價數據:', reviewStats);
+            
+            // 更新menuData中的評價信息
+            menuData.forEach(item => {
+                if (reviewStats[item.name]) {
+                    item.rating = reviewStats[item.name].rating;
+                    item.reviewCount = reviewStats[item.name].reviewCount;
+                }
+            });
+            
+            // 重新顯示當前分類
+            const activeCategory = document.querySelector('.category-btn.active');
+            if (activeCategory) {
+                showCategoryItems(activeCategory.getAttribute('data-category'));
+            }
+        }
+
         // 顯示分類飲料
         function showCategoryItems(category) {
             const drinksList = document.querySelector('.drinks-list');
@@ -1116,7 +1201,7 @@
                         <p class="drink-price">NT$ ${item.price}</p>
                     </div>
                     <div class="drink-image-container">
-                        <img src="${item.image}" alt="${item.name}" loading="lazy" class="drink-image" 
+                        <img data-src="${item.image}" alt="${item.name}" class="drink-image lazy" 
                              onload="this.classList.add('loaded')" 
                              onerror="this.style.display='none'">
                     </div>
