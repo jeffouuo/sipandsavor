@@ -289,35 +289,7 @@
             overflow-y: auto;
         }
         
-        /* 加载状态样式 */
-        .review-modal.loading .review-content {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            text-align: center;
-            max-width: 300px;
-        }
-        
-        .loading-spinner {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-        
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-        }
-        
-        .loading-spinner p {
-            margin: 0;
-            color: #666;
-            font-size: 16px;
-        }
+
         
         .review-header {
             display: flex;
@@ -1388,19 +1360,6 @@
             const product = menuData.find(item => item.name === productName);
             if (!product) return;
             
-            // 显示加载状态
-            const loadingModal = document.createElement('div');
-            loadingModal.className = 'review-modal active';
-            loadingModal.innerHTML = `
-                <div class="review-content">
-                    <div class="loading-spinner">
-                        <div class="spinner"></div>
-                        <p>載入評價中...</p>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(loadingModal);
-            
             try {
                 // 從後端獲取該產品的評價
                 const reviews = await loadProductReviews(productName);
@@ -1412,13 +1371,9 @@
                     const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
                     product.rating = (totalRating / reviews.length).toFixed(1);
                 }
-                
-                // 移除加载状态
-                loadingModal.remove();
             } catch (error) {
                 console.error('載入評價失敗:', error);
                 alert('載入評價失敗，請稍後再試');
-                loadingModal.remove();
                 return;
             }
             
