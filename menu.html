@@ -1360,21 +1360,15 @@
             const product = menuData.find(item => item.name === productName);
             if (!product) return;
             
-            try {
-                // 從後端獲取該產品的評價
-                const reviews = await loadProductReviews(productName);
-                product.reviews = reviews;
-                
-                // 更新產品的實際評價數量
-                product.reviewCount = reviews.length;
-                if (reviews.length > 0) {
-                    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-                    product.rating = (totalRating / reviews.length).toFixed(1);
-                }
-            } catch (error) {
-                console.error('載入評價失敗:', error);
-                alert('載入評價失敗，請稍後再試');
-                return;
+            // 從後端獲取該產品的評價和統計
+            const reviews = await loadProductReviews(productName);
+            product.reviews = reviews;
+            
+            // 更新產品的實際評價數量
+            product.reviewCount = reviews.length;
+            if (reviews.length > 0) {
+                const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+                product.rating = (totalRating / reviews.length).toFixed(1);
             }
             
             const modal = document.createElement('div');
