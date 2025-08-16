@@ -270,7 +270,6 @@
             z-index: 2000;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
             pointer-events: none;
         }
         
@@ -288,12 +287,6 @@
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
-            transform: scale(0.9);
-            transition: transform 0.3s ease;
-        }
-        
-        .review-modal.active .review-content {
-            transform: scale(1);
         }
         
         /* 加载状态样式 */
@@ -318,12 +311,6 @@
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3498db;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
         
         .loading-spinner p {
@@ -524,38 +511,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-            opacity: 0; /* 初始透明 */
-        }
-        
-        .drink-image.loaded {
-            opacity: 1;
-        }
-
-
-        
-        .drink-image-container::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 20px;
-            height: 20px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #4CAF50;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            z-index: 2;
-        }
-        
-        .drink-image-container:has(.drink-image.loaded)::before {
-            display: none;
-        }
-        
-        @keyframes spin {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
+            transition: transform 0.3s ease;
         }
         
         .drink-image:hover {
@@ -1434,7 +1390,7 @@
             
             // 显示加载状态
             const loadingModal = document.createElement('div');
-            loadingModal.className = 'review-modal loading';
+            loadingModal.className = 'review-modal active';
             loadingModal.innerHTML = `
                 <div class="review-content">
                     <div class="loading-spinner">
@@ -1444,7 +1400,6 @@
                 </div>
             `;
             document.body.appendChild(loadingModal);
-            setTimeout(() => loadingModal.classList.add('active'), 10);
             
             try {
                 // 從後端獲取該產品的評價
@@ -1459,13 +1414,11 @@
                 }
                 
                 // 移除加载状态
-                loadingModal.classList.remove('active');
-                setTimeout(() => loadingModal.remove(), 300);
+                loadingModal.remove();
             } catch (error) {
                 console.error('載入評價失敗:', error);
                 alert('載入評價失敗，請稍後再試');
-                loadingModal.classList.remove('active');
-                setTimeout(() => loadingModal.remove(), 300);
+                loadingModal.remove();
                 return;
             }
             
@@ -1565,19 +1518,14 @@
             });
             
             // 顯示模態框
-            setTimeout(() => {
-                modal.classList.add('active');
-            }, 10);
+            modal.classList.add('active');
         }
         
         // 關閉評價模態框
         function closeReviewModal() {
             const modal = document.querySelector('.review-modal');
             if (modal) {
-                modal.classList.remove('active');
-                setTimeout(() => {
-                    modal.remove();
-                }, 300);
+                modal.remove();
             }
         }
         
