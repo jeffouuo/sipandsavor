@@ -1532,14 +1532,19 @@
             });
             
             // 顯示模態框
-            modal.classList.add('active');
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
         }
         
         // 關閉評價模態框
         function closeReviewModal() {
             const modal = document.querySelector('.review-modal');
             if (modal) {
-                modal.remove();
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
             }
         }
         
