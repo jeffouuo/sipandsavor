@@ -893,8 +893,8 @@
                         image: 'images/americano.webp', 
                         description: '香濃美式咖啡，口感醇厚', 
                         category: 'coffee',
-                        rating: 4.2,
-                        reviewCount: 85,
+                        rating: reviewStats['美式咖啡']?.rating || 4.2,
+                        reviewCount: reviewStats['美式咖啡']?.reviewCount || 85,
                         reviews: []
                     },
                     { 
@@ -903,8 +903,8 @@
                         image: 'images/latte.webp', 
                         description: '香滑拿鐵，奶香濃郁', 
                         category: 'coffee',
-                        rating: 4.5,
-                        reviewCount: 120,
+                        rating: reviewStats['拿鐵咖啡']?.rating || 4.5,
+                        reviewCount: reviewStats['拿鐵咖啡']?.reviewCount || 120,
                         reviews: []
                     },
                     { 
@@ -913,8 +913,8 @@
                         image: 'images/blacktea.webp', 
                         description: '經典紅茶，清香回甘', 
                         category: 'tea',
-                        rating: 4.0,
-                        reviewCount: 65,
+                        rating: reviewStats['紅茶']?.rating || 4.0,
+                        reviewCount: reviewStats['紅茶']?.reviewCount || 65,
                         reviews: []
                     },
                     { 
@@ -923,8 +923,8 @@
                         image: 'images/greentea.webp', 
                         description: '清新綠茶，自然健康', 
                         category: 'tea',
-                        rating: 4.3,
-                        reviewCount: 78,
+                        rating: reviewStats['綠茶']?.rating || 4.3,
+                        reviewCount: reviewStats['綠茶']?.reviewCount || 78,
                         reviews: []
                     },
                     { 
@@ -933,8 +933,8 @@
                         image: 'images/milk tea.webp', 
                         description: '香濃奶茶，口感順滑', 
                         category: 'tea',
-                        rating: 4.4,
-                        reviewCount: 95,
+                        rating: reviewStats['星辰奶茶']?.rating || 4.4,
+                        reviewCount: reviewStats['星辰奶茶']?.reviewCount || 95,
                         reviews: []
                     },
                     { 
@@ -943,8 +943,8 @@
                         image: 'images/lemon black tea.webp', 
                         description: '清爽檸檬茶，酸甜可口', 
                         category: 'tea',
-                        rating: 4.1,
-                        reviewCount: 52,
+                        rating: reviewStats['夢幻檸茶']?.rating || 4.1,
+                        reviewCount: reviewStats['夢幻檸茶']?.reviewCount || 52,
                         reviews: []
                     },
                     { 
@@ -953,8 +953,8 @@
                         image: 'images/milkgreen.webp', 
                         description: '綠茶奶香，清新怡人', 
                         category: 'tea',
-                        rating: 4.6,
-                        reviewCount: 88,
+                        rating: reviewStats['綠霧奶綠']?.rating || 4.6,
+                        reviewCount: reviewStats['綠霧奶綠']?.reviewCount || 88,
                         reviews: []
                     },
                     { 
@@ -963,8 +963,8 @@
                         image: 'images/coldtea.webp', 
                         description: '冷萃烏龍，香氣四溢', 
                         category: 'tea',
-                        rating: 4.7,
-                        reviewCount: 72,
+                        rating: reviewStats['冷萃烏龍']?.rating || 4.7,
+                        reviewCount: reviewStats['冷萃烏龍']?.reviewCount || 72,
                         reviews: []
                     },
                     { 
@@ -973,8 +973,8 @@
                         image: 'images/blacktea1.webp', 
                         description: '翡翠紅茶，香醇濃郁', 
                         category: 'tea',
-                        rating: 4.2,
-                        reviewCount: 45,
+                        rating: reviewStats['翡翠紅茶']?.rating || 4.2,
+                        reviewCount: reviewStats['翡翠紅茶']?.reviewCount || 45,
                         reviews: []
                     },
                     { 
@@ -983,8 +983,8 @@
                         image: 'images/mango-iced.webp', 
                         description: '芒果冰茶，清涼解暑', 
                         category: 'tea',
-                        rating: 4.3,
-                        reviewCount: 68,
+                        rating: reviewStats['芒果冰茶']?.rating || 4.3,
+                        reviewCount: reviewStats['芒果冰茶']?.reviewCount || 68,
                         reviews: []
                     },
                     { 
@@ -993,8 +993,8 @@
                         image: 'images/Osmanthus Oolong Tea.webp', 
                         description: '桂花烏龍，花香四溢', 
                         category: 'tea',
-                        rating: 4.4,
-                        reviewCount: 82,
+                        rating: reviewStats['桂花烏龍']?.rating || 4.4,
+                        reviewCount: reviewStats['桂花烏龍']?.reviewCount || 82,
                         reviews: []
                     },
                     { 
@@ -1003,8 +1003,8 @@
                         image: 'images/berry-sparkling.webp', 
                         description: '莓果氣泡，清爽怡人', 
                         category: 'tea',
-                        rating: 4.5,
-                        reviewCount: 58,
+                        rating: reviewStats['莓果氣泡飲']?.rating || 4.5,
+                        reviewCount: reviewStats['莓果氣泡飲']?.reviewCount || 58,
                         reviews: []
                     }
                 ];
@@ -1017,6 +1017,8 @@
                 console.error('載入菜單失敗:', error);
                 document.getElementById('errorMessage').textContent = '載入菜單失敗，請重試';
                 document.getElementById('errorMessage').style.display = 'block';
+            } finally {
+                document.getElementById('loadingMenu').style.display = 'none';
             }
         }
 
@@ -1105,9 +1107,7 @@
                         <p class="drink-price">NT$ ${item.price}</p>
                     </div>
                     <div class="drink-image-container">
-                        <img src="${item.image}" alt="${item.name}" class="drink-image" 
-                             onload="this.classList.add('loaded')" 
-                             onerror="this.style.display='none'">
+                        <img src="${item.image}" alt="${item.name}" loading="lazy" class="drink-image" onerror="this.style.display='none'">
                     </div>
                 `;
                 
