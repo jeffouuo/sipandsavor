@@ -99,8 +99,14 @@
         }
         
         .menu-grid {
-            display: block;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
             margin-bottom: 30px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0 20px;
         }
         
         /* 分類導航樣式 */
@@ -1066,7 +1072,7 @@
             menuContainer.appendChild(drinksList);
             menuGrid.appendChild(menuContainer);
             
-            menuGrid.style.display = 'block';
+            menuGrid.style.display = 'grid';
             
             // 預設顯示全部飲料
             showCategoryItems('all');
