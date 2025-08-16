@@ -1063,11 +1063,11 @@
                 ];
                 }
                 
-                // 合併產品數據和評價統計
+                // 合併產品數據（第一階段使用默認評價數據）
                 menuData = products.map(product => ({
                     ...product,
-                    rating: reviewStats[product.name]?.rating || product.rating?.average || 4.0,
-                    reviewCount: reviewStats[product.name]?.reviewCount || product.rating?.count || 0,
+                    rating: product.rating?.average || 4.0,
+                    reviewCount: product.rating?.count || 0,
                     reviews: []
                 }));
                 
@@ -1083,12 +1083,18 @@
                         const result = await fullProductsResponse.json();
                         if (result.success && result.data.length > products.length) {
                             console.log('🔄 更新為完整產品數據');
-                            displayMenu(result.data);
+                            // 合併完整產品數據和評價統計
+                            const fullMenuData = result.data.map(product => ({
+                                ...product,
+                                rating: reviewStats[product.name]?.rating || product.rating?.average || 4.0,
+                                reviewCount: reviewStats[product.name]?.reviewCount || product.rating?.count || 0,
+                                reviews: []
+                            }));
+                            menuData = fullMenuData;
+                            displayMenu();
                         }
-                    }
-                    
-                    // 更新評價數據
-                    if (reviewStats) {
+                    } else if (reviewStats) {
+                        // 如果只有評價數據更新，只更新評價
                         updateMenuWithReviews(reviewStats);
                     }
                 }).catch(error => {
