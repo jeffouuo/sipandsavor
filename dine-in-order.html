@@ -839,12 +839,23 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    return result.data.map(review => ({
-                        name: review.reviewerName,
-                        rating: review.rating,
-                        text: review.text,
-                        date: new Date(review.date).toISOString().split('T')[0]
-                    }));
+                    // 檢查result.data的結構
+                    console.log('📋 API返回數據結構:', result.data);
+                    
+                    // 如果result.data有reviews屬性，使用它
+                    const reviews = result.data.reviews || result.data;
+                    
+                    if (Array.isArray(reviews)) {
+                        return reviews.map(review => ({
+                            name: review.reviewerName,
+                            rating: review.rating,
+                            text: review.text,
+                            date: new Date(review.date).toISOString().split('T')[0]
+                        }));
+                    } else {
+                        console.error('評價數據格式錯誤:', reviews);
+                        return [];
+                    }
                 }
             } catch (error) {
                 console.error('獲取產品評價失敗:', error);
@@ -1415,17 +1426,14 @@
             if (!product) return;
             
             // 從後端獲取該產品的評價和統計
-            const [reviews, stats] = await Promise.all([
-                loadProductReviews(productName),
-                fetch(`/api/reviews/stats/${encodeURIComponent(productName)}`).then(res => res.json())
-            ]);
-            
+            const reviews = await loadProductReviews(productName);
             product.reviews = reviews;
             
             // 更新產品的實際評價數量
-            if (stats.success) {
-                product.reviewCount = stats.data.totalReviews;
-                product.rating = stats.data.averageRating;
+            product.reviewCount = reviews.length;
+            if (reviews.length > 0) {
+                const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+                product.rating = (totalRating / reviews.length).toFixed(1);
             }
             
             const modal = document.createElement('div');
