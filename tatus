@@ -1,8 +1,98 @@
-warning: in the working copy of 'index.html', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'script-enhanced.js', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'server.js', LF will be replaced by CRLF the next time Git touches it
-index.html
-login.html
-package.json
-script-enhanced.js
-server.js
+[33m3afe1cf[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: reset: moving to 3afe1cf
+[33mf631984[m HEAD@{1}: commit: 重构为Tailwind CSS版本：使用简洁的Google Maps地址查询格式，优化响应式布局和视觉效果
+[33m3afe1cf[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{2}: commit: 重构地图功能：使用简洁的JavaScript代码，添加Google Maps pin针标记，优化地图显示效果
+[33m1ff861e[m HEAD@{3}: commit: 重构地图切换功能：使用单个iframe和data-map-url属性，通过JavaScript动态更新地图
+[33ma41fd20[m HEAD@{4}: commit: 移除Google地图下方的店家详细信息显示区域，简化页面布局
+[33mfaa92ab[m HEAD@{5}: commit: 新增店家地址詳細信息顯示區域，點擊店家時同步顯示對應地址信息
+[33md4d84eb[m HEAD@{6}: commit: 更新門市據點地址信息並添加地圖切換功能
+[33m0551701[m HEAD@{7}: commit: 恢复内用点餐动画，外带点餐跟随内用点餐保持一致
+[33m50bc27a[m HEAD@{8}: commit: 统一内用点餐和外带点餐的顾客评价逻辑，以内用点餐为基准并移除动画
+[33m65ad4af[m HEAD@{9}: commit: 移除顾客评价点击时的加载状态显示
+[33mb9b8bd8[m HEAD@{10}: commit: 移除顾客评价动画和饮料图片旋转圈圈
+[33m41abc39[m HEAD@{11}: commit: 统一内用点餐和外带点餐的商品辨识逻辑，以内用点餐为主
+[33meabd887[m HEAD@{12}: commit: 修复顾客评价数量和加载动画一致性问题
+[33mb889493[m HEAD@{13}: commit: 更新菜单页面功能
+[33m77b1323[m HEAD@{14}: commit: 🔧 修復內用點餐評價載入錯誤 - 修復loadProductReviews函數處理API返回數據結構 - 添加數據結構檢查和錯誤處理 - 修復showReviewModal函數使用新的API結構 - 移除舊的stats API調用，使用本地計算評價統計
+[33m4da75ff[m HEAD@{15}: commit: 🔧 修復載入圈圈位置和分類顯示問題 - 修復載入圈圈z-index和CSS選擇器問題 - 添加分類邏輯確保API數據正確分類 - 添加調試信息幫助排查分類問題 - 確保咖啡類別包含美式咖啡和拿鐵咖啡 - 其他飲料歸類為茶類
+[33m5bec444[m HEAD@{16}: commit: 🔄 修改飲料菜單排版格式與內用點餐一致 - 將menu-grid的display改為block - 添加menu-container容器樣式 - 修改HTML結構包裝菜單內容 - 確保與內用點餐頁面排版格式一致
+[33m8169e62[m HEAD@{17}: commit: 🔧 修復排版寬度問題 - 將menu-grid的display從block改為grid - 添加最大寬度1200px和居中對齊 - 修復JavaScript中的display設置 - 確保菜單項目正常寬度顯示
+[33m196b3c4[m HEAD@{18}: commit: 🔄 回到延遲載入之前的版本 - 移除複雜的懶加載和分階段載入策略 - 恢復簡單的並行載入方式 - 移除IntersectionObserver和data-src - 移除updateMenuWithReviews函數 - 簡化圖片載入邏輯
+[33m43ae15a[m HEAD@{19}: commit: 🔧 修復圖片和評價顯示問題 - 修復displayMenu函數調用錯誤 - 修復本地數據中reviewStats未定義問題 - 添加懶加載設置到菜單顯示後 - 確保圖片和評價數據正常顯示
+[33m20a2c36[m HEAD@{20}: commit: 🔧 修復reviewStats未定義錯誤 - 第一階段載入時使用默認評價數據 - 第二階段正確合併完整產品數據和評價統計 - 確保分階段載入策略正常工作
+[33m91accbc[m HEAD@{21}: commit: 🚀 延遲載入策略大幅改善 - 實現真正的懶加載 (IntersectionObserver) - 分階段載入：基本數據立即顯示，完整數據異步載入 - 視覺效果優化：閃爍動畫、平滑過渡、縮放效果 - 預期載入時間從2-3秒減少到<1秒
+[33m3a73867[m HEAD@{22}: commit: 🚀 API優化完成 - 數據庫索引優化，查詢速度提升70-80% - 新增輕量級API端點 /api/products/basic - 延長快取時間，提升命中率 - 預期載入時間從2-3秒減少到<1秒
+[33m9fafa1e[m HEAD@{23}: commit: 🎉 優化飲料菜單圖片載入速度 - 圖片壓縮改善54%，favicon優化81% - 新增載入分析報告 - 預期載入時間從2-3秒提升至<1秒
+[33mf07253d[m HEAD@{24}: commit: 🖼️ 飲料菜單圖片載入優化 - 解決載入速度問題
+[33m7a7b520[m HEAD@{25}: commit: 🚀 飲料菜單頁面性能優化 - 載入速度提升3-4倍
+[33mcc37439[m HEAD@{26}: commit: 🚀 评价系统性能优化 - 查询速度提升30-40倍
+[33mf52dc32[m HEAD@{27}: commit: 修復評價數量不一致問題：同步評價模態框與菜單列表的評價數量顯示
+[33mce14606[m HEAD@{28}: commit: 修改評價提交行為：提交後直接關閉模態框，不再重新打開評價列表
+[33mbb5e3d3[m HEAD@{29}: commit: 實現評價系統後端存儲功能：創建評價模型、API路由，並更新前端以支持持久化評價數據
+[33m77cbf2d[m HEAD@{30}: commit: 修復評價提交按鈕無法點擊的問題
+[33mfc05fcb[m HEAD@{31}: commit: 完善評價系統：實現即時更新功能並應用到內用點餐頁面
+[33md063e10[m HEAD@{32}: commit: 新增完整的評價系統功能
+[33m8253534[m HEAD@{33}: commit: 移除外帶點餐頁面的歡迎光臨區域
+[33m79d27c8[m HEAD@{34}: commit: 簡化導覽列：移除飲料菜單的下拉選單，只保留直接連結
+[33m4e094be[m HEAD@{35}: commit: 將外帶點餐版面設計改成和內用點餐一樣的現代化佈局
+[33me628fe5[m HEAD@{36}: commit: 調整主頁佈局：將內用點餐區域移到每一口都是一個故事下方
+[33mc71e5db[m HEAD@{37}: commit: 修改後台狀態欄字體為橫向顯示 - 改善待確認、更新狀態、付款狀態的可讀性
+[33m9a752d6[m HEAD@{38}: commit: 修复外带订单号显示问题：在后台响应中包含订单号并添加调试信息
+[33m7dab078[m HEAD@{39}: commit: 修正订单号逻辑：订单号在结账完成后生成和显示，而不是每个商品加入购物车时
+[33m546a075[m HEAD@{40}: commit: 完善订单号功能：订单号现在会保存到后台数据库并在管理页面显示
+[33mf47c3b8[m HEAD@{41}: commit: 添加外带订单号功能：商品加入购物车后显示订单号末四码
+[33m7b37486[m HEAD@{42}: commit: 优化购物车显示：内用和外带订单现在都显示完整的客制化信息
+[33maabcf73[m HEAD@{43}: commit: 更新项目文件：优化订单和产品路由，添加库存同步指南
+[33m5e8bfad[m HEAD@{44}: commit: 修復購物車刪除商品時強制關閉的問題 - 在購物車按鈕的 onclick 事件中添加 event.stopPropagation() - 防止事件冒泡到 document 層級觸發購物車關閉 - 解決事件冒泡導致的購物車意外關閉問題
+[33m705ccd8[m HEAD@{45}: commit: 添加購物車調試信息 - 在 updateQuantity 函數中添加詳細的日誌輸出 - 在 closeCartSidebar 函數中添加調用堆疊追蹤 - 幫助診斷購物車關閉問題
+[33me1c54e8[m HEAD@{46}: commit: 修復購物車刪除商品時強制關閉的問題 - 移除 dine-in-order.html 中重複的購物車初始化邏輯 - 統一使用 script-enhanced.js 中的全局購物車邏輯 - 確保購物車只有在完全為空時才關閉
+[33m1f85085[m HEAD@{47}: commit: 移除新聞管理和QR碼生成器功能 - 刪除導航標籤中的新聞管理和QR碼生成器按鈕 - 刪除新聞管理內容區塊和模態框 - 刪除所有新聞管理相關的JavaScript函數和事件監聽器 - 清理緩存和分頁中的新聞相關代碼
+[33m307aa79[m HEAD@{48}: commit: 修復後台產品管理頁面初始化問題 - 在頁面載入時同時載入產品數據 - 解決登入後產品列表不顯示的問題
+[33mdaeabf0[m HEAD@{49}: commit: 修復 admin.js 統計數據載入錯誤 - 更新 updateStatsDisplay 函數使用正確的 HTML 元素 ID - 移除對不存在的 statsContent 元素的引用 - 使用 /orders/admin/stats API 端點獲取完整統計數據 - 添加元素存在性檢查避免 null 引用錯誤
+[33mef91233[m HEAD@{50}: commit: 更新管理界面和路由功能，添加性能优化文档
+[33m6ef8a9d[m HEAD@{51}: commit: 🔧 徹底修復 express-rate-limit 問題 - 暫時禁用速率限制以避免 Vercel 環境中的 X-Forwarded-For 錯誤 - 改進 trust proxy 設置 - 添加自定義 keyGenerator 和 skip 邏輯 - 確保在生產環境中穩定運行
+[33mc485ac5[m HEAD@{52}: commit: 🔧 修復 ObjectId 轉換錯誤 - 改進內存產品處理邏輯，避免字符串ID轉換為ObjectId - 只有有效的ObjectId才設置product字段 - 添加結帳功能測試腳本 - 本地測試通過 ✅
+[33m0b54a44[m HEAD@{53}: commit: 🔧 修復 express-rate-limit 配置問題 - 添加 trust proxy 設置以支持 Vercel 環境 - 自定義 keyGenerator 避免 X-Forwarded-For 錯誤 - 更新所有速率限制器配置
+[33mf132749[m HEAD@{54}: commit: 🔧 緊急修復：正確調整路由順序 - 將/recent路由移到/:id路由之前，解決路由攔截問題 - 修復CastError: Cast to ObjectId failed for value 'recent'錯誤
+[33m07ef02d[m HEAD@{55}: commit: 🔧 修復500錯誤：路由順序問題和認證衝突 - 將/recent路由移到/:id路由之前，移除認證要求 - 改進錯誤處理，優雅降級避免500錯誤 - 優化前端自動刷新邏輯 - 添加診斷工具和測試腳本
+[33m630a5e8[m HEAD@{56}: commit: 🔧 修復自動刷新 API 500 錯誤 + 增強穩定性
+[33mf484ae0[m HEAD@{57}: commit: ⚡ 管理後台性能優化 + 自動刷新新訂單
+[33m4666128[m HEAD@{58}: commit: 🚨 緊急修復：增強登入錯誤處理 + 詳細診斷指南
+[33m470e827[m HEAD@{59}: commit: 🔧 緊急修復：isProduction 變數作用域問題
+[33m3700ce8[m HEAD@{60}: commit: 📋 最終設置指南：使用用戶指定的最小修正版本 URI
+[33m7fd8f7c[m HEAD@{61}: commit: ⚡ 超高速結帳優化 + Vercel 修復指南
+[33m4eb5088[m HEAD@{62}: commit: 🔧 修復關鍵問題：login.html API 端點配置
+[33m87acd74[m HEAD@{63}: commit: 🔗 MongoDB Atlas 連接優化和診斷工具
+[33m578748d[m HEAD@{64}: commit: 🔧 關鍵修復：優先使用 MongoDB 資料 + Token 驗證優化
+[33m8a8e12e[m HEAD@{65}: commit: 🔍 添加詳細診斷日誌 - 幫助解決管理後台無資料和自動登出問題
+[33m0c54323[m HEAD@{66}: commit: 🚨 緊急修復：簡化管理後台 API 配置，解決後台顯示問題
+[33mbde9c31[m HEAD@{67}: commit: 🔧 修復關鍵問題：管理後台 API 端點配置 - 支持本地開發和生產環境，解決後台無法顯示訂單的問題
+[33mc5ccef2[m HEAD@{68}: commit: 添加最近訂單查詢端點用於調試 - 幫助診斷訂單是否成功保存到數據庫
+[33m02d3d55[m HEAD@{69}: commit: 強化數據庫診斷和保存機制 - 添加詳細連接狀態檢查、多次重試機制、強化後台保存，並新增數據庫測試端點
+[33m0cdc522[m HEAD@{70}: commit: 修復後台訂單顯示問題 - 實現智能訂單保存：快速響應+非同步數據庫保存，確保訂單既快速又能在後台顯示
+[33m49f7234[m HEAD@{71}: commit: 大幅優化結帳速度 - 優先使用內存數據，添加數據庫查詢超時，生產環境跳過數據庫操作，預期從10秒降至1-2秒
+[33m8b9e3a7[m HEAD@{72}: commit: 修復結帳按鈕重複點擊問題 - 添加防重複點擊機制和按鈕狀態指示，移除管理後台重複初始化
+[33m0b8e647[m HEAD@{73}: commit: 優化結帳性能 - 減少日誌輸出，添加產品查詢緩存，提升響應速度
+[33m61c807a[m HEAD@{74}: commit: 修復 CORS 問題 - 添加生產環境域名到允許列表
+[33m9dbb572[m HEAD@{75}: commit: 改進生產環境錯誤處理和診斷 - 添加詳細錯誤信息和數據庫狀態檢查
+[33mc4c4fe0[m HEAD@{76}: commit: 修復 favicon 404 錯誤 - 為所有 HTML 頁面添加 favicon 支持
+[33m0beb774[m HEAD@{77}: commit: 修復QR碼404錯誤：使用簡化文件名避免特殊字符問題
+[33m08aff01[m HEAD@{78}: commit: 實現智能QR碼功能：電腦端可點擊，手機端掃描
+[33m839dd92[m HEAD@{79}: commit: 更新內用點餐QR碼為新的vercel.app版本
+[33m07ab591[m HEAD@{80}: commit: 優化login.html頁面設計，移除重複logo，添加優先級樣式
+[33mce39400[m HEAD@{81}: commit: 修復Swiper輪播警告並解決合併衝突
+[33m95e46f2[m HEAD@{82}: commit (merge): 解決合併衝突，保留最新的logo修復
+[33m084a43f[m HEAD@{83}: commit: 修復所有logo點擊問題並統一使用背景圖片方式
+[33me9b5a74[m HEAD@{84}: reset: moving to e9b5a74
+[33me6f9723[m HEAD@{85}: commit: 修復多個BUG - HTML結構、隱藏管理入口功能、購物車邏輯
+[33m80c2f5b[m HEAD@{86}: commit: 恢復首頁產品輪播區域 - 修復排版問題
+[33m8eec2d0[m HEAD@{87}: commit: 修復購物車自動顯示問題 - 合併重複的DOMContentLoaded事件監聽器
+[33m372be62[m HEAD@{88}: commit: 修復Swiper未定義錯誤 - 添加Swiper載入檢查和容器檢查
+[33m094a555[m HEAD@{89}: commit: 修復Vercel靜態檔案404錯誤 - 更新vercel.json配置和script.js路徑
+[33m68dd360[m HEAD@{90}: commit: 修復index.html的Git衝突標記，解決404錯誤
+[33me9b5a74[m HEAD@{91}: commit: 新增QR碼系統和Vercel部署配置 - 新增內用點餐功能、QR碼生成器、Vercel部署指南等
+[33m46d2b5d[m HEAD@{92}: reset: moving to origin/main
+[33md8bb479[m HEAD@{93}: reset: moving to HEAD
+[33md8bb479[m HEAD@{94}: Branch: renamed refs/heads/main to refs/heads/main
+[33md8bb479[m HEAD@{96}: commit: first commit
+[33m7714ec3[m HEAD@{97}: Branch: renamed refs/heads/master to refs/heads/main
+[33m7714ec3[m HEAD@{99}: commit (initial): Initial commit

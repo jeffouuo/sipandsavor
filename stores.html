@@ -9,6 +9,27 @@
     <link rel="stylesheet" href="style-optimized.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
+        /* Logo樣式 - 背景圖片方式 */
+        .logo-link {
+            position: fixed !important;
+            top: 0px !important;
+            left: -20px !important;
+            width: 120px !important;
+            height: 80px !important;
+            z-index: 1000 !important;
+            text-decoration: none !important;
+            background-image: url('images/sipandsavor.webp') !important;
+            background-size: contain !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            transition: opacity 0.3s ease !important;
+            opacity: 0.9 !important;
+        }
+        
+        .logo-link:hover {
+            opacity: 1;
+        }
+
         .stores-page {
             padding-top: 100px;
             background-color: #f5f5f5;
@@ -124,7 +145,7 @@
             height: 24rem;
         }
 
-        .map-section .md\\:h-\\[500px\\] {
+        .map-section .md\:h-\[500px\] {
             height: 500px;
         }
 
@@ -150,8 +171,6 @@
             border: none;
         }
 
-
-
         /* 店鋪卡片點擊效果 */
         .store-card {
             cursor: pointer;
@@ -171,8 +190,6 @@
         .store-card.ring-green-500 {
             box-shadow: 0 0 0 2px #10b981;
         }
-
-
 
         /* 確保 logo 在按鈕上方 */
         header h1 {
@@ -203,7 +220,7 @@
         <!-- 手機元件 -->
         <button class="menu" id="hamburgerBtn">&#9776;</button>
         
-        <a href="index.html"><h1>飲茶趣</h1></a>
+        <a href="index.html" class="logo-link" title="飲茶趣"></a>
     
         <!-- 桌面導航 -->
         <nav class="desktop-nav">
@@ -321,7 +338,6 @@
                 </div>
             </section>
 
-
         </div>
     </main>
 
@@ -377,6 +393,76 @@
             });
         });
     </script>
+
+    <!-- 隱藏管理入口功能 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const trigger = document.getElementById('adminEntryTrigger');
+            const modal = document.getElementById('adminEntryModal');
+            const loginBtn = document.getElementById('adminLoginBtn');
+            const cancelBtn = document.getElementById('adminCancelBtn');
+            
+            let clickCount = 0;
+            let clickTimer = null;
+            
+            // 雙擊觸發器顯示管理入口
+            if (trigger) {
+                trigger.addEventListener('click', function() {
+                    clickCount++;
+                    
+                    if (clickCount === 1) {
+                        clickTimer = setTimeout(() => {
+                            clickCount = 0;
+                        }, 300);
+                    } else if (clickCount === 2) {
+                        clearTimeout(clickTimer);
+                        clickCount = 0;
+                        
+                        // 添加動畫效果
+                        trigger.classList.add('double-clicked');
+                        setTimeout(() => {
+                            trigger.classList.remove('double-clicked');
+                        }, 500);
+                        
+                        // 顯示管理入口
+                        showAdminEntry();
+                    }
+                });
+            }
+            
+            // 顯示管理入口
+            function showAdminEntry() {
+                modal.style.display = 'flex';
+            }
+            
+            // 隱藏管理入口
+            function hideAdminEntry() {
+                modal.style.display = 'none';
+            }
+            
+            // 登入按鈕事件
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function() {
+                    // 跳轉到正式的登錄頁面進行身份驗證
+                    window.location.href = 'login.html?redirect=admin';
+                });
+            }
+            
+            // 取消按鈕事件
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', hideAdminEntry);
+            }
+            
+            // 點擊背景關閉
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        hideAdminEntry();
+                    }
+                });
+            }
+        });
+    </script>
     <script src="script-enhanced.js"></script>
 </body>
-</html> 
+</html>
