@@ -1497,7 +1497,7 @@
                         
                         <!-- 未登录时显示的提示 -->
                         <div id="login-prompt" class="login-prompt" style="display: ${currentUser ? 'none' : 'block'}">
-                            <p>請<span class="login-link" onclick="showGoogleSignIn()">登入</span>以發表您的評論。</p>
+                            <p>請<span class="login-link">登入</span>以發表您的評論。</p>
                         </div>
                         
                         <!-- 登录后显示的表单 -->
@@ -1700,33 +1700,7 @@
         // Google 登录相关函数
         let currentUser = null;
         
-        // 当 Google API 加载完成后会自动调用此函数
-        function onSignIn(googleUser) {
-            // 从 Google 账户取得个人资料
-            const profile = googleUser.getBasicProfile();
-            const userName = profile.getName();
-            const userAvatar = profile.getImageUrl();
-            const userEmail = profile.getEmail();
-            
-            // 保存用户信息
-            currentUser = {
-                name: userName,
-                email: userEmail,
-                avatar: userAvatar,
-                id: profile.getId()
-            };
-            
-            // 更新界面
-            document.getElementById('google-signin-button').classList.add('hidden');
-            const userProfileDiv = document.getElementById('user-profile');
-            userProfileDiv.classList.remove('hidden');
-            userProfileDiv.classList.add('flex');
-            document.getElementById('user-name').textContent = userName;
-            document.getElementById('user-avatar').src = userAvatar;
-            
-            // 更新评价表单显示
-            updateReviewFormVisibility();
-        }
+
         
         // 登出函数 (兼容新版和旧版API)
         function signOut() {
@@ -1779,14 +1753,7 @@
             }
         }
         
-        // 显示Google登录
-        function showGoogleSignIn() {
-            // 触发Google登录
-            const auth2 = gapi.auth2.getAuthInstance();
-            if (auth2) {
-                auth2.signIn();
-            }
-        }
+
         
         // 新版 Google Identity Services 登录成功回调函数
         function handleCredentialResponse(response) {
@@ -1840,7 +1807,7 @@
             }
         }
         
-        // 确保 gapi 对象加载完成后再渲染按钮
+        // 确保 Google Identity Services 库加载完成后再渲染按钮
         window.addEventListener('load', function() {
             // 延迟初始化，确保GIS库完全加载
             setTimeout(function() {
