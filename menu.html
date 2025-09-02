@@ -1726,6 +1726,7 @@
         
         // Google 登录相关函数
         let currentUser = null;
+        let isLoginInProgress = false; // 新增：防止重复点击的旗标
         
 
         
@@ -1783,10 +1784,25 @@
             }
         }
         
-        // 新增：点击按钮后触发 Google 登录的函数 (简化版)
+        // 新增：点击按钮后触发 Google 登录的函数 (优化版)
         function triggerGoogleLogin() {
+            if (isLoginInProgress) {
+                console.log("登录流程已在 진행中，请稍候。");
+                return;
+            }
+
             if (window.google && google.accounts && google.accounts.id) {
-                google.accounts.id.prompt();
+                isLoginInProgress = true;
+                
+                // 使用 prompt() 的回调函数来处理状态
+                google.accounts.id.prompt((notification) => {
+                    isLoginInProgress = false; // 无论成功或失败，流程结束后重设旗标
+
+                    // 检查提示窗口是否因某些原因 (例如 Cookie 设定) 而没有显示
+                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                        console.warn("Google 登录提示窗未显示。原因:", notification.getNotDisplayedReason());
+                    }
+                });
             } else {
                 alert("登录功能加载中，请稍候再试。");
             }
