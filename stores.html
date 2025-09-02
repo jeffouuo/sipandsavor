@@ -125,6 +125,39 @@
             border: none;
         }
 
+        /* 地圖容器樣式 */
+        #mapContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .store-map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        .store-map.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* 店鋪卡片點擊效果 */
+        .store-card {
+            cursor: pointer;
+        }
+
+        .store-card.active {
+            border: 2px solid #4CAF50;
+            background-color: #f0f8f0;
+        }
+
         /* 確保 logo 在按鈕上方 */
         header h1 {
             z-index: 1000;
@@ -209,48 +242,46 @@
                 <h2>全台門市</h2>
                 <div class="stores-grid">
                     <!-- 台北總店 -->
-                    <div class="store-card">
+                    <div class="store-card" data-store="taipei" onclick="showStoreMap('taipei')">
                         <div class="store-info">
                             <h3>台北總店</h3>
-                            <p>台北市大安區忠孝東路四段123號</p>
-                            <p>電話：(02) 2345-6789</p>
+                            <p>台北市大安區忠孝東路四段107號4樓</p>
+                            <p>電話：(02) 2272-1369</p>
                             <div class="store-hours">
                                 <h4>營業時間</h4>
                                 <ul>
-                                    <li>週一至週五：10:00 - 22:00</li>
-                                    <li>週六至週日：11:00 - 22:00</li>
+                                    <li>週一至週日：11:30 - 14:30</li>
+                                    <li>週一至週日：17:30 - 21:30</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
 
                     <!-- 台中旗艦店 -->
-                    <div class="store-card">
+                    <div class="store-card" data-store="taichung" onclick="showStoreMap('taichung')">
                         <div class="store-info">
                             <h3>台中旗艦店</h3>
-                            <p>台中市西區公益路二段456號</p>
-                            <p>電話：(04) 2345-6789</p>
+                            <p>台中市西區公益路268號</p>
+                            <p>電話：(04) 2328-1167</p>
                             <div class="store-hours">
                                 <h4>營業時間</h4>
                                 <ul>
-                                    <li>週一至週五：10:00 - 22:00</li>
-                                    <li>週六至週日：11:00 - 22:00</li>
+                                    <li>週一至週日：11:00 - 02:00</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
 
                     <!-- 高雄概念店 -->
-                    <div class="store-card">
+                    <div class="store-card" data-store="kaohsiung" onclick="showStoreMap('kaohsiung')">
                         <div class="store-info">
                             <h3>高雄概念店</h3>
-                            <p>高雄市前鎮區中山路789號</p>
-                            <p>電話：(07) 2345-6789</p>
+                            <p>高雄市前鎮區時代南一路85號</p>
+                            <p>電話：(07) 537-1333</p>
                             <div class="store-hours">
                                 <h4>營業時間</h4>
                                 <ul>
-                                    <li>週一至週五：10:00 - 22:00</li>
-                                    <li>週六至週日：11:00 - 22:00</li>
+                                    <li>週一至週日：11:30 - 00:00</li>
                                 </ul>
                             </div>
                         </div>
@@ -260,7 +291,16 @@
 
             <!-- 地圖區塊 -->
             <section class="map-section">
-                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3615.002769573873!2d121.53399987600001!3d25.033964979999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3442abb6da80a7ad%3A0xacc4d11dc963103c!2z5Y-w5YyX5biC5aSn5a6J!5e0!3m2!1szh-TW!2stw!4v1648641234567!5m2!1szh-TW!2stw" allowfullscreen="" loading="lazy"></iframe>
+                <div id="mapContainer">
+                    <!-- 台北總店地圖 (預設顯示) -->
+                    <iframe id="taipeiMap" class="store-map active" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3615.002769573873!2d121.54499987600001!3d25.033964979999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3442abb6da80a7ad%3A0xacc4d11dc963103c!2z5Y-w5YyX5biC5aSn5a6J!5e0!3m2!1szh-TW!2stw!4v1648641234567!5m2!1szh-TW!2stw" allowfullscreen="" loading="lazy"></iframe>
+                    
+                    <!-- 台中旗艦店地圖 -->
+                    <iframe id="taichungMap" class="store-map" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3640.1234567890123!2d120.6645678901234!3d24.12345678901234!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x34693d1234567890%3A0x1234567890abcdef!2z5Lit5Y2A5Y-w5YyX!5e0!3m2!1szh-TW!2stw!4v1648641234567!5m2!1szh-TW!2stw" allowfullscreen="" loading="lazy"></iframe>
+                    
+                    <!-- 高雄概念店地圖 -->
+                    <iframe id="kaohsiungMap" class="store-map" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3688.1234567890123!2d120.3123456789012!3d22.61234567890123!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x346e1234567890ab%3A0x1234567890cdef12!2z6auY6ZuF5Y-w5YyX!5e0!3m2!1szh-TW!2stw!4v1648641234567!5m2!1szh-TW!2stw" allowfullscreen="" loading="lazy"></iframe>
+                </div>
             </section>
         </div>
     </main>
@@ -285,6 +325,39 @@
         </div>
     </footer>
 
+    <script>
+        // 地圖切換功能
+        function showStoreMap(storeId) {
+            // 移除所有地圖的active類別
+            const allMaps = document.querySelectorAll('.store-map');
+            allMaps.forEach(map => map.classList.remove('active'));
+            
+            // 移除所有店鋪卡片的active類別
+            const allCards = document.querySelectorAll('.store-card');
+            allCards.forEach(card => card.classList.remove('active'));
+            
+            // 顯示選中的地圖
+            const selectedMap = document.getElementById(storeId + 'Map');
+            if (selectedMap) {
+                selectedMap.classList.add('active');
+            }
+            
+            // 為選中的店鋪卡片添加active類別
+            const selectedCard = document.querySelector(`[data-store="${storeId}"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('active');
+            }
+        }
+
+        // 頁面載入時預設顯示台北總店
+        document.addEventListener('DOMContentLoaded', function() {
+            // 預設選中台北總店
+            const taipeiCard = document.querySelector('[data-store="taipei"]');
+            if (taipeiCard) {
+                taipeiCard.classList.add('active');
+            }
+        });
+    </script>
     <script src="script-enhanced.js"></script>
 </body>
 </html> 
