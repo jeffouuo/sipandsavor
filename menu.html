@@ -1730,7 +1730,7 @@
         
 
         
-        // 登出函数 (简化版)
+        // 登出函数 (增强版)
         function signOut() {
             console.log('User signed out.');
             
@@ -1757,6 +1757,10 @@
             if (window.google && google.accounts && google.accounts.id) {
                 google.accounts.id.disableAutoSelect();
             }
+            
+            // 新增：解決登出後無法再次登入問題的程式碼
+            // 透過手動清除 Google 函式庫的狀態 Cookie，來重設「冷卻時間」
+            document.cookie = "g_state=;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT";
         }
         
         // 渲染 Google 登入按鈕 (使用新版 GIS API)
@@ -1784,7 +1788,7 @@
             }
         }
         
-        // 新增：點擊按鈕後觸發 Google 登入的函數 (增強錯誤處理版)
+        // 新增：點擊按鈕後觸發 Google 登入的函數 (優化版)
         function triggerGoogleLogin() {
             if (isLoginInProgress) {
                 console.log("登入流程已在進行中，請稍候。");
@@ -1794,54 +1798,26 @@
             if (window.google && google.accounts && google.accounts.id) {
                 isLoginInProgress = true;
                 
-                try {
-                    // 使用 prompt() 的回調函數來處理狀態
-                    google.accounts.id.prompt((notification) => {
-                        isLoginInProgress = false; // 無論成功或失敗，流程結束後重設旗標
+                // 使用 prompt() 的回呼函式來處理狀態
+                google.accounts.id.prompt((notification) => {
+                    isLoginInProgress = false; // 無論成功或失敗，流程結束後重設旗標
 
-                        // 檢查提示視窗是否因某些原因 (例如 Cookie 設定) 而沒有顯示
-                        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                            const reason = notification.getNotDisplayedReason();
-                            console.warn("Google 登入提示窗未顯示。原因:", reason);
-                            
-                            // 根據具體原因提供解決方案
-                            if (reason === 'browser_not_supported') {
-                                showLoginError("您的瀏覽器不支援此登入方式，請嘗試更新瀏覽器或使用Chrome");
-                            } else if (reason === 'invalid_client') {
-                                showLoginError("登入配置錯誤，請聯繫管理員");
-                            } else if (reason === 'opt_out_or_no_session') {
-                                showLoginError("請確保已啟用Google登入功能");
-                            } else {
-                                showLoginError("登入暫時不可用，請稍後重試");
-                            }
-                        }
-                    });
-                } catch (error) {
-                    isLoginInProgress = false;
-                    console.error("Google登入請求失敗:", error);
-                    
-                    // 檢查是否是請求中斷錯誤
-                    if (error.name === 'AbortError' || error.message.includes('aborted')) {
-                        console.warn("登入請求被中斷，可能是網路問題或頁面導航");
-                        showLoginError("登入請求被中斷，請檢查網路連接後重試");
-                    } else {
-                        showLoginError("登入失敗，請稍後重試");
+                    // 檢查提示視窗是否因某些原因 (例如 Cookie 設定) 而沒有顯示
+                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                        console.warn("Google 登入提示窗未顯示。原因:", notification.getNotDisplayedReason());
                     }
-                }
+                });
             } else {
                 alert("登入功能載入中，請稍候再試。");
             }
         }
         
-        // 新版 Google Identity Services 登入成功回調函數 (簡化版)
+        // 新版 Google Identity Services 登入成功回調函數 (優化版)
         function handleCredentialResponse(response) {
             const profile = parseJwt(response.credential);
-            if (!profile) {
-                console.error("無法從 Google 取得使用者資料。");
-                return;
-            }
+            if (!profile) return;
             
-            // 保存使用者資訊 (簡化)
+            // 保存使用者資訊
             currentUser = {
                 name: profile.name,
                 avatar: profile.picture,
@@ -1850,7 +1826,6 @@
             
             // 更新介面
             updateUIAfterLogin();
-            console.log('使用者登入成功:', profile.name);
         }
         
         // 新增：統一的UI更新函數
@@ -1988,7 +1963,7 @@
             if (authSection) {
                 authSection.innerHTML = `
                     <div class="manual-login">
-                        <input type="email" id="manual-email" placeholder="输入邮箱" class="px-3 py-2 border rounded mr-2">
+                        <input type="email" id="manual-email" placeholder="輸入郵箱" class="px-3 py-2 border rounded mr-2">
                         <button onclick="manualLogin()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
                             登入
                         </button>
@@ -2021,14 +1996,14 @@
             
             const authSection = document.querySelector('.auth-section');
             if (authSection) {
-                // 移除之前的错误信息
+                // 移除之前的錯誤資訊
                 const existingError = authSection.querySelector('.login-error');
                 if (existingError) {
                     existingError.remove();
                 }
                 
                 authSection.appendChild(errorDiv);
-                // 3秒后自动移除错误信息
+                // 3秒後自動移除錯誤資訊
                 setTimeout(() => {
                     if (errorDiv.parentNode) {
                         errorDiv.parentNode.removeChild(errorDiv);
