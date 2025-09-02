@@ -1784,7 +1784,7 @@
             }
         }
         
-        // 新增：点击按钮后触发 Google 登录的函数 (优化版)
+        // 新增：点击按钮后触发 Google 登录的函数 (增强错误处理版)
         function triggerGoogleLogin() {
             if (isLoginInProgress) {
                 console.log("登录流程已在 진행中，请稍候。");
@@ -1794,15 +1794,40 @@
             if (window.google && google.accounts && google.accounts.id) {
                 isLoginInProgress = true;
                 
-                // 使用 prompt() 的回调函数来处理状态
-                google.accounts.id.prompt((notification) => {
-                    isLoginInProgress = false; // 无论成功或失败，流程结束后重设旗标
+                try {
+                    // 使用 prompt() 的回调函数来处理状态
+                    google.accounts.id.prompt((notification) => {
+                        isLoginInProgress = false; // 无论成功或失败，流程结束后重设旗标
 
-                    // 检查提示窗口是否因某些原因 (例如 Cookie 设定) 而没有显示
-                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                        console.warn("Google 登录提示窗未显示。原因:", notification.getNotDisplayedReason());
+                        // 检查提示窗口是否因某些原因 (例如 Cookie 设定) 而没有显示
+                        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                            const reason = notification.getNotDisplayedReason();
+                            console.warn("Google 登录提示窗未显示。原因:", reason);
+                            
+                            // 根据具体原因提供解决方案
+                            if (reason === 'browser_not_supported') {
+                                showLoginError("您的浏览器不支持此登录方式，请尝试更新浏览器或使用Chrome");
+                            } else if (reason === 'invalid_client') {
+                                showLoginError("登录配置错误，请联系管理员");
+                            } else if (reason === 'opt_out_or_no_session') {
+                                showLoginError("请确保已启用Google登录功能");
+                            } else {
+                                showLoginError("登录暂时不可用，请稍后重试");
+                            }
+                        }
+                    });
+                } catch (error) {
+                    isLoginInProgress = false;
+                    console.error("Google登录请求失败:", error);
+                    
+                    // 检查是否是请求中断错误
+                    if (error.name === 'AbortError' || error.message.includes('aborted')) {
+                        console.warn("登录请求被中断，可能是网络问题或页面导航");
+                        showLoginError("登录请求被中断，请检查网络连接后重试");
+                    } else {
+                        showLoginError("登录失败，请稍后重试");
                     }
-                });
+                }
             } else {
                 alert("登录功能加载中，请稍候再试。");
             }
@@ -1873,23 +1898,62 @@
             }, 1000);
         });
         
-                // 初始化Google认证 (简化版)
+        // 添加页面可见性检测，防止在页面隐藏时进行登录操作
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && isLoginInProgress) {
+                console.log('页面隐藏，取消登录流程');
+                isLoginInProgress = false;
+                
+                // 如果Google API可用，取消当前请求
+                if (window.google && google.accounts && google.accounts.id) {
+                    try {
+                        google.accounts.id.cancel();
+                    } catch (error) {
+                        console.warn('取消Google登录请求失败:', error);
+                    }
+                }
+            }
+        });
+        
+                // 初始化Google认证 (增强错误处理版)
+        let authInitRetryCount = 0;
+        const MAX_AUTH_RETRIES = 3;
+        
         function initializeGoogleAuth() {
             try {
                 if (window.google && google.accounts && google.accounts.id) {
                     google.accounts.id.initialize({
                         client_id: '537222522180-n7ou6ojdpg861di8bc1jmghbhcc56d09.apps.googleusercontent.com',
                         callback: handleCredentialResponse,
-                        auto_select: false
+                        auto_select: false,
+                        cancel_on_tap_outside: true,
+                        prompt_parent_id: 'auth-section' // 指定提示窗口的父容器
                     });
                     
                     console.log('Google Identity Services 初始化成功');
+                    authInitRetryCount = 0; // 重置重试计数
                 } else {
                     console.error('Google Identity Services 未加载');
-                    showFallbackLogin();
+                    handleAuthInitFailure();
                 }
             } catch (error) {
                 console.error('初始化Google认证失败:', error);
+                handleAuthInitFailure();
+            }
+        }
+        
+        // 处理认证初始化失败
+        function handleAuthInitFailure() {
+            if (authInitRetryCount < MAX_AUTH_RETRIES) {
+                authInitRetryCount++;
+                console.log(`Google认证初始化失败，${3 - authInitRetryCount}秒后重试 (${authInitRetryCount}/${MAX_AUTH_RETRIES})`);
+                
+                // 延迟重试
+                setTimeout(() => {
+                    initializeGoogleAuth();
+                }, 3000);
+            } else {
+                console.error('Google认证初始化多次失败，显示备用登录方案');
                 showFallbackLogin();
             }
         }
