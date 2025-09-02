@@ -1,5 +1,0 @@
-[33mf631984[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m 重构为Tailwind CSS版本：使用简洁的Google Maps地址查询格式，优化响应式布局和视觉效果
-[33m3afe1cf[m 重构地图功能：使用简洁的JavaScript代码，添加Google Maps pin针标记，优化地图显示效果
-[33m1ff861e[m 重构地图切换功能：使用单个iframe和data-map-url属性，通过JavaScript动态更新地图
-[33ma41fd20[m 移除Google地图下方的店家详细信息显示区域，简化页面布局
-[33mfaa92ab[m 新增店家地址詳細信息顯示區域，點擊店家時同步顯示對應地址信息

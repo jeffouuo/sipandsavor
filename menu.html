@@ -8,6 +8,9 @@
     <link rel="shortcut icon" type="image/webp" href="/images/sipandsavor.webp">
     <link rel="stylesheet" href="style-optimized.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Google 登录相关 -->
+    <meta name="google-signin-client_id" content="537222522180-n7ou6ojdpg861di8bc1jmghbhcc56d09.apps.googleusercontent.com">
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
     <style>
         /* Logo樣式 - 背景圖片方式 */
         .logo-link {
@@ -586,6 +589,73 @@
             transform: scale(1);
         }
         
+        /* Google 登录相关样式 */
+        .auth-section {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+        
+        .auth-section .hidden {
+            display: none;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .user-name {
+            color: #333;
+            font-weight: 500;
+            margin-right: 12px;
+        }
+        
+        .signout-btn {
+            background: none;
+            border: 1px solid #ddd;
+            color: #666;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .signout-btn:hover {
+            background: #f5f5f5;
+            border-color: #ccc;
+        }
+        
+        /* 评价表单登录提示样式 */
+        .login-prompt {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .login-prompt p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .login-prompt .login-link {
+            color: #007bff;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .login-prompt .login-link:hover {
+            text-decoration: underline;
+        }
+        
         @media (max-width: 768px) {
             .category-nav {
                 flex-wrap: wrap;
@@ -612,6 +682,14 @@
                 width: 100px;
                 height: 100px;
             }
+            
+            .auth-section {
+                margin-right: 10px;
+            }
+            
+            .user-name {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -631,6 +709,18 @@
                 <li><a href="stores.html">門市據點</a></li>
             </ul>
         </nav>
+
+        <!-- Google 登录区域 -->
+        <div class="auth-section">
+            <!-- Google 登录按钮 -->
+            <div id="google-signin-button"></div>
+            <!-- 登录后显示的用户信息 -->
+            <div id="user-profile" class="hidden">
+                <img id="user-avatar" class="user-avatar" src="" alt="User Avatar">
+                <span id="user-name" class="user-name"></span>
+                <button onclick="signOut()" class="signout-btn">登出</button>
+            </div>
+        </div>
     
         <!-- 購物車圖標 -->
         <div class="cart-icon" id="cartIcon">
@@ -1401,7 +1491,14 @@
                     
                     <div class="write-review-section">
                         <h4>撰寫評價</h4>
-                        <form class="review-form" onsubmit="submitReview(event, '${productName}')">
+                        
+                        <!-- 未登录时显示的提示 -->
+                        <div id="login-prompt" class="login-prompt" style="display: ${currentUser ? 'none' : 'block'}">
+                            <p>請<span class="login-link" onclick="showGoogleSignIn()">登入</span>以發表您的評論。</p>
+                        </div>
+                        
+                        <!-- 登录后显示的表单 -->
+                        <form id="review-form" class="review-form" style="display: ${currentUser ? 'block' : 'none'}" onsubmit="submitReview(event, '${productName}')">
                             <div class="rating-input">
                                 <span class="star" data-rating="1">★</span>
                                 <span class="star" data-rating="2">★</span>
@@ -1494,6 +1591,12 @@
         async function submitReview(event, productName) {
             event.preventDefault();
             
+            // 检查用户是否已登录
+            if (!currentUser) {
+                alert('請先登入後再提交評價');
+                return;
+            }
+            
             const form = event.target;
             // 使用data-selected屬性檢查星級
             const ratingStars = form.querySelectorAll('.rating-input .star');
@@ -1517,7 +1620,7 @@
             }
             
             try {
-                // 提交評價到後端
+                // 提交評價到後端，使用Google账户信息
                 const response = await fetch('/api/reviews', {
                     method: 'POST',
                     headers: {
@@ -1527,7 +1630,9 @@
                         productName: productName,
                         rating: rating,
                         text: text.trim(),
-                        reviewerName: '匿名用戶'
+                        reviewerName: currentUser.name,
+                        reviewerEmail: currentUser.email,
+                        reviewerId: currentUser.id
                     })
                 });
                 
@@ -1539,7 +1644,7 @@
                     if (product) {
                         // 添加新評價到本地數據
                         const newReview = {
-                            name: '匿名用戶',
+                            name: currentUser.name,
                             rating: rating,
                             text: text.trim(),
                             date: new Date().toISOString().split('T')[0]
@@ -1587,6 +1692,101 @@
             if (event.target.classList.contains('review-modal')) {
                 closeReviewModal();
             }
+        });
+        
+        // Google 登录相关函数
+        let currentUser = null;
+        
+        // 当 Google API 加载完成后会自动调用此函数
+        function onSignIn(googleUser) {
+            // 从 Google 账户取得个人资料
+            const profile = googleUser.getBasicProfile();
+            const userName = profile.getName();
+            const userAvatar = profile.getImageUrl();
+            const userEmail = profile.getEmail();
+            
+            // 保存用户信息
+            currentUser = {
+                name: userName,
+                email: userEmail,
+                avatar: userAvatar,
+                id: profile.getId()
+            };
+            
+            // 更新界面
+            document.getElementById('google-signin-button').classList.add('hidden');
+            const userProfileDiv = document.getElementById('user-profile');
+            userProfileDiv.classList.remove('hidden');
+            userProfileDiv.classList.add('flex');
+            document.getElementById('user-name').textContent = userName;
+            document.getElementById('user-avatar').src = userAvatar;
+            
+            // 更新评价表单显示
+            updateReviewFormVisibility();
+        }
+        
+        // 登出函数
+        function signOut() {
+            const auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut().then(function () {
+                console.log('User signed out.');
+                // 清除用户信息
+                currentUser = null;
+                
+                // 更新界面
+                document.getElementById('google-signin-button').classList.remove('hidden');
+                document.getElementById('user-profile').classList.add('hidden');
+                
+                // 更新评价表单显示
+                updateReviewFormVisibility();
+            });
+        }
+        
+        // 渲染 Google 登录按钮
+        function renderButton() {
+            gapi.signin2.render('google-signin-button', {
+                'scope': 'profile email',
+                'width': 120,
+                'height': 40,
+                'longtitle': false,
+                'theme': 'light',
+                'onsuccess': onSignIn,
+                'onfailure': function(error) { 
+                    console.error('Google登录失败:', error); 
+                }
+            });
+        }
+        
+        // 显示Google登录
+        function showGoogleSignIn() {
+            // 触发Google登录
+            const auth2 = gapi.auth2.getAuthInstance();
+            if (auth2) {
+                auth2.signIn();
+            }
+        }
+        
+        // 更新评价表单可见性
+        function updateReviewFormVisibility() {
+            const loginPrompt = document.getElementById('login-prompt');
+            const reviewForm = document.getElementById('review-form');
+            
+            if (currentUser) {
+                // 用户已登录
+                if (loginPrompt) loginPrompt.style.display = 'none';
+                if (reviewForm) reviewForm.style.display = 'block';
+            } else {
+                // 用户未登录
+                if (loginPrompt) loginPrompt.style.display = 'block';
+                if (reviewForm) reviewForm.style.display = 'none';
+            }
+        }
+        
+        // 确保 gapi 对象加载完成后再渲染按钮
+        window.addEventListener('load', function() {
+            gapi.load('auth2', function() {
+                gapi.auth2.init().then(renderButton);
+            });
         });
     </script>
     <script src="script-enhanced.js"></script>
