@@ -10,7 +10,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https:; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https:;">
     <link rel="stylesheet" href="style-optimized.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <!-- Google 登录相关 -->
+            <!-- Google 登入相關 -->
     <meta name="google-signin-client_id" content="537222522180-n7ou6ojdpg861di8bc1jmghbhcc56d09.apps.googleusercontent.com">
     <!-- 使用新版的 Google Identity Services (GIS) 函式庫 -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -198,7 +198,7 @@
             will-change: transform;
         }
         
-        /* 登录按钮样式 */
+        /* 登入按鈕樣式 */
         .login-btn {
             background: linear-gradient(135deg, #4285f4, #34a853);
             color: white;
@@ -617,7 +617,7 @@
             transform: scale(1);
         }
         
-        /* Google 登录相关样式 */
+        /* Google 登入相關樣式 */
         .auth-section {
             display: flex;
             align-items: center;
@@ -657,7 +657,7 @@
             border-color: #ccc;
         }
         
-        /* 评价表单登录提示样式 */
+        /* 評價表單登入提示樣式 */
         .login-prompt {
             text-align: center;
             padding: 20px;
@@ -738,11 +738,11 @@
             </ul>
         </nav>
 
-        <!-- Google 登录区域 -->
+                    <!-- Google 登入區域 -->
         <div class="auth-section">
-            <!-- Google 登录按钮 -->
+            <!-- Google 登入按鈕 -->
             <div id="google-signin-button"></div>
-            <!-- 登录后显示的用户信息 -->
+                          <!-- 登入後顯示的使用者資訊 -->
             <div id="user-profile" class="hidden">
                 <img id="user-avatar" class="user-avatar" src="" alt="User Avatar">
                 <span id="user-name" class="user-name"></span>
@@ -1520,14 +1520,14 @@
                     <div class="write-review-section">
                         <h4>撰寫評價</h4>
                         
-                        <!-- 未登录时显示的提示 -->
+                        <!-- 未登入時顯示的提示 -->
                         <div id="login-prompt" class="login-prompt" style="display: ${currentUser ? 'none' : 'block'}">
                             <button onclick="triggerGoogleLogin()" class="login-btn">
                                 使用 Google 登入以發表評論
                             </button>
                         </div>
                         
-                        <!-- 登录后显示的表单 -->
+                        <!-- 登入後顯示的表單 -->
                         <form id="review-form" class="review-form" style="display: ${currentUser ? 'block' : 'none'}" onsubmit="submitReview(event, '${productName}')">
                             <div class="rating-input">
                                 <span class="star" data-rating="1">★</span>
@@ -1621,7 +1621,7 @@
         async function submitReview(event, productName) {
             event.preventDefault();
             
-            // 检查用户是否已登录
+            // 檢查使用者是否已登入
             if (!currentUser) {
                 alert('請先登入後再提交評價');
                 return;
@@ -1724,7 +1724,7 @@
             }
         });
         
-        // Google 登录相关函数
+        // Google 登入相關函數
         let currentUser = null;
         let isLoginInProgress = false; // 新增：防止重复点击的旗标
         
@@ -1734,10 +1734,10 @@
         function signOut() {
             console.log('User signed out.');
             
-            // 清除用户信息
+            // 清除使用者資訊
             currentUser = null;
             
-            // 更新界面
+            // 更新介面
             const userProfileDiv = document.getElementById('user-profile');
             if (userProfileDiv) {
                 userProfileDiv.classList.add('hidden');
@@ -1759,7 +1759,7 @@
             }
         }
         
-        // 渲染 Google 登录按钮 (使用新版 GIS API)
+        // 渲染 Google 登入按鈕 (使用新版 GIS API)
         function renderButton() {
             try {
                 if (window.google && google.accounts && google.accounts.id) {
@@ -1773,21 +1773,21 @@
                             width: 240
                         }
                     );
-                    console.log('Google 登录按钮渲染成功');
+                    console.log('Google 登入按鈕渲染成功');
                 } else {
-                    console.error('Google Identity Services 未加载');
+                    console.error('Google Identity Services 未載入');
                     showFallbackLogin();
                 }
             } catch (error) {
-                console.error('渲染 Google 登录按钮失败:', error);
+                console.error('渲染 Google 登入按鈕失敗:', error);
                 showFallbackLogin();
             }
         }
         
-        // 新增：点击按钮后触发 Google 登录的函数 (增强错误处理版)
+        // 新增：點擊按鈕後觸發 Google 登入的函數 (增強錯誤處理版)
         function triggerGoogleLogin() {
             if (isLoginInProgress) {
-                console.log("登录流程已在 진행中，请稍候。");
+                console.log("登入流程已在進行中，請稍候。");
                 return;
             }
 
@@ -1795,65 +1795,65 @@
                 isLoginInProgress = true;
                 
                 try {
-                    // 使用 prompt() 的回调函数来处理状态
+                    // 使用 prompt() 的回調函數來處理狀態
                     google.accounts.id.prompt((notification) => {
-                        isLoginInProgress = false; // 无论成功或失败，流程结束后重设旗标
+                        isLoginInProgress = false; // 無論成功或失敗，流程結束後重設旗標
 
-                        // 检查提示窗口是否因某些原因 (例如 Cookie 设定) 而没有显示
+                        // 檢查提示視窗是否因某些原因 (例如 Cookie 設定) 而沒有顯示
                         if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
                             const reason = notification.getNotDisplayedReason();
-                            console.warn("Google 登录提示窗未显示。原因:", reason);
+                            console.warn("Google 登入提示窗未顯示。原因:", reason);
                             
-                            // 根据具体原因提供解决方案
+                            // 根據具體原因提供解決方案
                             if (reason === 'browser_not_supported') {
-                                showLoginError("您的浏览器不支持此登录方式，请尝试更新浏览器或使用Chrome");
+                                showLoginError("您的瀏覽器不支援此登入方式，請嘗試更新瀏覽器或使用Chrome");
                             } else if (reason === 'invalid_client') {
-                                showLoginError("登录配置错误，请联系管理员");
+                                showLoginError("登入配置錯誤，請聯繫管理員");
                             } else if (reason === 'opt_out_or_no_session') {
-                                showLoginError("请确保已启用Google登录功能");
+                                showLoginError("請確保已啟用Google登入功能");
                             } else {
-                                showLoginError("登录暂时不可用，请稍后重试");
+                                showLoginError("登入暫時不可用，請稍後重試");
                             }
                         }
                     });
                 } catch (error) {
                     isLoginInProgress = false;
-                    console.error("Google登录请求失败:", error);
+                    console.error("Google登入請求失敗:", error);
                     
-                    // 检查是否是请求中断错误
+                    // 檢查是否是請求中斷錯誤
                     if (error.name === 'AbortError' || error.message.includes('aborted')) {
-                        console.warn("登录请求被中断，可能是网络问题或页面导航");
-                        showLoginError("登录请求被中断，请检查网络连接后重试");
+                        console.warn("登入請求被中斷，可能是網路問題或頁面導航");
+                        showLoginError("登入請求被中斷，請檢查網路連接後重試");
                     } else {
-                        showLoginError("登录失败，请稍后重试");
+                        showLoginError("登入失敗，請稍後重試");
                     }
                 }
             } else {
-                alert("登录功能加载中，请稍候再试。");
+                alert("登入功能載入中，請稍候再試。");
             }
         }
         
-        // 新版 Google Identity Services 登录成功回调函数 (简化版)
+        // 新版 Google Identity Services 登入成功回調函數 (簡化版)
         function handleCredentialResponse(response) {
             const profile = parseJwt(response.credential);
             if (!profile) {
-                console.error("无法从 Google 取得用户资料。");
+                console.error("無法從 Google 取得使用者資料。");
                 return;
             }
             
-            // 保存用户信息 (简化)
+            // 保存使用者資訊 (簡化)
             currentUser = {
                 name: profile.name,
                 avatar: profile.picture,
                 id: profile.sub
             };
             
-            // 更新界面
+            // 更新介面
             updateUIAfterLogin();
-            console.log('用户登录成功:', profile.name);
+            console.log('使用者登入成功:', profile.name);
         }
         
-        // 新增：统一的UI更新函数
+        // 新增：統一的UI更新函數
         function updateUIAfterLogin() {
             const userProfileDiv = document.getElementById('user-profile');
             if (userProfileDiv) {
@@ -1874,48 +1874,48 @@
             }
         }
         
-        // 更新评价表单可见性
+        // 更新評價表單可見性
         function updateReviewFormVisibility() {
             const loginPrompt = document.getElementById('login-prompt');
             const reviewForm = document.getElementById('review-form');
             
             if (currentUser) {
-                // 用户已登录
+                // 使用者已登入
                 if (loginPrompt) loginPrompt.classList.add('hidden');
                 if (reviewForm) reviewForm.classList.remove('hidden');
             } else {
-                // 用户未登录
+                // 使用者未登入
                 if (loginPrompt) loginPrompt.classList.remove('hidden');
                 if (reviewForm) reviewForm.classList.add('hidden');
             }
         }
         
-        // 确保 Google Identity Services 库加载完成后再渲染按钮
+        // 確保 Google Identity Services 庫載入完成後再渲染按鈕
         window.addEventListener('load', function() {
-            // 延迟初始化，确保GIS库完全加载
+            // 延遲初始化，確保GIS庫完全載入
             setTimeout(function() {
                 initializeGoogleAuth();
             }, 1000);
         });
         
-        // 添加页面可见性检测，防止在页面隐藏时进行登录操作
+        // 添加頁面可見性檢測，防止在頁面隱藏時進行登入操作
         document.addEventListener('visibilitychange', function() {
             if (document.hidden && isLoginInProgress) {
-                console.log('页面隐藏，取消登录流程');
+                console.log('頁面隱藏，取消登入流程');
                 isLoginInProgress = false;
                 
-                // 如果Google API可用，取消当前请求
+                // 如果Google API可用，取消當前請求
                 if (window.google && google.accounts && google.accounts.id) {
                     try {
                         google.accounts.id.cancel();
                     } catch (error) {
-                        console.warn('取消Google登录请求失败:', error);
+                        console.warn('取消Google登入請求失敗:', error);
                     }
                 }
             }
         });
         
-                // 初始化Google认证 (增强错误处理版)
+                // 初始化Google認證 (增強錯誤處理版)
         let authInitRetryCount = 0;
         const MAX_AUTH_RETRIES = 3;
         
@@ -1931,29 +1931,29 @@
                     });
                     
                     console.log('Google Identity Services 初始化成功');
-                    authInitRetryCount = 0; // 重置重试计数
+                    authInitRetryCount = 0; // 重置重試計數
                 } else {
-                    console.error('Google Identity Services 未加载');
+                    console.error('Google Identity Services 未載入');
                     handleAuthInitFailure();
                 }
             } catch (error) {
-                console.error('初始化Google认证失败:', error);
+                console.error('初始化Google認證失敗:', error);
                 handleAuthInitFailure();
             }
         }
         
-        // 处理认证初始化失败
+        // 處理認證初始化失敗
         function handleAuthInitFailure() {
             if (authInitRetryCount < MAX_AUTH_RETRIES) {
                 authInitRetryCount++;
-                console.log(`Google认证初始化失败，${3 - authInitRetryCount}秒后重试 (${authInitRetryCount}/${MAX_AUTH_RETRIES})`);
+                console.log(`Google認證初始化失敗，${3 - authInitRetryCount}秒後重試 (${authInitRetryCount}/${MAX_AUTH_RETRIES})`);
                 
-                // 延迟重试
+                // 延遲重試
                 setTimeout(() => {
                     initializeGoogleAuth();
                 }, 3000);
             } else {
-                console.error('Google认证初始化多次失败，显示备用登录方案');
+                console.error('Google認證初始化多次失敗，顯示備用登入方案');
                 showFallbackLogin();
             }
         }
@@ -1967,22 +1967,22 @@
             }
         }
         
-        // 备用登录方案
+        // 備用登入方案
         function showFallbackLogin() {
             const authSection = document.getElementById('auth-section');
             if (authSection) {
                 authSection.innerHTML = `
                     <div class="fallback-login">
-                        <p class="text-red-600 text-sm mb-2">Google登录暂时不可用</p>
+                        <p class="text-red-600 text-sm mb-2">Google登入暫時不可用</p>
                         <button onclick="showManualLogin()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                            手动登录
+                            手動登入
                         </button>
                     </div>
                 `;
             }
         }
         
-        // 显示手动登录界面
+        // 顯示手動登入介面
         function showManualLogin() {
             const authSection = document.getElementById('auth-section');
             if (authSection) {
@@ -1990,14 +1990,14 @@
                     <div class="manual-login">
                         <input type="email" id="manual-email" placeholder="输入邮箱" class="px-3 py-2 border rounded mr-2">
                         <button onclick="manualLogin()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                            登录
+                            登入
                         </button>
                     </div>
                 `;
             }
         }
         
-        // 手动登录处理
+        // 手動登入處理
         function manualLogin() {
             const email = document.getElementById('manual-email').value;
             if (email) {
@@ -2008,11 +2008,11 @@
                     id: 'manual_' + Date.now()
                 };
                 updateReviewFormVisibility();
-                console.log('手动登录成功:', email);
+                console.log('手動登入成功:', email);
             }
         }
         
-        // 显示登录错误信息
+        // 顯示登入錯誤資訊
         function showLoginError(message) {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'login-error';
