@@ -158,6 +158,77 @@
             background-color: #f0f8f0;
         }
 
+        /* 店家詳細信息區域樣式 */
+        .store-details-section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .store-details {
+            position: relative;
+        }
+
+        .store-detail {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .store-detail.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .store-detail h3 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+
+        .detail-content {
+            display: grid;
+            gap: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: #333;
+            min-width: 120px;
+            margin-right: 15px;
+        }
+
+        .detail-value {
+            color: #666;
+            font-size: 16px;
+        }
+
+        @media screen and (max-width: 768px) {
+            .detail-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .detail-label {
+                margin-bottom: 5px;
+                margin-right: 0;
+            }
+        }
+
         /* 確保 logo 在按鈕上方 */
         header h1 {
             z-index: 1000;
@@ -302,6 +373,68 @@
                     <iframe id="kaohsiungMap" class="store-map" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3688.1234567890123!2d120.3123456789012!3d22.61234567890123!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x346e1234567890ab%3A0x1234567890cdef12!2z6auY6ZuF5Y-w5YyX!5e0!3m2!1szh-TW!2stw!4v1648641234567!5m2!1szh-TW!2stw" allowfullscreen="" loading="lazy"></iframe>
                 </div>
             </section>
+
+            <!-- 店家地址詳細信息顯示區域 -->
+            <section class="store-details-section">
+                <div id="storeDetails" class="store-details">
+                    <!-- 台北總店詳細信息 (預設顯示) -->
+                    <div id="taipeiDetails" class="store-detail active">
+                        <h3>台北總店</h3>
+                        <div class="detail-content">
+                            <div class="detail-item">
+                                <span class="detail-label">📍 地址：</span>
+                                <span class="detail-value">台北市大安區忠孝東路四段107號4樓</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">📞 電話：</span>
+                                <span class="detail-value">(02) 2272-1369</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">🕒 營業時間：</span>
+                                <span class="detail-value">週一至週日：11:30 - 14:30, 17:30 - 21:30</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 台中旗艦店詳細信息 -->
+                    <div id="taichungDetails" class="store-detail">
+                        <h3>台中旗艦店</h3>
+                        <div class="detail-content">
+                            <div class="detail-item">
+                                <span class="detail-label">📍 地址：</span>
+                                <span class="detail-value">台中市西區公益路268號</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">📞 電話：</span>
+                                <span class="detail-value">(04) 2328-1167</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">🕒 營業時間：</span>
+                                <span class="detail-value">週一至週日：11:00 - 02:00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 高雄概念店詳細信息 -->
+                    <div id="kaohsiungDetails" class="store-detail">
+                        <h3>高雄概念店</h3>
+                        <div class="detail-content">
+                            <div class="detail-item">
+                                <span class="detail-label">📍 地址：</span>
+                                <span class="detail-value">高雄市前鎮區時代南一路85號</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">📞 電話：</span>
+                                <span class="detail-value">(07) 537-1333</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">🕒 營業時間：</span>
+                                <span class="detail-value">週一至週日：11:30 - 00:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
     </main>
 
@@ -326,7 +459,7 @@
     </footer>
 
     <script>
-        // 地圖切換功能
+        // 地圖和地址信息切換功能
         function showStoreMap(storeId) {
             // 移除所有地圖的active類別
             const allMaps = document.querySelectorAll('.store-map');
@@ -335,6 +468,10 @@
             // 移除所有店鋪卡片的active類別
             const allCards = document.querySelectorAll('.store-card');
             allCards.forEach(card => card.classList.remove('active'));
+            
+            // 移除所有詳細信息的active類別
+            const allDetails = document.querySelectorAll('.store-detail');
+            allDetails.forEach(detail => detail.classList.remove('active'));
             
             // 顯示選中的地圖
             const selectedMap = document.getElementById(storeId + 'Map');
@@ -347,6 +484,12 @@
             if (selectedCard) {
                 selectedCard.classList.add('active');
             }
+            
+            // 顯示選中的詳細信息
+            const selectedDetails = document.getElementById(storeId + 'Details');
+            if (selectedDetails) {
+                selectedDetails.classList.add('active');
+            }
         }
 
         // 頁面載入時預設顯示台北總店
@@ -355,6 +498,12 @@
             const taipeiCard = document.querySelector('[data-store="taipei"]');
             if (taipeiCard) {
                 taipeiCard.classList.add('active');
+            }
+            
+            // 預設顯示台北總店的詳細信息
+            const taipeiDetails = document.getElementById('taipeiDetails');
+            if (taipeiDetails) {
+                taipeiDetails.classList.add('active');
             }
         });
     </script>
