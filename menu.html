@@ -1728,36 +1728,55 @@
             updateReviewFormVisibility();
         }
         
-        // 登出函数
+        // 登出函数 (兼容新版和旧版API)
         function signOut() {
-            const auth2 = gapi.auth2.getAuthInstance();
-            auth2.signOut().then(function () {
-                console.log('User signed out.');
-                // 清除用户信息
-                currentUser = null;
-                
-                // 更新界面
-                document.getElementById('google-signin-button').classList.remove('hidden');
-                document.getElementById('user-profile').classList.add('hidden');
-                
-                // 更新评价表单显示
-                updateReviewFormVisibility();
-            });
+            console.log('User signed out.');
+            
+            // 清除用户信息
+            currentUser = null;
+            
+            // 更新界面，显示登录按钮
+            document.getElementById('google-signin-button').style.display = 'block';
+            document.getElementById('user-profile').classList.add('hidden');
+            
+            // 隐藏评论表单并显示提示
+            document.getElementById('login-prompt').classList.remove('hidden');
+            document.getElementById('review-form').classList.add('hidden');
+            
+            // 停用 Google 的自动选择功能，确保登出后按钮能正常显示
+            if (window.google && google.accounts && google.accounts.id) {
+                google.accounts.id.disableAutoSelect();
+            }
+            
+            // 重新渲染登录按钮
+            setTimeout(() => {
+                renderButton();
+            }, 100);
         }
         
-        // 渲染 Google 登录按钮
+        // 渲染 Google 登录按钮 (使用新版 GIS API)
         function renderButton() {
-            gapi.signin2.render('google-signin-button', {
-                'scope': 'profile email',
-                'width': 120,
-                'height': 40,
-                'longtitle': false,
-                'theme': 'light',
-                'onsuccess': onSignIn,
-                'onfailure': function(error) { 
-                    console.error('Google登录失败:', error); 
+            try {
+                if (window.google && google.accounts && google.accounts.id) {
+                    google.accounts.id.renderButton(
+                        document.getElementById("google-signin-button"),
+                        { 
+                            theme: "outline", 
+                            size: "large", 
+                            text: "signin_with", 
+                            shape: "rectangular",
+                            width: 240
+                        }
+                    );
+                    console.log('Google 登录按钮渲染成功');
+                } else {
+                    console.error('Google Identity Services 未加载');
+                    showFallbackLogin();
                 }
-            });
+            } catch (error) {
+                console.error('渲染 Google 登录按钮失败:', error);
+                showFallbackLogin();
+            }
         }
         
         // 显示Google登录
@@ -1769,6 +1788,42 @@
             }
         }
         
+        // 新版 Google Identity Services 登录成功回调函数
+        function handleCredentialResponse(response) {
+            const profile = parseJwt(response.credential);
+            if (!profile) {
+                console.error("无法从 Google 取得用户资料。");
+                showLoginError("登录失败，请重试");
+                return;
+            }
+            
+            const userName = profile.name;
+            const userAvatar = profile.picture;
+            const userEmail = profile.email;
+            
+            // 保存用户信息
+            currentUser = {
+                name: userName,
+                email: userEmail,
+                avatar: userAvatar,
+                id: profile.sub
+            };
+            
+            // 更新界面，显示用户信息
+            document.getElementById('google-signin-button').style.display = 'none';
+            const userProfileDiv = document.getElementById('user-profile');
+            userProfileDiv.classList.remove('hidden');
+            userProfileDiv.classList.add('flex');
+            document.getElementById('user-name').textContent = userName;
+            document.getElementById('user-avatar').src = userAvatar;
+            
+            // 显示评论表单
+            document.getElementById('login-prompt').classList.add('hidden');
+            document.getElementById('review-form').classList.remove('hidden');
+            
+            console.log('用户登录成功:', userName);
+        }
+        
         // 更新评价表单可见性
         function updateReviewFormVisibility() {
             const loginPrompt = document.getElementById('login-prompt');
@@ -1776,12 +1831,12 @@
             
             if (currentUser) {
                 // 用户已登录
-                if (loginPrompt) loginPrompt.style.display = 'none';
-                if (reviewForm) reviewForm.style.display = 'block';
+                if (loginPrompt) loginPrompt.classList.add('hidden');
+                if (reviewForm) reviewForm.classList.remove('hidden');
             } else {
                 // 用户未登录
-                if (loginPrompt) loginPrompt.style.display = 'block';
-                if (reviewForm) reviewForm.style.display = 'none';
+                if (loginPrompt) loginPrompt.classList.remove('hidden');
+                if (reviewForm) reviewForm.classList.add('hidden');
             }
         }
         
@@ -1799,7 +1854,9 @@
                 if (window.google && google.accounts && google.accounts.id) {
                     google.accounts.id.initialize({
                         client_id: '537222522180-n7ou6ojdpg861di8bc1jmghbhcc56d09.apps.googleusercontent.com',
-                        callback: handleCredentialResponse // 设定登录成功后要呼叫的函数
+                        callback: handleCredentialResponse, // 设定登录成功后要呼叫的函数
+                        auto_select: false, // 禁用自动选择
+                        cancel_on_tap_outside: true // 点击外部取消
                     });
                     
                     console.log('Google Identity Services 初始化成功');
@@ -1821,6 +1878,51 @@
             } catch (e) {
                 console.error('JWT解析失败:', e);
                 return null;
+            }
+        }
+        
+        // 备用登录方案
+        function showFallbackLogin() {
+            const authSection = document.getElementById('auth-section');
+            if (authSection) {
+                authSection.innerHTML = `
+                    <div class="fallback-login">
+                        <p class="text-red-600 text-sm mb-2">Google登录暂时不可用</p>
+                        <button onclick="showManualLogin()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                            手动登录
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // 显示手动登录界面
+        function showManualLogin() {
+            const authSection = document.getElementById('auth-section');
+            if (authSection) {
+                authSection.innerHTML = `
+                    <div class="manual-login">
+                        <input type="email" id="manual-email" placeholder="输入邮箱" class="px-3 py-2 border rounded mr-2">
+                        <button onclick="manualLogin()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                            登录
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // 手动登录处理
+        function manualLogin() {
+            const email = document.getElementById('manual-email').value;
+            if (email) {
+                currentUser = {
+                    name: email.split('@')[0],
+                    email: email,
+                    avatar: '',
+                    id: 'manual_' + Date.now()
+                };
+                updateReviewFormVisibility();
+                console.log('手动登录成功:', email);
             }
         }
         
