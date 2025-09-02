@@ -1729,30 +1729,33 @@
         
 
         
-        // 登出函数 (兼容新版和旧版API)
+        // 登出函数 (简化版)
         function signOut() {
             console.log('User signed out.');
             
             // 清除用户信息
             currentUser = null;
             
-            // 更新界面，显示登录按钮
-            document.getElementById('google-signin-button').style.display = 'block';
-            document.getElementById('user-profile').classList.add('hidden');
+            // 更新界面
+            const userProfileDiv = document.getElementById('user-profile');
+            if (userProfileDiv) {
+                userProfileDiv.classList.add('hidden');
+            }
+
+            const loginPromptDiv = document.getElementById('login-prompt');
+            if (loginPromptDiv) {
+                loginPromptDiv.classList.remove('hidden');
+            }
+
+            const reviewForm = document.getElementById('review-form');
+            if (reviewForm) {
+                reviewForm.classList.add('hidden');
+            }
             
-            // 隐藏评论表单并显示提示
-            document.getElementById('login-prompt').classList.remove('hidden');
-            document.getElementById('review-form').classList.add('hidden');
-            
-            // 停用 Google 的自动选择功能，确保登出后按钮能正常显示
+            // 停用 Google 的自动选择功能
             if (window.google && google.accounts && google.accounts.id) {
                 google.accounts.id.disableAutoSelect();
             }
-            
-            // 重新渲染登录按钮
-            setTimeout(() => {
-                renderButton();
-            }, 100);
         }
         
         // 渲染 Google 登录按钮 (使用新版 GIS API)
@@ -1780,51 +1783,54 @@
             }
         }
         
-        // 新增：点击按钮后触发 Google 登录的函数
+        // 新增：点击按钮后触发 Google 登录的函数 (简化版)
         function triggerGoogleLogin() {
             if (window.google && google.accounts && google.accounts.id) {
-                // 以弹出窗口的方式提示用户登录
-                google.accounts.id.prompt(); 
+                google.accounts.id.prompt();
             } else {
-                console.error("Google 登录功能尚未准备好。");
                 alert("登录功能加载中，请稍候再试。");
             }
         }
         
-        // 新版 Google Identity Services 登录成功回调函数
+        // 新版 Google Identity Services 登录成功回调函数 (简化版)
         function handleCredentialResponse(response) {
             const profile = parseJwt(response.credential);
             if (!profile) {
                 console.error("无法从 Google 取得用户资料。");
-                showLoginError("登录失败，请重试");
                 return;
             }
             
-            const userName = profile.name;
-            const userAvatar = profile.picture;
-            const userEmail = profile.email;
-            
-            // 保存用户信息
+            // 保存用户信息 (简化)
             currentUser = {
-                name: userName,
-                email: userEmail,
-                avatar: userAvatar,
+                name: profile.name,
+                avatar: profile.picture,
                 id: profile.sub
             };
             
-            // 更新界面，显示用户信息
-            document.getElementById('google-signin-button').style.display = 'none';
+            // 更新界面
+            updateUIAfterLogin();
+            console.log('用户登录成功:', profile.name);
+        }
+        
+        // 新增：统一的UI更新函数
+        function updateUIAfterLogin() {
             const userProfileDiv = document.getElementById('user-profile');
-            userProfileDiv.classList.remove('hidden');
-            userProfileDiv.classList.add('flex');
-            document.getElementById('user-name').textContent = userName;
-            document.getElementById('user-avatar').src = userAvatar;
+            if (userProfileDiv) {
+                userProfileDiv.classList.remove('hidden');
+                userProfileDiv.classList.add('flex');
+                document.getElementById('user-name').textContent = currentUser.name;
+                document.getElementById('user-avatar').src = currentUser.avatar;
+            }
+
+            const loginPromptDiv = document.getElementById('login-prompt');
+            if (loginPromptDiv) {
+                loginPromptDiv.classList.add('hidden');
+            }
             
-            // 显示评论表单
-            document.getElementById('login-prompt').classList.add('hidden');
-            document.getElementById('review-form').classList.remove('hidden');
-            
-            console.log('用户登录成功:', userName);
+            const reviewForm = document.getElementById('review-form');
+            if (reviewForm) {
+                reviewForm.classList.remove('hidden');
+            }
         }
         
         // 更新评价表单可见性
@@ -1851,19 +1857,17 @@
             }, 1000);
         });
         
-                // 初始化Google认证 (使用新版GIS API)
+                // 初始化Google认证 (简化版)
         function initializeGoogleAuth() {
             try {
                 if (window.google && google.accounts && google.accounts.id) {
                     google.accounts.id.initialize({
                         client_id: '537222522180-n7ou6ojdpg861di8bc1jmghbhcc56d09.apps.googleusercontent.com',
-                        callback: handleCredentialResponse, // 设定登录成功后要呼叫的函数
-                        auto_select: false, // 禁用自动选择
-                        cancel_on_tap_outside: true // 点击外部取消
+                        callback: handleCredentialResponse,
+                        auto_select: false
                     });
                     
                     console.log('Google Identity Services 初始化成功');
-                    // 不再自动渲染按钮，改为手动触发登录
                 } else {
                     console.error('Google Identity Services 未加载');
                     showFallbackLogin();
@@ -1874,13 +1878,12 @@
             }
         }
         
-        // JWT 解析函数 (从网络上找的标准函数)
+        // JWT 解析函数 (简化版)
         function parseJwt(token) {
-            try {
-                return JSON.parse(atob(token.split('.')[1]));
-            } catch (e) {
-                console.error('JWT解析失败:', e);
-                return null;
+            try { 
+                return JSON.parse(atob(token.split('.')[1])); 
+            } catch (e) { 
+                return null; 
             }
         }
         
