@@ -198,6 +198,31 @@
             will-change: transform;
         }
         
+        /* 登录按钮样式 */
+        .login-btn {
+            background: linear-gradient(135deg, #4285f4, #34a853);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+            min-width: 280px;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+            background: linear-gradient(135deg, #3367d6, #2e8b57);
+        }
+        
+        .login-btn:active {
+            transform: translateY(0);
+        }
+        
         .drink-image {
             will-change: transform;
         }
@@ -1497,7 +1522,9 @@
                         
                         <!-- 未登录时显示的提示 -->
                         <div id="login-prompt" class="login-prompt" style="display: ${currentUser ? 'none' : 'block'}">
-                            <p>請<span class="login-link">登入</span>以發表您的評論。</p>
+                            <button onclick="triggerGoogleLogin()" class="login-btn">
+                                使用 Google 登入以發表評論
+                            </button>
                         </div>
                         
                         <!-- 登录后显示的表单 -->
@@ -1753,7 +1780,16 @@
             }
         }
         
-
+        // 新增：点击按钮后触发 Google 登录的函数
+        function triggerGoogleLogin() {
+            if (window.google && google.accounts && google.accounts.id) {
+                // 以弹出窗口的方式提示用户登录
+                google.accounts.id.prompt(); 
+            } else {
+                console.error("Google 登录功能尚未准备好。");
+                alert("登录功能加载中，请稍候再试。");
+            }
+        }
         
         // 新版 Google Identity Services 登录成功回调函数
         function handleCredentialResponse(response) {
@@ -1815,7 +1851,7 @@
             }, 1000);
         });
         
-        // 初始化Google认证 (使用新版GIS API)
+                // 初始化Google认证 (使用新版GIS API)
         function initializeGoogleAuth() {
             try {
                 if (window.google && google.accounts && google.accounts.id) {
@@ -1827,7 +1863,7 @@
                     });
                     
                     console.log('Google Identity Services 初始化成功');
-                    renderButton();
+                    // 不再自动渲染按钮，改为手动触发登录
                 } else {
                     console.error('Google Identity Services 未加载');
                     showFallbackLogin();
