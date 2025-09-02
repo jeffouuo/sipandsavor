@@ -12,7 +12,8 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <!-- Google 登录相关 -->
     <meta name="google-signin-client_id" content="537222522180-n7ou6ojdpg861di8bc1jmghbhcc56d09.apps.googleusercontent.com">
-    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <!-- 使用新版的 Google Identity Services (GIS) 函式庫 -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* Logo樣式 - 背景圖片方式 */
         .logo-link {
@@ -1786,10 +1787,67 @@
         
         // 确保 gapi 对象加载完成后再渲染按钮
         window.addEventListener('load', function() {
-            gapi.load('auth2', function() {
-                gapi.auth2.init().then(renderButton);
-            });
+            // 延迟初始化，确保GIS库完全加载
+            setTimeout(function() {
+                initializeGoogleAuth();
+            }, 1000);
         });
+        
+        // 初始化Google认证 (使用新版GIS API)
+        function initializeGoogleAuth() {
+            try {
+                if (window.google && google.accounts && google.accounts.id) {
+                    google.accounts.id.initialize({
+                        client_id: '537222522180-n7ou6ojdpg861di8bc1jmghbhcc56d09.apps.googleusercontent.com',
+                        callback: handleCredentialResponse // 设定登录成功后要呼叫的函数
+                    });
+                    
+                    console.log('Google Identity Services 初始化成功');
+                    renderButton();
+                } else {
+                    console.error('Google Identity Services 未加载');
+                    showFallbackLogin();
+                }
+            } catch (error) {
+                console.error('初始化Google认证失败:', error);
+                showFallbackLogin();
+            }
+        }
+        
+        // JWT 解析函数 (从网络上找的标准函数)
+        function parseJwt(token) {
+            try {
+                return JSON.parse(atob(token.split('.')[1]));
+            } catch (e) {
+                console.error('JWT解析失败:', e);
+                return null;
+            }
+        }
+        
+        // 显示登录错误信息
+        function showLoginError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'login-error';
+            errorDiv.textContent = message;
+            errorDiv.style.cssText = 'color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 4px; margin: 10px 0; text-align: center;';
+            
+            const authSection = document.querySelector('.auth-section');
+            if (authSection) {
+                // 移除之前的错误信息
+                const existingError = authSection.querySelector('.login-error');
+                if (existingError) {
+                    existingError.remove();
+                }
+                
+                authSection.appendChild(errorDiv);
+                // 3秒后自动移除错误信息
+                setTimeout(() => {
+                    if (errorDiv.parentNode) {
+                        errorDiv.parentNode.removeChild(errorDiv);
+                    }
+                }, 3000);
+            }
+        }
     </script>
     <script src="script-enhanced.js"></script>
     
