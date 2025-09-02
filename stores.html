@@ -113,9 +113,34 @@
         }
 
         .map-section {
-            height: 400px;
             margin-top: 40px;
-            border-radius: 10px;
+        }
+
+        .map-section .w-full {
+            width: 100%;
+        }
+
+        .map-section .h-96 {
+            height: 24rem;
+        }
+
+        .map-section .md\\:h-\\[500px\\] {
+            height: 500px;
+        }
+
+        .map-section .bg-gray-200 {
+            background-color: #e5e7eb;
+        }
+
+        .map-section .rounded-lg {
+            border-radius: 0.5rem;
+        }
+
+        .map-section .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .map-section .overflow-hidden {
             overflow: hidden;
         }
 
@@ -132,9 +157,19 @@
             cursor: pointer;
         }
 
-        .store-card.active {
+        .store-card.active,
+        .store-card.ring-2.ring-green-500 {
             border: 2px solid #4CAF50;
             background-color: #f0f8f0;
+        }
+
+        /* 添加 ring 样式支持 */
+        .store-card.ring-2 {
+            box-shadow: 0 0 0 2px #10b981;
+        }
+
+        .store-card.ring-green-500 {
+            box-shadow: 0 0 0 2px #10b981;
         }
 
 
@@ -223,7 +258,7 @@
                 <h2>全台門市</h2>
                 <div class="stores-grid">
                     <!-- 台北總店 -->
-                    <div class="store-card" data-store="taipei" data-map-url="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3615.002769573873!2d121.54499987600001!3d25.033964979999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3442abb6da80a7ad%3A0xacc4d11dc963103c!2z5Y-w5YyX5biC5aSn5a6J!5e0!3m2!1szh-TW!2stw!4v1648641234567!5m2!1szh-TW!2stw">
+                    <div class="store-card" data-store="taipei" data-map-url="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3615.002769573873!2d121.54499987600001!3d25.033964979999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3442abb6da80a7ad%3A0xacc4d11dc963103c!2z5Y-w5YyX5biC5aSn5a6J!5e0!3m2!1szh-TW!2stw!4v1648641234567!5m2!1szh-TW!2stw&markers=color:red%7Clabel:T%7C25.033965,121.544999">
                         <div class="store-info">
                             <h3>台北總店</h3>
                             <p>台北市大安區忠孝東路四段107號4樓</p>
@@ -239,7 +274,7 @@
                     </div>
 
                     <!-- 台中旗艦店 -->
-                    <div class="store-card" data-store="taichung" data-map-url="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3640.1234567890123!2d120.6645678901234!3d24.12345678901234!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x34693d1234567890%3A0x1234567890abcdef!2z5Lit5Y2A5Y-w5YyX!5e0!3m2!1szh-TW!2stw!4v1648641234567!5m2!1szh-TW!2stw">
+                    <div class="store-card" data-store="taichung" data-map-url="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3640.1234567890123!2d120.6645678901234!3d24.12345678901234!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x34693d1234567890%3A0x1234567890abcdef!2z5Lit5Y2A5Y-w5YyX!5e0!3m2!1szh-TW!2stw!4v1648641234567!5m2!1szh-TW!2stw&markers=color:red%7Clabel:C%7C24.123457,120.664568">
                         <div class="store-info">
                             <h3>台中旗艦店</h3>
                             <p>台中市西區公益路268號</p>
@@ -254,7 +289,7 @@
                     </div>
 
                     <!-- 高雄概念店 -->
-                    <div class="store-card" data-store="kaohsiung" data-map-url="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3688.1234567890123!2d120.3123456789012!3d22.61234567890123!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3469e1234567890ab%3A0x1234567890cdef12!2z6auY6ZuF5Y-w5YyX!5e0!3m2!1szh-TW!2stw!4v1648641234567!5m2!1szh-TW!2stw">
+                    <div class="store-card" data-store="kaohsiung" data-map-url="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3688.1234567890123!2d120.3123456789012!3d22.61234567890123!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3469e1234567890ab%3A0x1234567890cdef12!2z6auY6ZuF5Y-w5YyX!5e0!3m2!1szh-TW!2stw!4v1648641234567!5m2!1szh-TW!2stw&markers=color:red%7Clabel:K%7C22.612346,120.312346">
                         <div class="store-info">
                             <h3>高雄概念店</h3>
                             <p>高雄市前鎮區時代南一路85號</p>
@@ -270,9 +305,20 @@
                 </div>
             </section>
 
-            <!-- 地圖區塊 -->
+            <!-- Google Map 嵌入區塊 -->
             <section class="map-section">
-                <iframe id="storeMap" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3615.002769573873!2d121.54499987600001!3d25.033964979999998!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3442abb6da80a7ad%3A0xacc4d11dc963103c!2z5Y-w5YyX5biC5aSn5a6J!5e0!3m2!1szh-TW!2stw!4v1648641234567!5m2!1szh-TW!2stw" allowfullscreen="" loading="lazy"></iframe>
+                <div class="w-full h-96 md:h-[500px] bg-gray-200 rounded-lg shadow-lg overflow-hidden">
+                    <iframe
+                        id="map-iframe"
+                        width="100%"
+                        height="100%"
+                        frameborder="0"
+                        scrolling="no"
+                        marginheight="0"
+                        marginwidth="0"
+                        src=""
+                    ></iframe>
+                </div>
             </section>
 
 
@@ -300,41 +346,34 @@
     </footer>
 
     <script>
-        // 地圖切換功能
-        function showStoreMap(storeId) {
-            // 移除所有店鋪卡片的active類別
-            const allCards = document.querySelectorAll('.store-card');
-            allCards.forEach(card => card.classList.remove('active'));
+        // 取得所有的店家卡片元素
+        const storeCards = document.querySelectorAll('.store-card');
+        // 取得地圖的 iframe 元素
+        const mapIframe = document.getElementById('map-iframe');
+
+        // 設定預設顯示的地圖 (第一家店)
+        if (storeCards.length > 0) {
+            const defaultMapUrl = storeCards[0].getAttribute('data-map-url');
+            mapIframe.setAttribute('src', defaultMapUrl);
             
-            // 為選中的店鋪卡片添加active類別
-            const selectedCard = document.querySelector(`[data-store="${storeId}"]`);
-            if (selectedCard) {
-                selectedCard.classList.add('active');
-                
-                // 獲取地圖網址並更新iframe
-                const mapUrl = selectedCard.getAttribute('data-map-url');
-                if (mapUrl) {
-                    const storeMap = document.getElementById('storeMap');
-                    storeMap.src = mapUrl;
-                }
-            }
+            // 預設選中第一家店
+            storeCards[0].classList.add('ring-2', 'ring-green-500');
         }
 
-        // 頁面載入時預設顯示台北總店
-        document.addEventListener('DOMContentLoaded', function() {
-            // 預設選中台北總店
-            const taipeiCard = document.querySelector('[data-store="taipei"]');
-            if (taipeiCard) {
-                taipeiCard.classList.add('active');
-            }
-            
-            // 為所有店家卡片添加點擊事件監聽器
-            const storeCards = document.querySelectorAll('.store-card');
-            storeCards.forEach(card => {
-                card.addEventListener('click', function() {
-                    const storeId = this.getAttribute('data-store');
-                    showStoreMap(storeId);
-                });
+        // 為每一張卡片加上點擊事件監聽
+        storeCards.forEach(card => {
+            card.addEventListener('click', () => {
+                // 取得被點擊卡片的 data-map-url
+                const mapUrl = card.getAttribute('data-map-url');
+                
+                // 更新 iframe 的 src 來切換地圖
+                mapIframe.setAttribute('src', mapUrl);
+
+                // 更新卡片的選中狀態樣式
+                // 1. 移除所有卡片的選中樣式
+                storeCards.forEach(c => c.classList.remove('ring-2', 'ring-green-500'));
+                // 2. 為被點擊的卡片加上選中樣式
+                card.classList.add('ring-2', 'ring-green-500');
             });
         });
     </script>
