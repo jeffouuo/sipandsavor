@@ -743,10 +743,11 @@
             <!-- Google 登入按鈕 -->
             <div id="google-signin-button"></div>
                           <!-- 登入後顯示的使用者資訊 -->
-            <div id="user-profile" class="hidden">
-                <img id="user-avatar" class="user-avatar" src="" alt="User Avatar">
-                <span id="user-name" class="user-name"></span>
-                <button onclick="signOut()" class="signout-btn">登出</button>
+            <!-- 修改：將 ml-4 改為 ml-8 來增加左邊間距 -->
+            <div id="user-profile" class="hidden items-center ml-8">
+                <img id="user-avatar" class="w-8 h-8 rounded-full mr-2" src="" alt="User Avatar">
+                <span id="user-name" class="text-gray-700 font-semibold"></span>
+                <button onclick="signOut()" class="ml-4 text-sm text-blue-500 hover:underline">登出</button>
             </div>
         </div>
     
