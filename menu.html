@@ -10,10 +10,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https:; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https:;">
     <link rel="stylesheet" href="style-optimized.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-            <!-- Google 登入相關 -->
-    <meta name="google-signin-client_id" content="537222522180-n7ou6ojdpg861di8bc1jmghbhcc56d09.apps.googleusercontent.com">
-    <!-- 使用新版的 Google Identity Services (GIS) 函式庫 -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+        
     <style>
         /* Logo樣式 - 背景圖片方式 */
         .logo-link {
@@ -198,30 +195,7 @@
             will-change: transform;
         }
         
-        /* 登入按鈕樣式 */
-        .login-btn {
-            background: linear-gradient(135deg, #4285f4, #34a853);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
-            min-width: 280px;
-        }
-        
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
-            background: linear-gradient(135deg, #3367d6, #2e8b57);
-        }
-        
-        .login-btn:active {
-            transform: translateY(0);
-        }
+
         
         .drink-image {
             will-change: transform;
@@ -1169,7 +1143,7 @@
             // 直接調用全局購物車系統
             if (typeof window.addToCart === 'function') {
                 try {
-                    window.addToCart(itemName, price, customizations, specialRequest, false);
+                    window.addToCart(itemName, price, customizations, specialRequest, true);
                     showSuccessMessage(`${itemName} 已加入購物車`);
                 } catch (error) {
                     showSuccessMessage(`${itemName} 已加入購物車`);
@@ -1515,15 +1489,8 @@
                     <div class="write-review-section">
                         <h4>撰寫評價</h4>
                         
-                        <!-- 未登入時顯示的提示 -->
-                        <div id="login-prompt" class="login-prompt" style="display: ${currentUser ? 'none' : 'block'}">
-                            <button onclick="triggerGoogleLogin()" class="login-btn">
-                                使用 Google 登入以發表評論
-                            </button>
-                        </div>
-                        
-                        <!-- 登入後顯示的表單 -->
-                        <form id="review-form" class="review-form" style="display: ${currentUser ? 'block' : 'none'}" onsubmit="submitReview(event, '${productName}')">
+                        <!-- 評價表單 -->
+                        <form id="review-form" class="review-form" onsubmit="submitReview(event, '${productName}')">
                             <div class="rating-input">
                                 <span class="star" data-rating="1">★</span>
                                 <span class="star" data-rating="2">★</span>
@@ -1616,12 +1583,6 @@
         async function submitReview(event, productName) {
             event.preventDefault();
             
-            // 檢查使用者是否已登入
-            if (!currentUser) {
-                alert('請先登入後再提交評價');
-                return;
-            }
-            
             const form = event.target;
             // 使用data-selected屬性檢查星級
             const ratingStars = form.querySelectorAll('.rating-input .star');
@@ -1645,7 +1606,7 @@
             }
             
             try {
-                // 提交評價到後端，使用Google账户信息
+                // 提交評價到後端
                 const response = await fetch('/api/reviews', {
                     method: 'POST',
                     headers: {
@@ -1655,9 +1616,7 @@
                         productName: productName,
                         rating: rating,
                         text: text.trim(),
-                        reviewerName: currentUser.name,
-                        reviewerEmail: currentUser.email,
-                        reviewerId: currentUser.id
+                        reviewerName: '匿名用戶'
                     })
                 });
                 
@@ -1669,7 +1628,7 @@
                     if (product) {
                         // 添加新評價到本地數據
                         const newReview = {
-                            name: currentUser.name,
+                            name: '匿名用戶',
                             rating: rating,
                             text: text.trim(),
                             date: new Date().toISOString().split('T')[0]
@@ -1719,320 +1678,7 @@
             }
         });
         
-        // Google 登入相關函數
-        let currentUser = null;
-        let isLoginInProgress = false; // 新增：防止重复点击的旗标
-        
-
-        
-        // 登出函数 (增强版)
-        function signOut() {
-            console.log('User signed out.');
-            
-            // 清除使用者資訊
-            currentUser = null;
-            
-            // 更新介面
-            const userProfileDiv = document.getElementById('user-profile');
-            if (userProfileDiv) {
-                userProfileDiv.classList.add('hidden');
-            }
-
-            const loginPromptDiv = document.getElementById('login-prompt');
-            if (loginPromptDiv) {
-                loginPromptDiv.classList.remove('hidden');
-            }
-
-            const reviewForm = document.getElementById('review-form');
-            if (reviewForm) {
-                reviewForm.classList.add('hidden');
-            }
-            
-            // 新增：關閉評價模態框
-            const reviewModal = document.querySelector('.review-modal');
-            if (reviewModal) {
-                closeReviewModal();
-            }
-            
-            // 停用 Google 的自动选择功能
-            if (window.google && google.accounts && google.accounts.id) {
-                google.accounts.id.disableAutoSelect();
-            }
-            
-            // 新增：解決登出後無法再次登入問題的程式碼
-            // 透過手動清除 Google 函式庫的狀態 Cookie，來重設「冷卻時間」
-            document.cookie = "g_state=;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT";
-        }
-        
-        // 渲染 Google 登入按鈕 (使用新版 GIS API)
-        function renderButton() {
-            try {
-                if (window.google && google.accounts && google.accounts.id) {
-                    google.accounts.id.renderButton(
-                        document.getElementById("google-signin-button"),
-                        { 
-                            theme: "outline", 
-                            size: "large", 
-                            text: "signin_with", 
-                            shape: "rectangular",
-                            width: 240
-                        }
-                    );
-                    console.log('Google 登入按鈕渲染成功');
-                } else {
-                    console.error('Google Identity Services 未載入');
-                    showFallbackLogin();
-                }
-            } catch (error) {
-                console.error('渲染 Google 登入按鈕失敗:', error);
-                showFallbackLogin();
-            }
-        }
-        
-        // 新增：點擊按鈕後觸發 Google 登入的函數 (優化版)
-        function triggerGoogleLogin() {
-            if (isLoginInProgress) {
-                console.log("登入流程已在進行中，請稍候。");
-                return;
-            }
-
-            if (window.google && google.accounts && google.accounts.id) {
-                isLoginInProgress = true;
-                
-                // 使用 prompt() 的回呼函式來處理狀態
-                google.accounts.id.prompt((notification) => {
-                    isLoginInProgress = false; // 無論成功或失敗，流程結束後重設旗標
-
-                    // 檢查提示視窗是否因某些原因 (例如 Cookie 設定) 而沒有顯示
-                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                        console.warn("Google 登入提示窗未顯示。原因:", notification.getNotDisplayedReason());
-                    }
-                });
-            } else {
-                alert("登入功能載入中，請稍候再試。");
-            }
-        }
-        
-        // 新版 Google Identity Services 登入成功回調函數 (優化版)
-        function handleCredentialResponse(response) {
-            const profile = parseJwt(response.credential);
-            if (!profile) return;
-            
-            // 保存使用者資訊
-            currentUser = {
-                name: profile.name,
-                avatar: profile.picture,
-                id: profile.sub
-            };
-            
-            // 更新介面
-            updateUIAfterLogin();
-        }
-        
-        // 新增：統一的UI更新函數
-        function updateUIAfterLogin() {
-            const userProfileDiv = document.getElementById('user-profile');
-            if (userProfileDiv) {
-                userProfileDiv.classList.remove('hidden');
-                userProfileDiv.classList.add('flex');
-                // 移除對 user-name 元素的引用，因為已刪除該元素
-                document.getElementById('user-avatar').src = currentUser.avatar;
-            }
-
-            const loginPromptDiv = document.getElementById('login-prompt');
-            if (loginPromptDiv) {
-                loginPromptDiv.classList.add('hidden');
-            }
-            
-            // 檢查是否有評價表單，如果有則顯示
-            const reviewForm = document.getElementById('review-form');
-            if (reviewForm) {
-                reviewForm.classList.remove('hidden');
-            }
-            
-            // 新增：自動觸發評價界面顯示
-            // 如果當前在菜單頁面，自動顯示第一個產品的評價選項
-            if (window.location.pathname.includes('menu.html')) {
-                // 延遲一下確保頁面完全載入
-                setTimeout(() => {
-                    showFirstProductReview();
-                }, 500);
-            }
-        }
-        
-        // 新增：顯示第一個產品的評價選項
-        function showFirstProductReview() {
-            // 查找第一個產品項目
-            const firstProduct = document.querySelector('.drink-item');
-            if (firstProduct) {
-                // 模擬點擊第一個產品，觸發評價模態框
-                firstProduct.click();
-            }
-        }
-        
-        // 更新評價表單可見性
-        function updateReviewFormVisibility() {
-            const loginPrompt = document.getElementById('login-prompt');
-            const reviewForm = document.getElementById('review-form');
-            
-            if (currentUser) {
-                // 使用者已登入
-                if (loginPrompt) loginPrompt.classList.add('hidden');
-                if (reviewForm) reviewForm.classList.remove('hidden');
-            } else {
-                // 使用者未登入
-                if (loginPrompt) loginPrompt.classList.remove('hidden');
-                if (reviewForm) reviewForm.classList.add('hidden');
-            }
-        }
-        
-        // 確保 Google Identity Services 庫載入完成後再渲染按鈕
-        window.addEventListener('load', function() {
-            // 延遲初始化，確保GIS庫完全載入
-            setTimeout(function() {
-                initializeGoogleAuth();
-            }, 1000);
-        });
-        
-        // 添加頁面可見性檢測，防止在頁面隱藏時進行登入操作
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden && isLoginInProgress) {
-                console.log('頁面隱藏，取消登入流程');
-                isLoginInProgress = false;
-                
-                // 如果Google API可用，取消當前請求
-                if (window.google && google.accounts && google.accounts.id) {
-                    try {
-                        google.accounts.id.cancel();
-                    } catch (error) {
-                        console.warn('取消Google登入請求失敗:', error);
-                    }
-                }
-            }
-        });
-        
-                // 初始化Google認證 (增強錯誤處理版)
-        let authInitRetryCount = 0;
-        const MAX_AUTH_RETRIES = 3;
-        
-        function initializeGoogleAuth() {
-            try {
-                if (window.google && google.accounts && google.accounts.id) {
-                    google.accounts.id.initialize({
-                        client_id: '537222522180-n7ou6ojdpg861di8bc1jmghbhcc56d09.apps.googleusercontent.com',
-                        callback: handleCredentialResponse,
-                        auto_select: false,
-                        cancel_on_tap_outside: true,
-                        prompt_parent_id: 'auth-section' // 指定提示窗口的父容器
-                    });
-                    
-                    console.log('Google Identity Services 初始化成功');
-                    authInitRetryCount = 0; // 重置重試計數
-                } else {
-                    console.error('Google Identity Services 未載入');
-                    handleAuthInitFailure();
-                }
-            } catch (error) {
-                console.error('初始化Google認證失敗:', error);
-                handleAuthInitFailure();
-            }
-        }
-        
-        // 處理認證初始化失敗
-        function handleAuthInitFailure() {
-            if (authInitRetryCount < MAX_AUTH_RETRIES) {
-                authInitRetryCount++;
-                console.log(`Google認證初始化失敗，${3 - authInitRetryCount}秒後重試 (${authInitRetryCount}/${MAX_AUTH_RETRIES})`);
-                
-                // 延遲重試
-                setTimeout(() => {
-                    initializeGoogleAuth();
-                }, 3000);
-            } else {
-                console.error('Google認證初始化多次失敗，顯示備用登入方案');
-                showFallbackLogin();
-            }
-        }
-        
-        // JWT 解析函数 (简化版)
-        function parseJwt(token) {
-            try { 
-                return JSON.parse(atob(token.split('.')[1])); 
-            } catch (e) { 
-                return null; 
-            }
-        }
-        
-        // 備用登入方案
-        function showFallbackLogin() {
-            const authSection = document.getElementById('auth-section');
-            if (authSection) {
-                authSection.innerHTML = `
-                    <div class="fallback-login">
-                        <p class="text-red-600 text-sm mb-2">Google登入暫時不可用</p>
-                        <button onclick="showManualLogin()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                            手動登入
-                        </button>
-                    </div>
-                `;
-            }
-        }
-        
-        // 顯示手動登入介面
-        function showManualLogin() {
-            const authSection = document.getElementById('auth-section');
-            if (authSection) {
-                authSection.innerHTML = `
-                    <div class="manual-login">
-                        <input type="email" id="manual-email" placeholder="輸入郵箱" class="px-3 py-2 border rounded mr-2">
-                        <button onclick="manualLogin()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                            登入
-                        </button>
-                    </div>
-                `;
-            }
-        }
-        
-        // 手動登入處理
-        function manualLogin() {
-            const email = document.getElementById('manual-email').value;
-            if (email) {
-                currentUser = {
-                    name: email.split('@')[0],
-                    email: email,
-                    avatar: '',
-                    id: 'manual_' + Date.now()
-                };
-                updateReviewFormVisibility();
-                console.log('手動登入成功:', email);
-            }
-        }
-        
-        // 顯示登入錯誤資訊
-        function showLoginError(message) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'login-error';
-            errorDiv.textContent = message;
-            errorDiv.style.cssText = 'color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 4px; margin: 10px 0; text-align: center;';
-            
-            const authSection = document.querySelector('.auth-section');
-            if (authSection) {
-                // 移除之前的錯誤資訊
-                const existingError = authSection.querySelector('.login-error');
-                if (existingError) {
-                    existingError.remove();
-                }
-                
-                authSection.appendChild(errorDiv);
-                // 3秒後自動移除錯誤資訊
-                setTimeout(() => {
-                    if (errorDiv.parentNode) {
-                        errorDiv.parentNode.removeChild(errorDiv);
-                    }
-                }, 3000);
-            }
-        }
-    </script>
+            </script>
     <script src="script-enhanced.js"></script>
     
     <footer>
