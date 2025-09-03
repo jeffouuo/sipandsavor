@@ -448,13 +448,15 @@
 
     <script>
         // 動態獲取 API 基礎 URL - 支持本地開發和生產環境
-        const API_BASE_URL = window.location.hostname.includes('localhost') 
+        const API_BASE_URL = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
             ? `http://localhost:${window.location.port || '3001'}/api`
-            : '/api';
+            : 'https://sipandsavor.vercel.app/api';
         
         console.log('🔧 登錄頁面已加載');
         console.log('📍 當前環境:', window.location.hostname);
         console.log('🔗 API地址:', API_BASE_URL);
+        console.log('🌐 完整URL:', window.location.href);
+        console.log('🚪 端口:', window.location.port);
 
         // 檢查是否已登錄
         document.addEventListener('DOMContentLoaded', function() {

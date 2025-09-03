@@ -2,7 +2,7 @@
 // 簡單而安全的 API 配置
 const API_BASE_URL = window.location.hostname.includes('localhost') 
     ? `http://localhost:${window.location.port || '3001'}/api`
-    : '/api';
+    : 'https://sipandsavor.vercel.app/api';
 
 console.log('🔧 管理後台已加載');
 console.log('📍 當前環境:', window.location.hostname);
