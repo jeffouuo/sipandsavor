@@ -950,7 +950,7 @@ async function loadOrders(page = 1, statusFilter = '', notesFilter = '') {
 
 // 更新訂單狀態
 async function updateOrderStatus(orderId) {
-    const newStatus = prompt('請輸入新狀態 (pending/confirmed/preparing/ready/completed/cancelled):');
+    const newStatus = prompt('請輸入新狀態 (pending/completed/cancelled):');
     if (!newStatus) return;
 
     try {
@@ -1165,9 +1165,6 @@ function changePage(section, page) {
 function getStatusText(status) {
     const statusMap = {
         'pending': '待確認',
-        'confirmed': '已確認',
-        'preparing': '製作中',
-        'ready': '待取餐',
         'completed': '已完成',
         'cancelled': '已取消'
     };

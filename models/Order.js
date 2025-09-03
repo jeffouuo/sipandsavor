@@ -47,7 +47,7 @@ const orderSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'],
+        enum: ['pending', 'completed', 'cancelled'],
         default: 'pending'
     },
     paymentStatus: {
@@ -132,9 +132,6 @@ orderSchema.virtual('formattedTotalAmount').get(function() {
 orderSchema.virtual('statusText').get(function() {
     const statusMap = {
         'pending': '待確認',
-        'confirmed': '已確認',
-        'preparing': '製作中',
-        'ready': '待取餐',
         'completed': '已完成',
         'cancelled': '已取消'
     };

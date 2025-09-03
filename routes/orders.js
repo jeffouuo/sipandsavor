@@ -660,7 +660,7 @@ router.post('/dine-in', [
     body('items.*.quantity').isInt({ min: 1 }).withMessage('商品數量至少為1'),
     body('total').isFloat({ min: 0 }).withMessage('總金額必須大於等於0'),
     body('orderType').isIn(['dine-in']).withMessage('訂單類型必須是dine-in'),
-    body('status').optional().isIn(['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled']).withMessage('無效的訂單狀態')
+    body('status').optional().isIn(['pending', 'completed', 'cancelled']).withMessage('無效的訂單狀態')
 ], async (req, res) => {
     try {
         // 驗證輸入
@@ -909,7 +909,7 @@ router.post('/dine-in', [
 router.get('/my-orders', auth, [
     query('page').optional().isInt({ min: 1 }).withMessage('頁碼必須是正整數'),
     query('limit').optional().isInt({ min: 1, max: 20 }).withMessage('每頁數量必須在1-20之間'),
-    query('status').optional().isIn(['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled']).withMessage('無效的訂單狀態')
+    query('status').optional().isIn(['pending', 'completed', 'cancelled']).withMessage('無效的訂單狀態')
 ], async (req, res) => {
     try {
         // 驗證查詢參數
@@ -1322,7 +1322,7 @@ router.get('/admin/stats', adminAuth, async (req, res) => {
 router.get('/admin/all', adminAuth, [
     query('page').optional().isInt({ min: 1 }).withMessage('頁碼必須是正整數'),
     query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('每頁數量必須在1-50之間'),
-    query('status').optional().isIn(['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled']).withMessage('無效的訂單狀態'),
+    query('status').optional().isIn(['pending', 'completed', 'cancelled']).withMessage('無效的訂單狀態'),
     query('paymentStatus').optional().isIn(['pending', 'paid', 'failed', 'refunded']).withMessage('無效的付款狀態')
 ], async (req, res) => {
     try {
@@ -1393,7 +1393,7 @@ router.get('/admin/all', adminAuth, [
 
 // 管理員：更新訂單狀態
 router.put('/admin/:id/status', adminAuth, [
-    body('status').isIn(['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled']).withMessage('無效的訂單狀態'),
+    body('status').isIn(['pending', 'completed', 'cancelled']).withMessage('無效的訂單狀態'),
     body('paymentStatus').optional().isIn(['pending', 'paid', 'failed', 'refunded']).withMessage('無效的付款狀態')
 ], async (req, res) => {
     try {
