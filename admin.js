@@ -878,13 +878,59 @@ async function loadOrders(page = 1, statusFilter = '', notesFilter = '') {
         // 客戶端篩選特殊需求
         let filteredOrders = data.data.orders;
         if (notesFilter === 'has_notes') {
-            filteredOrders = filteredOrders.filter(order => 
-                order.notes && order.notes !== '前台結帳'
-            );
+            filteredOrders = filteredOrders.filter(order => {
+                // 檢查是否有特殊需求
+                return order.items.some(item => {
+                    // 檢查 specialRequest 字段
+                    if (item.specialRequest && item.specialRequest.trim() !== '') {
+                        return true;
+                    }
+                    // 檢查 customizations 字段（只檢查非標準客製化）
+                    if (item.customizations && item.customizations.trim() !== '') {
+                        const customizations = item.customizations.trim();
+                        const standardCustomizations = ['無糖', '微糖', '半糖', '少糖', '全糖', '去冰', '微冰', '少冰', '正常冰', '熱飲'];
+                        
+                        // 檢查是否有加料或其他特殊需求
+                        const hasToppings = customizations.includes('+');
+                        const hasOtherSpecialRequests = customizations.split(',').some(part => {
+                            const trimmedPart = part.trim();
+                            return trimmedPart && 
+                                   !standardCustomizations.some(standard => trimmedPart.includes(standard)) &&
+                                   !trimmedPart.includes('+');
+                        });
+                        
+                        return hasToppings || hasOtherSpecialRequests;
+                    }
+                    return false;
+                });
+            });
         } else if (notesFilter === 'no_notes') {
-            filteredOrders = filteredOrders.filter(order => 
-                !order.notes || order.notes === '前台結帳'
-            );
+            filteredOrders = filteredOrders.filter(order => {
+                // 檢查是否無特殊需求
+                return order.items.every(item => {
+                    // 檢查 specialRequest 字段
+                    if (item.specialRequest && item.specialRequest.trim() !== '') {
+                        return false;
+                    }
+                    // 檢查 customizations 字段（只檢查非標準客製化）
+                    if (item.customizations && item.customizations.trim() !== '') {
+                        const customizations = item.customizations.trim();
+                        const standardCustomizations = ['無糖', '微糖', '半糖', '少糖', '全糖', '去冰', '微冰', '少冰', '正常冰', '熱飲'];
+                        
+                        // 檢查是否有加料或其他特殊需求
+                        const hasToppings = customizations.includes('+');
+                        const hasOtherSpecialRequests = customizations.split(',').some(part => {
+                            const trimmedPart = part.trim();
+                            return trimmedPart && 
+                                   !standardCustomizations.some(standard => trimmedPart.includes(standard)) &&
+                                   !trimmedPart.includes('+');
+                        });
+                        
+                        return !(hasToppings || hasOtherSpecialRequests);
+                    }
+                    return true;
+                });
+            });
         }
         
         const loadTime = Date.now() - startTime;

@@ -1257,8 +1257,19 @@ router.get('/admin/stats', adminAuth, async (req, res) => {
         
         // 獲取有特殊需求的訂單數量
         const ordersWithNotes = await Order.countDocuments({
-            notes: { $exists: true, $ne: null, $ne: '' },
-            $expr: { $ne: ['$notes', '前台結帳'] }
+            $or: [
+                // 檢查是否有特殊需求
+                { 'items.specialRequest': { $exists: true, $ne: null, $ne: '' } },
+                // 檢查是否有加料或其他特殊客製化
+                {
+                    'items.customizations': {
+                        $exists: true,
+                        $ne: null,
+                        $ne: '',
+                        $regex: /(\+|[^無糖微糖半糖少糖全糖去冰微冰少冰正常冰熱飲,])/
+                    }
+                }
+            ]
         });
         
         // 獲取今日訂單數量
