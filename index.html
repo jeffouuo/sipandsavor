@@ -8,13 +8,35 @@
     <link rel="shortcut icon" type="image/webp" href="/images/sipandsavor.webp">
     <link rel="stylesheet" href="style-optimized.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* Logo樣式 - 背景圖片方式 */
+        .logo-link {
+            position: fixed !important;
+            top: 0px !important;
+            left: -20px !important;
+            width: 120px !important;
+            height: 80px !important;
+            z-index: 1000 !important;
+            text-decoration: none !important;
+            background-image: url('images/sipandsavor.webp') !important;
+            background-size: contain !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            transition: opacity 0.3s ease !important;
+            opacity: 0.9 !important;
+        }
+        
+        .logo-link:hover {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
     <header>
         <!-- 手機元件 -->
         <button class="menu" id="hamburgerBtn">&#9776;</button>
         
-        <a href="index.html"><h1>飲茶趣</h1></a>
+        <a href="index.html" class="logo-link" title="飲茶趣"></a>
     
         <!-- 桌面導航 -->
         <nav class="desktop-nav">
