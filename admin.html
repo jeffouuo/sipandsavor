@@ -495,47 +495,30 @@
             border: 1px solid #f5c6cb;
         }
 
-        /* Logo懸停效果 - 與首頁一致 */
-        .desktop-nav a:hover h1 {
+        /* Logo樣式 - 與首頁一致 */
+        .logo-link {
+            position: fixed !important;
+            top: 0px !important;
+            left: -20px !important;
+            width: 120px !important;
+            height: 80px !important;
+            z-index: 1000 !important;
+            text-decoration: none !important;
+            background-image: url('images/sipandsavor.webp') !important;
+            background-size: contain !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            transition: opacity 0.3s ease !important;
+            opacity: 0.9 !important;
+        }
+        
+        .logo-link:hover {
             opacity: 1;
         }
-        
-        /* 移除導航項目底下的黃色線 */
-        .desktop-nav a::after {
-            display: none;
-        }
-        
-        /* 確保logo圖片正確顯示 */
-        .desktop-nav a h1 {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 150px; /* 根據圖片調整 */
-            height: 80px;
-            background-image: url(images/sipandsavor.webp);
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: left top;
-            z-index: 1000;
-            text-indent: -9999px; /* 如果不想顯示文字 */
-            opacity: 0.9;
-            transition: opacity 0.3s ease;
-            cursor: pointer;
-            pointer-events: none; /* 讓h1不阻擋點擊 */
-        }
 
-        
-        /* 確保logo的a標籤使用block而不是flex */
-        .desktop-nav a[href="index.html"] {
-            display: block !important;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 150px;
-            height: 80px;
-            z-index: 1001;
-            text-decoration: none;
-            cursor: pointer;
+        /* 購物車圖標間距 - 與飲料菜單保持一致 */
+        .cart-icon {
+            margin-left: 20px;
         }
 
         @media screen and (max-width: 768px) {
@@ -577,9 +560,13 @@
 </head>
 <body>
     <header>
+        <!-- 手機元件 -->
+        <button class="menu" id="hamburgerBtn">&#9776;</button>
+        
+        <a href="index.html" class="logo-link" title="飲茶趣"></a>
+    
         <!-- 桌面導航 -->
         <nav class="desktop-nav">
-            <a href="index.html"><h1>飲茶趣</h1></a>
             <ul>
                 <li><a href="news.html">最新消息</a></li>
                 <li><a href="menu.html">飲料菜單</a></li>
@@ -588,9 +575,6 @@
             </ul>
         </nav>
     
-        <!-- 手機元件 -->
-        <button class="menu" id="hamburgerBtn">&#9776;</button>
-        
         <!-- 購物車圖標 -->
         <div class="cart-icon" id="cartIcon">
             <span class="material-icons">shopping_cart</span>
