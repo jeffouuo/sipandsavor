@@ -1255,18 +1255,18 @@ router.get('/admin/stats', adminAuth, async (req, res) => {
             statusCounts[stat._id] = stat.count;
         });
         
-        // 獲取有特殊需求的訂單數量
+        // 獲取有特殊需求的訂單數量（有特殊需求文字或有加料）
         const ordersWithNotes = await Order.countDocuments({
             $or: [
-                // 檢查是否有特殊需求
+                // 檢查是否有特殊需求文字
                 { 'items.specialRequest': { $exists: true, $ne: null, $ne: '' } },
-                // 檢查是否有加料或其他特殊客製化
+                // 檢查是否有加料（customizations 中包含 "+" 號）
                 {
                     'items.customizations': {
                         $exists: true,
                         $ne: null,
                         $ne: '',
-                        $regex: /(\+|[^無糖微糖半糖少糖全糖去冰微冰少冰正常冰熱飲,])/
+                        $regex: /\+/
                     }
                 }
             ]
@@ -1287,8 +1287,13 @@ router.get('/admin/stats', adminAuth, async (req, res) => {
             createdAt: { $gte: thisMonth }
         });
         
-        // 計算總收入
+        // 計算總收入（只計算已完成的訂單）
         const totalRevenue = await Order.aggregate([
+            {
+                $match: {
+                    status: 'completed'
+                }
+            },
             {
                 $group: {
                     _id: null,
