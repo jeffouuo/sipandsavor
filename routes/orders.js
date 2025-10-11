@@ -1368,10 +1368,19 @@ router.get('/admin/all', adminAuth, [
 
         const { page = 1, limit = 20, status, paymentStatus } = req.query;
 
+        console.log('🔍 管理員訂單查詢參數:', { page, limit, status, paymentStatus });
+
         // 構建查詢條件
         const query = {};
-        if (status) query.status = status;
+        if (status) {
+            query.status = status;
+            console.log('✅ 應用狀態篩選:', status);
+        } else {
+            console.log('ℹ️ 無狀態篩選（返回所有狀態訂單）');
+        }
         if (paymentStatus) query.paymentStatus = paymentStatus;
+        
+        console.log('📋 最終查詢條件:', query);
 
         // 執行查詢
         const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -1385,11 +1394,18 @@ router.get('/admin/all', adminAuth, [
             Order.countDocuments(query)
         ]);
 
+        console.log('📊 查詢結果 - 總數:', total, '本頁數量:', orders.length);
+        console.log('📊 訂單狀態分佈:', orders.reduce((acc, order) => {
+            acc[order.status] = (acc[order.status] || 0) + 1;
+            return acc;
+        }, {}));
+        
         if (process.env.NODE_ENV === 'development') {
             console.log('🟢 後台API回傳的訂單資料:', orders.map(order => ({
                 _id: order._id,
                 tableNumber: order.tableNumber,
-                orderType: order.orderType
+                orderType: order.orderType,
+                status: order.status
             })));
         }
 

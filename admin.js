@@ -842,6 +842,8 @@ function filterOrders() {
     const status = document.getElementById('orderStatusFilter').value;
     const notesFilter = document.getElementById('orderNotesFilter').value;
     
+    console.log('🔍 篩選訂單 - 狀態:', status, '特殊需求:', notesFilter);
+    
     // 重新載入訂單並應用篩選
     loadOrders(1, status, notesFilter);
 }
@@ -849,6 +851,7 @@ function filterOrders() {
 // 載入訂單（支援篩選）
 async function loadOrders(page = 1, statusFilter = '', notesFilter = '') {
     console.log('📋 載入訂單列表（優化版）...');
+    console.log('📋 狀態篩選:', statusFilter, '特殊需求篩選:', notesFilter);
     const startTime = Date.now();
     
     try {
@@ -858,6 +861,9 @@ async function loadOrders(page = 1, statusFilter = '', notesFilter = '') {
         // 添加篩選參數
         if (statusFilter) {
             url += `&status=${statusFilter}`;
+            console.log('✅ 已添加狀態篩選參數:', statusFilter);
+        } else {
+            console.log('ℹ️ 無狀態篩選（顯示所有狀態）');
         }
         
         // 添加排序參數，確保最新的訂單在前面
@@ -872,6 +878,12 @@ async function loadOrders(page = 1, statusFilter = '', notesFilter = '') {
         if (!response.ok) throw new Error('獲取訂單失敗');
 
         const data = await response.json();
+        
+        console.log('📦 API返回訂單數量:', data.data.orders.length);
+        console.log('📊 訂單狀態分佈:', data.data.orders.reduce((acc, order) => {
+            acc[order.status] = (acc[order.status] || 0) + 1;
+            return acc;
+        }, {}));
         
         // 客戶端篩選特殊需求
         let filteredOrders = data.data.orders;
