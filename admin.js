@@ -733,7 +733,6 @@ function renderOrdersTable(orders, pagination) {
                     <th>總金額</th>
                     <th>特殊需求</th>
                     <th>狀態</th>
-                    <th>付款狀態</th>
                     <th>創建時間</th>
                     <th>操作</th>
                 </tr>
@@ -814,7 +813,6 @@ function renderOrdersTable(orders, pagination) {
                     }
                 </td>
                 <td><span class="status-badge ${statusClass}">${getStatusText(order.status)}</span></td>
-                <td>${getPaymentStatusText(order.paymentStatus)}</td>
                 <td>${new Date(order.createdAt).toLocaleString()}</td>
                 <td>
                     <button class="action-btn edit-btn" onclick="updateOrderStatus('${order._id}')">更新狀態</button>
@@ -1167,16 +1165,6 @@ function getStatusText(status) {
         'pending': '待確認',
         'completed': '已完成',
         'cancelled': '已取消'
-    };
-    return statusMap[status] || status;
-}
-
-function getPaymentStatusText(status) {
-    const statusMap = {
-        'pending': '待付款',
-        'paid': '已付款',
-        'failed': '付款失敗',
-        'refunded': '已退款'
     };
     return statusMap[status] || status;
 }
