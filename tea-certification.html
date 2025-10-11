@@ -165,9 +165,10 @@
 
         .image-section {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
-            margin: 40px 0;
+            margin: 40px auto;
+            max-width: 1000px;
         }
 
         .image-box {
@@ -183,7 +184,7 @@
 
         .image-box img {
             width: 100%;
-            height: 250px;
+            height: 180px;
             object-fit: cover;
             display: block;
         }
