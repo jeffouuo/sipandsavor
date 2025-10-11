@@ -1255,21 +1255,48 @@ router.get('/admin/stats', adminAuth, async (req, res) => {
             statusCounts[stat._id] = stat.count;
         });
         
-        // 獲取有特殊需求的訂單數量（有特殊需求文字或有加料）
-        const ordersWithNotes = await Order.countDocuments({
-            $or: [
-                // 檢查是否有特殊需求文字
-                { 'items.specialRequest': { $exists: true, $ne: null, $ne: '' } },
-                // 檢查是否有加料（customizations 中包含 "+" 號）
-                {
-                    'items.customizations': {
-                        $exists: true,
-                        $ne: null,
-                        $ne: '',
-                        $regex: /\+/
+        // 獲取有特殊需求的訂單數量
+        // 邏輯：只計算在前端"特殊需求"欄位會顯示內容的訂單
+        // 包含：1) 有 specialRequest 字段 2) 有加料(+) 3) 有其他非標準客製化
+        const allOrders = await Order.find({}).lean();
+        let ordersWithNotes = 0;
+        
+        allOrders.forEach(order => {
+            const hasSpecialRequest = order.items.some(item => {
+                // 檢查 specialRequest 字段
+                if (item.specialRequest && item.specialRequest.trim() !== '') {
+                    return true;
+                }
+                
+                // 檢查 customizations 字段
+                if (item.customizations && item.customizations.trim() !== '') {
+                    const customizations = item.customizations.trim();
+                    const standardCustomizations = ['無糖', '微糖', '半糖', '少糖', '全糖', '去冰', '微冰', '少冰', '正常冰', '熱飲'];
+                    
+                    // 檢查是否有加料
+                    if (customizations.includes('+')) {
+                        return true;
+                    }
+                    
+                    // 檢查是否有其他特殊需求（非標準客製化）
+                    const hasOtherSpecialRequests = customizations.split(',').some(part => {
+                        const trimmedPart = part.trim();
+                        return trimmedPart && 
+                               !standardCustomizations.some(standard => trimmedPart.includes(standard)) &&
+                               !trimmedPart.includes('+');
+                    });
+                    
+                    if (hasOtherSpecialRequests) {
+                        return true;
                     }
                 }
-            ]
+                
+                return false;
+            });
+            
+            if (hasSpecialRequest) {
+                ordersWithNotes++;
+            }
         });
         
         // 獲取今日訂單數量
