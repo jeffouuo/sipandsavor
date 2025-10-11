@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>環保計畫 - 飲茶趣</title>
+    <link rel="icon" type="image/webp" href="/images/sipandsavor.webp">
+    <link rel="shortcut icon" type="image/webp" href="/images/sipandsavor.webp">
+    <link rel="stylesheet" href="style-optimized.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .logo-link {
+            position: fixed !important;
+            top: 0px !important;
+            left: -20px !important;
+            width: 120px !important;
+            height: 80px !important;
+            z-index: 1000 !important;
+            text-decoration: none !important;
+            background-image: url('images/sipandsavor.webp') !important;
+            background-size: contain !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            transition: opacity 0.3s ease !important;
+            opacity: 0.9 !important;
+        }
+        
+        .logo-link:hover {
+            opacity: 1;
+        }
+
+        .cart-icon {
+            margin-left: 20px;
+        }
+
+        .eco-page {
+            padding-top: 100px;
+            background: linear-gradient(to bottom, #e8f5e9, #ffffff);
+            min-height: 100vh;
+        }
+
+        .eco-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .page-header h1 {
+            color: #2c5530;
+            font-size: 42px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 18px;
+            line-height: 1.8;
+        }
+
+        .hero-section {
+            background: white;
+            border-radius: 20px;
+            padding: 60px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .hero-section h2 {
+            color: #2c5530;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .hero-section p {
+            color: #555;
+            font-size: 18px;
+            line-height: 1.9;
+            margin-bottom: 15px;
+        }
+
+        .initiative-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .initiative-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border-top: 5px solid #4CAF50;
+        }
+
+        .initiative-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .initiative-card h3 {
+            color: #2c5530;
+            font-size: 24px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .initiative-card .icon {
+            font-size: 32px;
+            color: #4CAF50;
+        }
+
+        .initiative-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .initiative-card li {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 12px;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .initiative-card li::before {
+            content: '🌱';
+            position: absolute;
+            left: 0;
+            font-size: 16px;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+        }
+
+        .back-button:hover {
+            background: #45a049;
+            transform: translateX(-5px);
+        }
+
+        .impact-banner {
+            background: linear-gradient(135deg, #66BB6A, #4CAF50);
+            color: white;
+            border-radius: 20px;
+            padding: 60px;
+            margin: 40px 0;
+            text-align: center;
+        }
+
+        .impact-banner h2 {
+            font-size: 32px;
+            margin-bottom: 40px;
+        }
+
+        .impact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+        }
+
+        .impact-item {
+            padding: 20px;
+        }
+
+        .impact-item .number {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .impact-item .label {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .action-section {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 50px;
+            margin: 40px 0;
+        }
+
+        .action-section h2 {
+            color: #2c5530;
+            font-size: 28px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        .action-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+
+        .action-card .emoji {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .action-card h4 {
+            color: #2c5530;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .action-card p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media screen and (max-width: 768px) {
+            .hero-section {
+                padding: 30px 20px;
+            }
+
+            .page-header h1 {
+                font-size: 32px;
+            }
+
+            .impact-banner {
+                padding: 30px 20px;
+            }
+
+            .impact-item .number {
+                font-size: 36px;
+            }
+
+            .action-section {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <button class="menu" id="hamburgerBtn">&#9776;</button>
+        <a href="index.html" class="logo-link" title="飲茶趣"></a>
+        <nav class="desktop-nav">
+            <ul>
+                <li><a href="news.html">最新消息</a></li>
+                <li><a href="menu.html">飲料菜單</a></li>
+                <li><a href="about.html">關於我們</a></li>
+                <li><a href="stores.html">門市據點</a></li>
+            </ul>
+        </nav>
+        <div class="cart-icon" id="cartIcon">
+            <span class="material-icons">shopping_cart</span>
+            <span class="cart-count">0</span>
+        </div>
+        <div class="cart-sidebar" id="cartSidebar">
+            <div class="cart-header">
+                <h3>購物車</h3>
+                <button class="close-cart" id="closeCart">&times;</button>
+            </div>
+            <div class="cart-items"></div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>總計：</span>
+                    <span class="total-amount">NT$ 0</span>
+                </div>
+                <button class="checkout-btn">結帳</button>
+            </div>
+        </div>
+        <nav id="mobileMenu">
+            <ul>
+                <li><a href="news.html">最新消息</a></li>
+                <li><a href="menu.html">飲料菜單</a></li>
+                <li><a href="about.html">關於我們</a></li>
+                <li><a href="stores.html">門市據點</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="eco-page">
+        <div class="eco-container">
+            <a href="news.html" class="back-button">
+                <span class="material-icons">arrow_back</span>
+                返回最新消息
+            </a>
+
+            <div class="page-header">
+                <h1>🌍 環保計畫</h1>
+                <p>為地球盡一份心力，讓每一杯茶都更環保</p>
+            </div>
+
+            <div class="hero-section">
+                <h2>綠色永續，從一杯茶開始</h2>
+                <p>飲茶趣深信企業社會責任的重要性，我們於2024年全面啟動環保計畫，從包裝材料、能源使用到廢棄物處理，每個環節都以環保為優先考量。我們不只是賣茶，更要為地球的永續發展盡一份心力。</p>
+                <p>透過減少一次性用品、推廣環保杯使用、採用可降解材料等具體行動，我們希望能夠降低對環境的影響，同時也鼓勵顧客一起加入環保行列。讓我們攜手創造更美好的未來。</p>
+            </div>
+
+            <div class="impact-banner">
+                <h2>2024年環保成果</h2>
+                <div class="impact-grid">
+                    <div class="impact-item">
+                        <div class="number">85%</div>
+                        <div class="label">塑膠減量</div>
+                    </div>
+                    <div class="impact-item">
+                        <div class="number">10萬+</div>
+                        <div class="label">環保杯使用次數</div>
+                    </div>
+                    <div class="impact-item">
+                        <div class="number">30噸</div>
+                        <div class="label">碳排放減少</div>
+                    </div>
+                    <div class="impact-item">
+                        <div class="number">100%</div>
+                        <div class="label">可回收包裝</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="initiative-grid">
+                <div class="initiative-card">
+                    <h3>
+                        <span class="material-icons icon">shopping_bag</span>
+                        環保包裝
+                    </h3>
+                    <ul>
+                        <li>全面採用可生物降解材料</li>
+                        <li>紙吸管取代塑膠吸管</li>
+                        <li>環保提袋免費提供</li>
+                        <li>包裝材料可回收再利用</li>
+                        <li>減少過度包裝</li>
+                    </ul>
+                </div>
+
+                <div class="initiative-card">
+                    <h3>
+                        <span class="material-icons icon">local_cafe</span>
+                        自備杯優惠
+                    </h3>
+                    <ul>
+                        <li>自備環保杯折扣5元</li>
+                        <li>累積點數兌換飲品</li>
+                        <li>推薦環保杯品牌</li>
+                        <li>杯子清潔服務</li>
+                        <li>環保大使表揚</li>
+                    </ul>
+                </div>
+
+                <div class="initiative-card">
+                    <h3>
+                        <span class="material-icons icon">lightbulb</span>
+                        節能減碳
+                    </h3>
+                    <ul>
+                        <li>LED照明全面換裝</li>
+                        <li>太陽能熱水系統</li>
+                        <li>節能空調設備</li>
+                        <li>智慧能源管理</li>
+                        <li>定期碳足跡盤查</li>
+                    </ul>
+                </div>
+
+                <div class="initiative-card">
+                    <h3>
+                        <span class="material-icons icon">recycling</span>
+                        資源回收
+                    </h3>
+                    <ul>
+                        <li>完整垃圾分類系統</li>
+                        <li>茶渣堆肥再利用</li>
+                        <li>回收箱設置</li>
+                        <li>與回收商合作</li>
+                        <li>廢棄物減量追蹤</li>
+                    </ul>
+                </div>
+
+                <div class="initiative-card">
+                    <h3>
+                        <span class="material-icons icon">water_drop</span>
+                        水資源管理
+                    </h3>
+                    <ul>
+                        <li>節水設備安裝</li>
+                        <li>雨水回收系統</li>
+                        <li>用水量監控</li>
+                        <li>廢水處理優化</li>
+                        <li>定期水質檢測</li>
+                    </ul>
+                </div>
+
+                <div class="initiative-card">
+                    <h3>
+                        <span class="material-icons icon">forest</span>
+                        綠色採購
+                    </h3>
+                    <ul>
+                        <li>優先選擇有機茶葉</li>
+                        <li>支持在地小農</li>
+                        <li>減少運輸碳足跡</li>
+                        <li>環保供應商認證</li>
+                        <li>永續採購政策</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="action-section">
+                <h2>您也可以這樣做</h2>
+                <div class="action-grid">
+                    <div class="action-card">
+                        <div class="emoji">♻️</div>
+                        <h4>自備環保杯</h4>
+                        <p>使用環保杯不僅享有折扣，更能減少一次性垃圾產生</p>
+                    </div>
+                    <div class="action-card">
+                        <div class="emoji">🌱</div>
+                        <h4>選擇內用</h4>
+                        <p>在店內用餐使用瓷杯，減少外帶包裝的使用</p>
+                    </div>
+                    <div class="action-card">
+                        <div class="emoji">🚶</div>
+                        <h4>步行或騎車</h4>
+                        <p>選擇綠色交通方式到店，減少碳排放</p>
+                    </div>
+                    <div class="action-card">
+                        <div class="emoji">📢</div>
+                        <h4>分享環保理念</h4>
+                        <p>向親友推廣環保行動，一起為地球努力</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-section" style="background: linear-gradient(135deg, #e8f5e9, #ffffff);">
+                <h2>永續承諾</h2>
+                <p>飲茶趣承諾持續推動環保計畫，定期檢視並優化各項環保措施。我們相信，每一個小小的改變，都能為地球帶來正面影響。</p>
+                <p>未來，我們將持續投入資源，研發更環保的營運模式，並積極參與環保公益活動，為台灣的永續發展貢獻心力。讓我們一起守護這片美麗的土地。</p>
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="menu.html" style="display: inline-block; padding: 15px 40px; background: #4CAF50; color: white; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: 500; transition: all 0.3s ease;">
+                        加入環保行動
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Copyright ◎ 2025 飲茶趣 All Rights Reserved.</p>
+        <div class="hidden-admin-entry" id="hiddenAdminEntry">
+            <div class="admin-entry-trigger" id="adminEntryTrigger">
+                <span class="admin-hint">👑</span>
+            </div>
+            <div class="admin-entry-modal" id="adminEntryModal">
+                <div class="admin-entry-content">
+                    <h3>管理員入口</h3>
+                    <p>確認進入管理後台？</p>
+                    <div class="admin-entry-buttons">
+                        <button id="adminLoginBtn">進入後台</button>
+                        <button id="adminCancelBtn">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script-enhanced.js"></script>
+</body>
+</html>
+

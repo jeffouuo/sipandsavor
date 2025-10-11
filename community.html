@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社區回饋 - 飲茶趣</title>
+    <link rel="icon" type="image/webp" href="/images/sipandsavor.webp">
+    <link rel="shortcut icon" type="image/webp" href="/images/sipandsavor.webp">
+    <link rel="stylesheet" href="style-optimized.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .logo-link {
+            position: fixed !important;
+            top: 0px !important;
+            left: -20px !important;
+            width: 120px !important;
+            height: 80px !important;
+            z-index: 1000 !important;
+            text-decoration: none !important;
+            background-image: url('images/sipandsavor.webp') !important;
+            background-size: contain !important;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
+            transition: opacity 0.3s ease !important;
+            opacity: 0.9 !important;
+        }
+        
+        .logo-link:hover {
+            opacity: 1;
+        }
+
+        .cart-icon {
+            margin-left: 20px;
+        }
+
+        .community-page {
+            padding-top: 100px;
+            background: linear-gradient(to bottom, #fff3e0, #ffffff);
+            min-height: 100vh;
+        }
+
+        .community-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .page-header h1 {
+            color: #2c5530;
+            font-size: 42px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 18px;
+            line-height: 1.8;
+        }
+
+        .hero-section {
+            background: white;
+            border-radius: 20px;
+            padding: 60px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .hero-section h2 {
+            color: #2c5530;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .hero-section p {
+            color: #555;
+            font-size: 18px;
+            line-height: 1.9;
+            margin-bottom: 15px;
+        }
+
+        .program-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .program-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border-top: 5px solid #FF9800;
+        }
+
+        .program-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+
+        .program-card h3 {
+            color: #2c5530;
+            font-size: 24px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .program-card .icon {
+            font-size: 32px;
+            color: #FF9800;
+        }
+
+        .program-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .program-card li {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 12px;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .program-card li::before {
+            content: '❤️';
+            position: absolute;
+            left: 0;
+            font-size: 16px;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+        }
+
+        .back-button:hover {
+            background: #45a049;
+            transform: translateX(-5px);
+        }
+
+        .impact-banner {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            color: white;
+            border-radius: 20px;
+            padding: 60px;
+            margin: 40px 0;
+            text-align: center;
+        }
+
+        .impact-banner h2 {
+            font-size: 32px;
+            margin-bottom: 40px;
+        }
+
+        .impact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+        }
+
+        .impact-item {
+            padding: 20px;
+        }
+
+        .impact-item .number {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .impact-item .label {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .event-section {
+            margin: 60px 0;
+        }
+
+        .event-timeline {
+            position: relative;
+            padding: 40px 0;
+        }
+
+        .event-item {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-left: 5px solid #FF9800;
+        }
+
+        .event-item h4 {
+            color: #2c5530;
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+
+        .event-date {
+            color: #FF9800;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .event-item p {
+            color: #666;
+            line-height: 1.7;
+        }
+
+        .partner-section {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 50px;
+            margin: 40px 0;
+        }
+
+        .partner-section h2 {
+            color: #2c5530;
+            font-size: 28px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .partner-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+        }
+
+        .partner-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+
+        .partner-card .emoji {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .partner-card h4 {
+            color: #2c5530;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .partner-card p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media screen and (max-width: 768px) {
+            .hero-section {
+                padding: 30px 20px;
+            }
+
+            .page-header h1 {
+                font-size: 32px;
+            }
+
+            .impact-banner {
+                padding: 30px 20px;
+            }
+
+            .impact-item .number {
+                font-size: 36px;
+            }
+
+            .partner-section {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <button class="menu" id="hamburgerBtn">&#9776;</button>
+        <a href="index.html" class="logo-link" title="飲茶趣"></a>
+        <nav class="desktop-nav">
+            <ul>
+                <li><a href="news.html">最新消息</a></li>
+                <li><a href="menu.html">飲料菜單</a></li>
+                <li><a href="about.html">關於我們</a></li>
+                <li><a href="stores.html">門市據點</a></li>
+            </ul>
+        </nav>
+        <div class="cart-icon" id="cartIcon">
+            <span class="material-icons">shopping_cart</span>
+            <span class="cart-count">0</span>
+        </div>
+        <div class="cart-sidebar" id="cartSidebar">
+            <div class="cart-header">
+                <h3>購物車</h3>
+                <button class="close-cart" id="closeCart">&times;</button>
+            </div>
+            <div class="cart-items"></div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>總計：</span>
+                    <span class="total-amount">NT$ 0</span>
+                </div>
+                <button class="checkout-btn">結帳</button>
+            </div>
+        </div>
+        <nav id="mobileMenu">
+            <ul>
+                <li><a href="news.html">最新消息</a></li>
+                <li><a href="menu.html">飲料菜單</a></li>
+                <li><a href="about.html">關於我們</a></li>
+                <li><a href="stores.html">門市據點</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="community-page">
+        <div class="community-container">
+            <a href="news.html" class="back-button">
+                <span class="material-icons">arrow_back</span>
+                返回最新消息
+            </a>
+
+            <div class="page-header">
+                <h1>🤝 社區回饋</h1>
+                <p>回饋社會，與社區共同成長</p>
+            </div>
+
+            <div class="hero-section">
+                <h2>根植社區，服務在地</h2>
+                <p>飲茶趣相信企業的成功源於社區的支持，因此我們積極投入社區回饋活動，希望能為社會帶來正面影響。從定期舉辦茶藝文化活動、支持在地慈善機構，到提供弱勢族群就業機會，我們用實際行動回報社會的支持。</p>
+                <p>我們不僅是一家茶飲店，更是社區的一份子。透過各種公益活動和社區服務，我們希望能夠拉近與居民的距離，共同打造更溫暖、更有愛的社區環境。</p>
+            </div>
+
+            <div class="impact-banner">
+                <h2>2024年回饋成果</h2>
+                <div class="impact-grid">
+                    <div class="impact-item">
+                        <div class="number">50萬+</div>
+                        <div class="label">捐款金額 (NT$)</div>
+                    </div>
+                    <div class="impact-item">
+                        <div class="number">30+</div>
+                        <div class="label">社區活動場次</div>
+                    </div>
+                    <div class="impact-item">
+                        <div class="number">500+</div>
+                        <div class="label">受益人次</div>
+                    </div>
+                    <div class="impact-item">
+                        <div class="number">15+</div>
+                        <div class="label">合作夥伴</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="program-grid">
+                <div class="program-card">
+                    <h3>
+                        <span class="material-icons icon">school</span>
+                        茶藝文化推廣
+                    </h3>
+                    <ul>
+                        <li>每月社區茶藝講座</li>
+                        <li>免費茶藝體驗課程</li>
+                        <li>學校茶文化教育</li>
+                        <li>茶葉知識分享會</li>
+                        <li>專業茶師培訓</li>
+                    </ul>
+                </div>
+
+                <div class="program-card">
+                    <h3>
+                        <span class="material-icons icon">volunteer_activism</span>
+                        慈善捐款
+                    </h3>
+                    <ul>
+                        <li>每月營收1%捐贈</li>
+                        <li>支持在地慈善機構</li>
+                        <li>弱勢家庭物資捐贈</li>
+                        <li>獎助學金計畫</li>
+                        <li>急難救助基金</li>
+                    </ul>
+                </div>
+
+                <div class="program-card">
+                    <h3>
+                        <span class="material-icons icon">elderly</span>
+                        長者關懷
+                    </h3>
+                    <ul>
+                        <li>敬老茶會活動</li>
+                        <li>長者優惠專案</li>
+                        <li>送茶到府服務</li>
+                        <li>社區關懷據點合作</li>
+                        <li>健康講座舉辦</li>
+                    </ul>
+                </div>
+
+                <div class="program-card">
+                    <h3>
+                        <span class="material-icons icon">work</span>
+                        就業機會
+                    </h3>
+                    <ul>
+                        <li>優先聘用在地居民</li>
+                        <li>提供弱勢族群工作</li>
+                        <li>職業訓練課程</li>
+                        <li>實習機會提供</li>
+                        <li>友善職場環境</li>
+                    </ul>
+                </div>
+
+                <div class="program-card">
+                    <h3>
+                        <span class="material-icons icon">celebration</span>
+                        社區活動
+                    </h3>
+                    <ul>
+                        <li>年度社區園遊會</li>
+                        <li>節慶特別活動</li>
+                        <li>親子同樂日</li>
+                        <li>社區清潔日</li>
+                        <li>文化市集支持</li>
+                    </ul>
+                </div>
+
+                <div class="program-card">
+                    <h3>
+                        <span class="material-icons icon">groups</span>
+                        青年培力
+                    </h3>
+                    <ul>
+                        <li>創業諮詢服務</li>
+                        <li>青年就業輔導</li>
+                        <li>職涯分享講座</li>
+                        <li>暑期工讀機會</li>
+                        <li>技能培訓計畫</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="event-section">
+                <h2 style="text-align: center; color: #2c5530; font-size: 32px; margin-bottom: 40px;">近期活動回顧</h2>
+                <div class="event-timeline">
+                    <div class="event-item">
+                        <div class="event-date">2024年2月</div>
+                        <h4>農曆新年敬老茶會</h4>
+                        <p>於社區活動中心舉辦新春敬老茶會，邀請200多位長輩共同品茗聊天，並贈送每位長者新春茶禮盒。活動中安排專業茶師進行茶藝表演，讓長輩們度過溫馨愉快的午後時光。</p>
+                    </div>
+
+                    <div class="event-item">
+                        <div class="event-date">2024年1月</div>
+                        <h4>寒冬送暖公益活動</h4>
+                        <p>捐贈1000份熱茶與物資包給街友和弱勢家庭，並提供臨時工作機會。與多家社福機構合作，確保物資能夠送到真正需要的人手中，傳遞社會溫暖。</p>
+                    </div>
+
+                    <div class="event-item">
+                        <div class="event-date">2023年12月</div>
+                        <h4>社區歲末感恩活動</h4>
+                        <p>舉辦年終回饋活動，邀請社區居民免費品茗，並舉辦茶藝表演、DIY手作等活動。現場募集發票捐贈給慈善機構，共募得超過5000張發票。</p>
+                    </div>
+
+                    <div class="event-item">
+                        <div class="event-date">2023年11月</div>
+                        <h4>青年創業分享講座</h4>
+                        <p>邀請在地成功創業家分享經驗，提供免費創業諮詢服務。超過80位青年參與，許多學員表示獲益良多，對創業有了更深入的了解。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="partner-section">
+                <h2>合作夥伴</h2>
+                <div class="partner-grid">
+                    <div class="partner-card">
+                        <div class="emoji">🏥</div>
+                        <h4>在地醫療機構</h4>
+                        <p>合作舉辦健康講座與義診活動</p>
+                    </div>
+                    <div class="partner-card">
+                        <div class="emoji">🏫</div>
+                        <h4>社區學校</h4>
+                        <p>提供茶文化教育與職業體驗</p>
+                    </div>
+                    <div class="partner-card">
+                        <div class="emoji">🏛️</div>
+                        <h4>社福機構</h4>
+                        <p>共同推動弱勢關懷計畫</p>
+                    </div>
+                    <div class="partner-card">
+                        <div class="emoji">🌳</div>
+                        <h4>環保團體</h4>
+                        <p>推動社區環境保護行動</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-section" style="background: linear-gradient(135deg, #fff3e0, #ffffff);">
+                <h2>持續付出，永不停歇</h2>
+                <p>飲茶趣承諾將持續投入社區回饋工作，不斷擴大服務範圍，讓更多人受惠。我們相信，企業的價值不只在營利，更在於能為社會帶來多少正面影響。</p>
+                <p>歡迎您加入我們的行列，一起為社區付出，讓愛與溫暖傳遞到每個角落。讓我們攜手打造更美好的社會。</p>
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="menu.html" style="display: inline-block; padding: 15px 40px; background: #FF9800; color: white; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: 500; transition: all 0.3s ease;">
+                        一起為愛發聲
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Copyright ◎ 2025 飲茶趣 All Rights Reserved.</p>
+        <div class="hidden-admin-entry" id="hiddenAdminEntry">
+            <div class="admin-entry-trigger" id="adminEntryTrigger">
+                <span class="admin-hint">👑</span>
+            </div>
+            <div class="admin-entry-modal" id="adminEntryModal">
+                <div class="admin-entry-content">
+                    <h3>管理員入口</h3>
+                    <p>確認進入管理後台？</p>
+                    <div class="admin-entry-buttons">
+                        <button id="adminLoginBtn">進入後台</button>
+                        <button id="adminCancelBtn">取消</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script-enhanced.js"></script>
+</body>
+</html>
+
