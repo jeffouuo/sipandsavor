@@ -1256,29 +1256,29 @@ router.get('/admin/stats', adminAuth, async (req, res) => {
         });
         
         // 獲取有特殊需求的訂單數量
-        // 邏輯：只計算在前端"特殊需求"欄位會顯示內容的訂單
-        // 包含：1) 有 specialRequest 字段 2) 有加料(+) 3) 有其他非標準客製化
+        // 邏輯：完全匹配前端 getSpecialRequests() 函數
+        // 只統計在"特殊需求"欄位會顯示具體內容（不是"無"）的訂單
         const allOrders = await Order.find({}).lean();
         let ordersWithNotes = 0;
         
         allOrders.forEach(order => {
-            const hasSpecialRequest = order.items.some(item => {
+            // 檢查該訂單是否有特殊需求內容（與前端顯示邏輯完全一致）
+            const specialRequests = [];
+            
+            order.items.forEach(item => {
                 // 檢查 specialRequest 字段
                 if (item.specialRequest && item.specialRequest.trim() !== '') {
-                    return true;
+                    specialRequests.push(item.specialRequest);
                 }
-                
-                // 檢查 customizations 字段
-                if (item.customizations && item.customizations.trim() !== '') {
+                // 檢查 customizations 字段（只計算非標準客製化）
+                else if (item.customizations && item.customizations.trim() !== '') {
                     const customizations = item.customizations.trim();
                     const standardCustomizations = ['無糖', '微糖', '半糖', '少糖', '全糖', '去冰', '微冰', '少冰', '正常冰', '熱飲'];
                     
                     // 檢查是否有加料
-                    if (customizations.includes('+')) {
-                        return true;
-                    }
+                    const hasToppings = customizations.includes('+');
                     
-                    // 檢查是否有其他特殊需求（非標準客製化）
+                    // 檢查是否有其他特殊需求
                     const hasOtherSpecialRequests = customizations.split(',').some(part => {
                         const trimmedPart = part.trim();
                         return trimmedPart && 
@@ -1286,15 +1286,14 @@ router.get('/admin/stats', adminAuth, async (req, res) => {
                                !trimmedPart.includes('+');
                     });
                     
-                    if (hasOtherSpecialRequests) {
-                        return true;
+                    if (hasToppings || hasOtherSpecialRequests) {
+                        specialRequests.push(customizations);
                     }
                 }
-                
-                return false;
             });
             
-            if (hasSpecialRequest) {
+            // 只有當 specialRequests 有內容時，才計入統計
+            if (specialRequests.length > 0) {
                 ordersWithNotes++;
             }
         });
