@@ -875,7 +875,7 @@
                     
                     if (Array.isArray(reviews)) {
                         return reviews.map(review => ({
-                            name: review.reviewerName,
+                            name: review.reviewerName || '匿名',
                             rating: review.rating,
                             text: review.text,
                             date: new Date(review.date).toISOString().split('T')[0]
