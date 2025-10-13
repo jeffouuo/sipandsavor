@@ -1084,6 +1084,9 @@ function renderUsersTable(users, pagination) {
                     <button class="action-btn edit-btn" onclick="toggleUserStatus('${user._id}', ${user.isActive})">
                         ${user.isActive ? '禁用' : '啟用'}
                     </button>
+                    <button class="action-btn delete-btn" onclick="deleteUser('${user._id}', '${user.username}')" style="margin-left: 5px;">
+                        刪除
+                    </button>
                 </td>
             </tr>
         `;
@@ -1149,6 +1152,61 @@ async function toggleUserStatus(userId, currentStatus) {
     } catch (error) {
         console.error('更新用戶狀態失敗:', error);
         showAlert('更新用戶狀態失敗', 'error');
+    }
+}
+
+// 刪除用戶
+async function deleteUser(userId, username) {
+    // 雙重確認
+    if (!confirm(`⚠️ 警告：您確定要刪除用戶「${username}」嗎？\n\n此操作無法撤銷！`)) {
+        return;
+    }
+    
+    // 再次確認
+    const confirmText = prompt(`請輸入用戶名「${username}」以確認刪除：`);
+    if (confirmText !== username) {
+        if (confirmText !== null) {  // 用戶沒有點擊取消
+            showAlert('用戶名不匹配，刪除已取消', 'error');
+        }
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('adminToken');
+        
+        console.log('🗑️ 刪除用戶:', userId);
+        
+        const response = await fetch(`${API_BASE_URL}/users/admin/${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || '刪除用戶失敗');
+        }
+
+        console.log('✅ 用戶刪除成功:', data);
+        showAlert('用戶刪除成功', 'success');
+        
+        // 清除緩存
+        cache.users = null;
+        cache.lastUpdate.users = 0;
+        cache.stats = null;
+        cache.lastUpdate.stats = 0;
+        
+        // 重新載入用戶列表和統計數據
+        await Promise.all([
+            loadUsers(currentPage.users),
+            loadStats(true)
+        ]);
+
+    } catch (error) {
+        console.error('❌ 刪除用戶失敗:', error);
+        showAlert(error.message || '刪除用戶失敗', 'error');
     }
 }
 
