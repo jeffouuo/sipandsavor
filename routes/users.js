@@ -387,11 +387,13 @@ router.put('/admin/:id/status', adminAuth, [
 // 管理員：創建新用戶
 router.post('/admin/create', adminAuth, [
     body('username')
+        .trim()
         .isLength({ min: 3, max: 20 })
         .withMessage('用戶名長度必須在3-20個字符之間')
         .matches(/^[a-zA-Z0-9_]+$/)
         .withMessage('用戶名只能包含字母、數字和下劃線'),
     body('email')
+        .trim()
         .isEmail()
         .withMessage('請輸入有效的電子郵件地址'),
     body('password')
@@ -400,7 +402,8 @@ router.post('/admin/create', adminAuth, [
         .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
         .withMessage('密碼必須包含至少一個小寫字母、一個大寫字母和一個數字'),
     body('phone')
-        .optional()
+        .optional({ checkFalsy: true })  // 如果是空字符串或 undefined，跳過驗證
+        .trim()
         .matches(/^09\d{8}$/)
         .withMessage('請輸入有效的台灣手機號碼'),
     body('role')

@@ -1308,13 +1308,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('userForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            // 獲取表單數據
+            const username = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const password = document.getElementById('userPassword').value;
+            const phone = document.getElementById('userPhone').value.trim();
+            const role = document.getElementById('userRole').value;
+            
+            // 構建表單數據（只包含非空字段）
             const formData = {
-                username: document.getElementById('userName').value.trim(),
-                email: document.getElementById('userEmail').value.trim(),
-                password: document.getElementById('userPassword').value,
-                phone: document.getElementById('userPhone').value.trim(),
-                role: document.getElementById('userRole').value
+                username: username,
+                email: email,
+                password: password,
+                role: role
             };
+            
+            // 只在手機號碼不為空時才添加到 formData
+            if (phone && phone.length > 0) {
+                formData.phone = phone;
+            }
             
             // 驗證用戶名格式
             const usernamePattern = /^[a-zA-Z0-9_]{3,20}$/;
