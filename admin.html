@@ -708,6 +708,7 @@
                 <div class="content-section" id="users-section">
                     <div class="section-header">
                         <h2 class="section-title">用戶管理</h2>
+                        <button class="add-btn" onclick="showUserModal()">新增用戶</button>
                     </div>
                     
                     <div class="search-bar">
@@ -768,6 +769,55 @@
                 <div class="btn-group">
                     <button type="button" class="btn btn-secondary" onclick="closeProductModal()">取消</button>
                     <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 用戶創建模態框 -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="userModalTitle">新增用戶</h3>
+                <span class="close" onclick="closeUserModal()">&times;</span>
+            </div>
+            <form id="userForm">
+                <div class="form-group">
+                    <label class="form-label">用戶名 <span style="color: red;">*</span></label>
+                    <input type="text" class="form-input" id="userName" required 
+                           placeholder="3-20個字符，只能包含字母、數字和下劃線"
+                           pattern="^[a-zA-Z0-9_]{3,20}$">
+                    <small style="color: #666; font-size: 12px;">用戶名只能包含字母、數字和下劃線</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">電子郵件 <span style="color: red;">*</span></label>
+                    <input type="email" class="form-input" id="userEmail" required 
+                           placeholder="example@email.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密碼 <span style="color: red;">*</span></label>
+                    <input type="password" class="form-input" id="userPassword" required 
+                           placeholder="至少6個字符，包含大小寫字母和數字"
+                           pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$">
+                    <small style="color: #666; font-size: 12px;">密碼必須至少6個字符，包含至少一個大寫字母、一個小寫字母和一個數字</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">手機號碼（選填）</label>
+                    <input type="tel" class="form-input" id="userPhone" 
+                           placeholder="09xxxxxxxx"
+                           pattern="^09\d{8}$">
+                    <small style="color: #666; font-size: 12px;">台灣手機號碼格式：09xxxxxxxx</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">角色</label>
+                    <select class="form-select" id="userRole" required>
+                        <option value="user">普通用戶</option>
+                        <option value="admin">管理員</option>
+                    </select>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" onclick="closeUserModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">創建用戶</button>
                 </div>
             </form>
         </div>

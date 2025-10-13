@@ -1108,6 +1108,19 @@ function searchUsers() {
     console.log('搜索用戶:', searchTerm);
 }
 
+// 顯示用戶創建模態框
+function showUserModal() {
+    const modal = document.getElementById('userModal');
+    const form = document.getElementById('userForm');
+    form.reset();
+    modal.style.display = 'block';
+}
+
+// 關閉用戶創建模態框
+function closeUserModal() {
+    document.getElementById('userModal').style.display = 'none';
+}
+
 // 切換用戶狀態
 async function toggleUserStatus(userId, currentStatus) {
     const action = currentStatus ? '禁用' : '啟用';
@@ -1127,6 +1140,10 @@ async function toggleUserStatus(userId, currentStatus) {
         if (!response.ok) throw new Error('更新用戶狀態失敗');
 
         showAlert(`用戶${action}成功`, 'success');
+        
+        // 清除緩存並重新載入
+        cache.users = null;
+        cache.lastUpdate.users = 0;
         loadUsers(currentPage.users);
 
     } catch (error) {
@@ -1197,63 +1214,16 @@ function showAlert(message, type) {
 // 表單提交處理
 let currentEditingProductId = null; // 追蹤當前編輯的產品ID
 
-document.getElementById('productForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = {
-        name: document.getElementById('productName').value,
-        description: document.getElementById('productDescription').value,
-        price: parseFloat(document.getElementById('productPrice').value),
-        category: document.getElementById('productCategory').value,
-        image: document.getElementById('productImage').value,
-        stock: parseInt(document.getElementById('productStock').value),
-        featured: document.getElementById('productFeatured').checked
-    };
-
-    try {
-        const token = localStorage.getItem('adminToken');
-        
-        // 判斷是新增還是編輯
-        const isEditing = currentEditingProductId !== null;
-        const url = isEditing ? `${API_BASE_URL}/products/${currentEditingProductId}` : `${API_BASE_URL}/products`;
-        const method = isEditing ? 'PUT' : 'POST';
-        
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('API 錯誤回應:', errorData);
-            throw new Error(`保存產品失敗: ${errorData.message || response.statusText}`);
-        }
-
-        showAlert(isEditing ? '產品更新成功' : '產品保存成功', 'success');
-        closeProductModal();
-        loadProducts(currentPage.products);
-        
-        // 重置編輯狀態
-        currentEditingProductId = null;
-
-    } catch (error) {
-        console.error('保存產品失敗:', error);
-        showAlert(error.message || '保存產品失敗', 'error');
-    }
-});
-
-
-
 // 點擊模態框外部關閉
 window.onclick = function(event) {
     const productModal = document.getElementById('productModal');
+    const userModal = document.getElementById('userModal');
     
     if (event.target === productModal) {
         closeProductModal();
+    }
+    if (event.target === userModal) {
+        closeUserModal();
     }
 }
 
@@ -1283,6 +1253,138 @@ document.addEventListener('DOMContentLoaded', async function() {
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
+        
+        // 產品表單提交處理
+        document.getElementById('productForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('productName').value,
+                description: document.getElementById('productDescription').value,
+                price: parseFloat(document.getElementById('productPrice').value),
+                category: document.getElementById('productCategory').value,
+                image: document.getElementById('productImage').value,
+                stock: parseInt(document.getElementById('productStock').value),
+                featured: document.getElementById('productFeatured').checked
+            };
+
+            try {
+                const token = localStorage.getItem('adminToken');
+                
+                // 判斷是新增還是編輯
+                const isEditing = currentEditingProductId !== null;
+                const url = isEditing ? `${API_BASE_URL}/products/${currentEditingProductId}` : `${API_BASE_URL}/products`;
+                const method = isEditing ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('API 錯誤回應:', errorData);
+                    throw new Error(`保存產品失敗: ${errorData.message || response.statusText}`);
+                }
+
+                showAlert(isEditing ? '產品更新成功' : '產品保存成功', 'success');
+                closeProductModal();
+                loadProducts(currentPage.products);
+                
+                // 重置編輯狀態
+                currentEditingProductId = null;
+
+            } catch (error) {
+                console.error('保存產品失敗:', error);
+                showAlert(error.message || '保存產品失敗', 'error');
+            }
+        });
+        
+        // 用戶表單提交處理
+        document.getElementById('userForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                username: document.getElementById('userName').value.trim(),
+                email: document.getElementById('userEmail').value.trim(),
+                password: document.getElementById('userPassword').value,
+                phone: document.getElementById('userPhone').value.trim(),
+                role: document.getElementById('userRole').value
+            };
+            
+            // 驗證用戶名格式
+            const usernamePattern = /^[a-zA-Z0-9_]{3,20}$/;
+            if (!usernamePattern.test(formData.username)) {
+                showAlert('用戶名格式不正確：只能包含字母、數字和下劃線，長度3-20個字符', 'error');
+                return;
+            }
+            
+            // 驗證密碼格式
+            const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}$/;
+            if (!passwordPattern.test(formData.password)) {
+                showAlert('密碼格式不正確：至少6個字符，必須包含大寫字母、小寫字母和數字', 'error');
+                return;
+            }
+            
+            // 驗證手機號碼（如果填寫）
+            if (formData.phone) {
+                const phonePattern = /^09\d{8}$/;
+                if (!phonePattern.test(formData.phone)) {
+                    showAlert('手機號碼格式不正確：台灣手機號碼格式為09xxxxxxxx', 'error');
+                    return;
+                }
+            }
+
+            try {
+                const token = localStorage.getItem('adminToken');
+                
+                console.log('🚀 創建用戶請求數據:', { ...formData, password: '***' });
+                
+                const response = await fetch(`${API_BASE_URL}/users/admin/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    // 處理驗證錯誤
+                    if (data.errors && Array.isArray(data.errors)) {
+                        const errorMessages = data.errors.map(err => err.msg).join(', ');
+                        throw new Error(errorMessages);
+                    }
+                    throw new Error(data.message || '創建用戶失敗');
+                }
+
+                console.log('✅ 用戶創建成功:', data);
+                showAlert('用戶創建成功！數據已保存到數據庫', 'success');
+                closeUserModal();
+                
+                // 清除緩存
+                cache.users = null;
+                cache.lastUpdate.users = 0;
+                cache.stats = null;
+                cache.lastUpdate.stats = 0;
+                
+                // 重新載入用戶列表和統計數據
+                await Promise.all([
+                    loadUsers(1),
+                    loadStats(true)
+                ]);
+
+            } catch (error) {
+                console.error('❌ 創建用戶失敗:', error);
+                showAlert(error.message || '創建用戶失敗，請檢查輸入信息', 'error');
+            }
+        });
         
         console.log('✅ 後台頁面初始化完成');
     } catch (error) {
