@@ -153,7 +153,7 @@ router.post('/return', async (req, res) => {
 const pendingOrders = new Map();
 
 // 獲取綠界金流參數（返回 JSON，供前端創建表單）
-router.post('/get-params', (req, res) => {
+router.post('/get-params', async (req, res) => {
     try {
         const { items, totalAmount, paymentMethod = 'Credit', deliveryMethod = 'pickup', notes = '' } = req.body;
         
@@ -174,6 +174,49 @@ router.post('/get-params', (req, res) => {
 
         // 生成訂單編號（使用時間戳 + 隨機數）
         const merchantTradeNo = 'EC' + Date.now() + Math.floor(Math.random() * 1000);
+        
+        // ⚠️ 關鍵：在產生綠界參數之前，先在資料庫建立訂單（狀態為 Unpaid）
+        console.log('💾 開始在資料庫建立訂單（狀態：Unpaid）...');
+        
+        // 準備訂單項目
+        const orderItems = [];
+        for (const item of items) {
+            orderItems.push({
+                name: item.name,
+                price: parseFloat(item.price) || 0,
+                quantity: parseInt(item.quantity) || 1,
+                subtotal: (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1)
+            });
+        }
+        
+        // 創建訂單到資料庫（狀態為 Unpaid）
+        const orderData = {
+            items: orderItems,
+            totalAmount: parseFloat(totalAmount) || 0,
+            paymentMethod: 'credit_card', // 綠界支付
+            deliveryMethod: deliveryMethod || 'pickup',
+            notes: notes || '綠界金流支付',
+            orderNumber: merchantTradeNo, // 使用 MerchantTradeNo 作為訂單編號
+            status: 'pending',
+            paymentStatus: 'pending', // Unpaid（未付款）
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+        
+        let order = null;
+        try {
+            order = new Order(orderData);
+            await order.save();
+            console.log('✅ 訂單已建立到資料庫（狀態：Unpaid）:', {
+                orderId: order._id,
+                orderNumber: merchantTradeNo,
+                totalAmount: totalAmount
+            });
+        } catch (dbError) {
+            console.error('❌ 建立訂單到資料庫失敗:', dbError);
+            // 如果資料庫保存失敗，仍然繼續流程（但記錄錯誤）
+            // 可以選擇返回錯誤或繼續
+        }
         
         // 格式化交易時間
         const now = new Date();
@@ -214,21 +257,6 @@ router.post('/get-params', (req, res) => {
         // 生成 CheckMacValue
         const checkMacValue = generateCheckMacValue(params);
         params.CheckMacValue = checkMacValue;
-
-        // 保存訂單資訊到臨時存儲（用於支付成功後創建訂單）
-        pendingOrders.set(merchantTradeNo, {
-            items,
-            totalAmount: Math.round(totalAmount),
-            paymentMethod: paymentMethod || 'Credit',
-            deliveryMethod: deliveryMethod || 'pickup',
-            notes: notes || '',
-            createdAt: new Date()
-        });
-
-        // 清理過期的訂單資訊（24小時後）
-        setTimeout(() => {
-            pendingOrders.delete(merchantTradeNo);
-        }, 24 * 60 * 60 * 1000);
 
         console.log('✅ 創建綠界訂單參數:', {
             merchantTradeNo,
@@ -629,62 +657,6 @@ router.post('/result', async (req, res) => {
     }
 });
 
-/**
- * 從支付成功資訊創建訂單
- */
-async function createOrderFromPayment(pendingOrder, merchantTradeNo) {
-    try {
-        const { items, totalAmount, paymentMethod, deliveryMethod, notes } = pendingOrder;
-        
-        // 準備訂單項目
-        const orderItems = [];
-        for (const item of items) {
-            // 提取基礎產品名稱
-            let baseProductName = item.name
-                .replace(/\s*\([^)]*\)/g, '')
-                .replace(/\s*\+[^)]*$/g, '')
-                .trim();
-            
-            // 查找產品（簡化版，實際應該從資料庫查詢）
-            const product = await Product.findOne({ name: baseProductName }).lean();
-            
-            orderItems.push({
-                name: item.name,
-                price: parseFloat(item.price) || 0,
-                quantity: parseInt(item.quantity) || 1,
-                subtotal: (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1)
-            });
-        }
-        
-        // 創建訂單
-        const orderData = {
-            items: orderItems,
-            totalAmount: parseFloat(totalAmount) || 0,
-            paymentMethod: paymentMethod || 'credit_card',
-            deliveryMethod: deliveryMethod || 'pickup',
-            notes: notes || '綠界金流支付',
-            orderNumber: merchantTradeNo,
-            status: 'pending',
-            paymentStatus: 'paid', // 已支付
-            createdAt: new Date(),
-            updatedAt: new Date()
-        };
-        
-        const order = new Order(orderData);
-        await order.save();
-        
-        console.log('✅ 訂單已創建:', {
-            orderId: order._id,
-            orderNumber: merchantTradeNo,
-            totalAmount: totalAmount
-        });
-        
-        return order;
-    } catch (error) {
-        console.error('❌ 創建訂單時發生錯誤:', error);
-        throw error;
-    }
-}
 
 module.exports = router;
 
