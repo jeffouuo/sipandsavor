@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>綠界金流支付 - 飲茶趣</title>
+    <link rel="icon" type="image/webp" href="/images/sipandsavor.webp">
+    <link rel="shortcut icon" type="image/webp" href="/images/sipandsavor.webp">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https:; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https:;">
+    <link rel="stylesheet" href="style-optimized.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        .ecpay-container {
+            max-width: 600px;
+            margin: 100px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2ed573;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #2c3e50;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+
+        .info-box {
+            background: #e8f5e9;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .info-box h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .test-card-info {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .test-card-info strong {
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="ecpay-container">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">正在準備支付頁面...</div>
+        
+        <div class="info-box" style="display: none;" id="infoBox">
+            <h3>測試環境說明</h3>
+            <p>您正在使用綠界金流測試環境進行支付測試</p>
+            <div class="test-card-info">
+                <strong>測試信用卡資訊：</strong><br>
+                卡號：4311-9522-2222-2222<br>
+                安全碼：222<br>
+                有效期限：請輸入未來的日期（例如：12/30）
+            </div>
+        </div>
+
+        <!-- 綠界金流表單（隱藏，自動提交） -->
+        <form id="ecpayForm" method="post" action="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5" style="display: none;">
+            <!-- 表單欄位將由 JavaScript 動態生成 -->
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.js"></script>
+    <script>
+        // 綠界金流測試環境設定
+        const ECPAY_CONFIG = {
+            merchantID: '3002607',
+            hashKey: 'pwFHCqoQZGmho4w6',
+            hashIV: 'EkRm7iFT261dpevs',
+            actionUrl: 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5'
+        };
+
+        let orderData = null;
+
+        // 從 localStorage 獲取訂單數據
+        function loadOrderData() {
+            const storedData = localStorage.getItem('pendingOrder');
+            if (!storedData) {
+                alert('沒有找到訂單數據，將返回菜單頁面');
+                window.location.href = 'menu.html';
+                return;
+            }
+
+            try {
+                orderData = JSON.parse(storedData);
+                generateEcpayForm();
+            } catch (error) {
+                console.error('解析訂單數據失敗:', error);
+                alert('訂單數據格式錯誤，將返回菜單頁面');
+                window.location.href = 'menu.html';
+            }
+        }
+
+        // 生成綠界金流表單
+        function generateEcpayForm() {
+            if (!orderData) return;
+
+            // 生成訂單編號（使用時間戳 + 隨機數）
+            const merchantTradeNo = 'EC' + Date.now() + Math.floor(Math.random() * 1000);
+            
+            // 格式化交易時間
+            const now = new Date();
+            const merchantTradeDate = now.getFullYear() + '/' + 
+                String(now.getMonth() + 1).padStart(2, '0') + '/' + 
+                String(now.getDate()).padStart(2, '0') + ' ' + 
+                String(now.getHours()).padStart(2, '0') + ':' + 
+                String(now.getMinutes()).padStart(2, '0') + ':' + 
+                String(now.getSeconds()).padStart(2, '0');
+
+            // 商品名稱（最多 400 字元）
+            const itemNames = orderData.items.map(item => `${item.name} x${item.quantity}`).join('#');
+            const itemName = itemNames.length > 400 ? itemNames.substring(0, 400) : itemNames;
+
+            // 交易描述
+            const tradeDesc = '飲茶趣訂單';
+
+            // 取得當前網站的基礎 URL
+            const baseUrl = window.location.origin;
+            const returnURL = `${baseUrl}/api/ecpay/return`;
+            const orderResultURL = `${baseUrl}/api/ecpay/result`;
+
+            // 準備表單參數
+            const formParams = {
+                MerchantID: ECPAY_CONFIG.merchantID,
+                MerchantTradeNo: merchantTradeNo,
+                MerchantTradeDate: merchantTradeDate,
+                PaymentType: 'aio',
+                TotalAmount: Math.round(orderData.totalAmount),
+                TradeDesc: tradeDesc,
+                ItemName: itemName,
+                ReturnURL: returnURL,
+                OrderResultURL: orderResultURL,
+                ChoosePayment: 'Credit',
+                EncryptType: '1'
+            };
+
+            // 生成 CheckMacValue
+            const checkMacValue = generateCheckMacValue(formParams);
+            formParams.CheckMacValue = checkMacValue;
+
+            // 創建表單並自動提交
+            const form = document.getElementById('ecpayForm');
+            
+            // 清空表單
+            form.innerHTML = '';
+
+            // 添加所有參數到表單
+            Object.keys(formParams).forEach(key => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = formParams[key];
+                form.appendChild(input);
+            });
+
+            // 顯示測試資訊
+            document.getElementById('infoBox').style.display = 'block';
+
+            // 延遲一下後自動提交表單（讓用戶看到載入畫面）
+            setTimeout(() => {
+                console.log('提交綠界金流表單:', formParams);
+                form.submit();
+            }, 1500);
+        }
+
+        // 生成 CheckMacValue（綠界金流的檢查碼）
+        function generateCheckMacValue(params) {
+            // 1. 將參數按照字母順序排序（排除 CheckMacValue）
+            const sortedKeys = Object.keys(params).filter(key => key !== 'CheckMacValue').sort();
+            
+            // 2. 組合參數字串
+            let checkString = `HashKey=${ECPAY_CONFIG.hashKey}&`;
+            sortedKeys.forEach(key => {
+                checkString += `${key}=${params[key]}&`;
+            });
+            checkString += `HashIV=${ECPAY_CONFIG.hashIV}`;
+
+            // 3. URL Encode（小寫）
+            let encoded = encodeURIComponent(checkString).toLowerCase();
+            
+            // 4. 替換特殊字符
+            encoded = encoded.replace(/%20/g, '+')
+                            .replace(/%2d/g, '-')
+                            .replace(/%5f/g, '_')
+                            .replace(/%2e/g, '.')
+                            .replace(/%21/g, '!')
+                            .replace(/%2a/g, '*')
+                            .replace(/%28/g, '(')
+                            .replace(/%29/g, ')')
+                            .replace(/%2c/g, ',')
+                            .replace(/%2f/g, '/')
+                            .replace(/%3a/g, ':')
+                            .replace(/%3b/g, ';')
+                            .replace(/%3d/g, '=')
+                            .replace(/%3f/g, '?')
+                            .replace(/%40/g, '@')
+                            .replace(/%5b/g, '[')
+                            .replace(/%5d/g, ']');
+
+            // 5. 解碼
+            let decoded = decodeURIComponent(encoded);
+
+            // 6. 使用 MD5 加密並轉大寫
+            const hash = CryptoJS.MD5(decoded).toString();
+            return hash.toUpperCase();
+        }
+
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrderData();
+        });
+    </script>
+</body>
+</html>
+

@@ -306,7 +306,14 @@
                 return;
             }
 
-            // 線上支付，跳轉到支付處理頁面
+            // 如果是信用卡支付，跳轉到綠界金流支付頁面
+            if (selectedMethod.value === 'credit_card') {
+                localStorage.setItem('pendingOrder', JSON.stringify(orderData));
+                window.location.href = 'ecpay-payment.html';
+                return;
+            }
+
+            // 其他線上支付（LINE Pay），跳轉到支付處理頁面
             localStorage.setItem('pendingOrder', JSON.stringify(orderData));
             window.location.href = `payment-process.html?method=${selectedMethod.value}`;
         }

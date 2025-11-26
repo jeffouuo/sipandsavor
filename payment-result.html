@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支付結果 - 飲茶趣</title>
+    <link rel="icon" type="image/webp" href="/images/sipandsavor.webp">
+    <link rel="shortcut icon" type="image/webp" href="/images/sipandsavor.webp">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https:; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https:;">
+    <link rel="stylesheet" href="style-optimized.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        .result-container {
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .result-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .success-icon {
+            color: #2ed573;
+        }
+
+        .error-icon {
+            color: #e74c3c;
+        }
+
+        .result-title {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .success-title {
+            color: #2ed573;
+        }
+
+        .error-title {
+            color: #e74c3c;
+        }
+
+        .result-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .result-info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .result-info-item:last-child {
+            border-bottom: none;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background-color: #2ed573;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #26d0ce;
+        }
+    </style>
+</head>
+<body>
+    <div class="result-container">
+        <!-- 成功狀態 -->
+        <div id="successState" style="display: none;">
+            <div class="result-icon success-icon">
+                <span class="material-icons">check_circle</span>
+            </div>
+            <h2 class="result-title success-title">支付成功！</h2>
+            <p>您的訂單已成功支付</p>
+            <div class="result-info" id="successInfo">
+                <!-- 成功信息將動態顯示 -->
+            </div>
+            <button class="btn btn-primary" onclick="goToMenu()">返回菜單</button>
+        </div>
+
+        <!-- 失敗狀態 -->
+        <div id="errorState" style="display: none;">
+            <div class="result-icon error-icon">
+                <span class="material-icons">error</span>
+            </div>
+            <h2 class="result-title error-title">支付失敗</h2>
+            <p id="errorMessage">支付處理失敗，請重試</p>
+            <button class="btn btn-primary" onclick="goToMenu()">返回菜單</button>
+        </div>
+    </div>
+
+    <script>
+        // 從 URL 參數獲取支付結果
+        const urlParams = new URLSearchParams(window.location.search);
+        const status = urlParams.get('status');
+        const orderNo = urlParams.get('orderNo');
+        const amount = urlParams.get('amount');
+        const message = urlParams.get('message');
+
+        function displayResult() {
+            if (status === 'success') {
+                // 顯示成功狀態
+                document.getElementById('successState').style.display = 'block';
+                
+                const successInfo = document.getElementById('successInfo');
+                successInfo.innerHTML = `
+                    <div class="result-info-item">
+                        <span>訂單編號</span>
+                        <span>${orderNo || 'N/A'}</span>
+                    </div>
+                    <div class="result-info-item">
+                        <span>支付金額</span>
+                        <span>NT$ ${amount ? parseInt(amount).toLocaleString() : 'N/A'}</span>
+                    </div>
+                    <div class="result-info-item">
+                        <span>支付時間</span>
+                        <span>${new Date().toLocaleString('zh-TW')}</span>
+                    </div>
+                `;
+
+                // 清空購物車
+                localStorage.removeItem('cart');
+                localStorage.removeItem('pendingOrder');
+                if (typeof window.cart !== 'undefined') {
+                    window.cart = [];
+                }
+                console.log('✅ 購物車已清空');
+
+                // 提交訂單到後端（如果還沒有提交）
+                submitOrderIfNeeded();
+            } else {
+                // 顯示失敗狀態
+                document.getElementById('errorState').style.display = 'block';
+                if (message) {
+                    document.getElementById('errorMessage').textContent = decodeURIComponent(message);
+                }
+            }
+        }
+
+        function submitOrderIfNeeded() {
+            // 檢查是否有待處理的訂單
+            const pendingOrder = localStorage.getItem('pendingOrder');
+            if (!pendingOrder) return;
+
+            try {
+                const orderData = JSON.parse(pendingOrder);
+                
+                // 檢查是否為內用訂單
+                const isDineIn = localStorage.getItem('dineInTableNumber');
+                const url = isDineIn ? '/api/orders/dine-in' : '/api/orders/checkout';
+
+                let requestData;
+                if (isDineIn) {
+                    requestData = {
+                        tableNumber: localStorage.getItem('dineInTableNumber'),
+                        area: '內用區',
+                        items: orderData.items,
+                        total: orderData.totalAmount,
+                        orderType: 'dine-in',
+                        status: 'pending',
+                        orderTime: new Date().toISOString(),
+                        paymentMethod: 'credit_card'
+                    };
+                } else {
+                    requestData = {
+                        ...orderData,
+                        paymentMethod: 'credit_card'
+                    };
+                }
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('✅ 訂單已提交到後端');
+                        // 清除待處理訂單
+                        localStorage.removeItem('pendingOrder');
+                        if (isDineIn) {
+                            localStorage.removeItem('dineInTableNumber');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('提交訂單失敗:', error);
+                });
+            } catch (error) {
+                console.error('處理訂單數據失敗:', error);
+            }
+        }
+
+        function goToMenu() {
+            window.location.href = 'menu.html';
+        }
+
+        // 頁面載入時顯示結果
+        document.addEventListener('DOMContentLoaded', function() {
+            displayResult();
+        });
+    </script>
+</body>
+</html>
+
