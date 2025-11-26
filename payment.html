@@ -357,6 +357,15 @@
                     if (isDineIn) {
                         localStorage.removeItem('dineInTableNumber');
                     }
+                    
+                    // 清空購物車
+                    localStorage.removeItem('cart');
+                    // 如果 window.cart 存在（在其他頁面），也清空它
+                    if (typeof window.cart !== 'undefined') {
+                        window.cart = [];
+                    }
+                    console.log('✅ 購物車已清空');
+                    
                     alert('訂單已成功提交！');
                     window.location.href = 'menu.html';
                 } else {
