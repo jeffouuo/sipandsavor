@@ -105,6 +105,91 @@ router.post('/return', async (req, res) => {
     }
 });
 
+// 創建綠界金流訂單（計算所有參數包括 CheckMacValue）
+router.post('/create-order', (req, res) => {
+    try {
+        const { items, totalAmount, paymentMethod = 'Credit' } = req.body;
+        
+        // 驗證必要參數
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ 
+                success: false,
+                error: '商品列表不能為空' 
+            });
+        }
+        
+        if (!totalAmount || totalAmount <= 0) {
+            return res.status(400).json({ 
+                success: false,
+                error: '交易金額必須大於 0' 
+            });
+        }
+
+        // 生成訂單編號（使用時間戳 + 隨機數）
+        const merchantTradeNo = 'EC' + Date.now() + Math.floor(Math.random() * 1000);
+        
+        // 格式化交易時間
+        const now = new Date();
+        const merchantTradeDate = now.getFullYear() + '/' + 
+            String(now.getMonth() + 1).padStart(2, '0') + '/' + 
+            String(now.getDate()).padStart(2, '0') + ' ' + 
+            String(now.getHours()).padStart(2, '0') + ':' + 
+            String(now.getMinutes()).padStart(2, '0') + ':' + 
+            String(now.getSeconds()).padStart(2, '0');
+
+        // 商品名稱（最多 400 字元）
+        const itemNames = items.map(item => `${item.name} x${item.quantity}`).join('#');
+        const itemName = itemNames.length > 400 ? itemNames.substring(0, 400) : itemNames;
+
+        // 交易描述
+        const tradeDesc = '飲茶趣訂單';
+
+        // 取得當前網站的基礎 URL
+        const baseUrl = req.protocol + '://' + req.get('host');
+        const returnURL = `${baseUrl}/api/ecpay/return`;
+        const orderResultURL = `${baseUrl}/api/ecpay/result`;
+
+        // 準備表單參數（不包含 CheckMacValue）
+        const formParams = {
+            MerchantID: ECPAY_CONFIG.merchantID,
+            MerchantTradeNo: merchantTradeNo,
+            MerchantTradeDate: merchantTradeDate,
+            PaymentType: 'aio',
+            TotalAmount: Math.round(totalAmount),
+            TradeDesc: tradeDesc,
+            ItemName: itemName,
+            ReturnURL: returnURL,
+            OrderResultURL: orderResultURL,
+            ChoosePayment: paymentMethod,
+            EncryptType: '1'
+        };
+
+        // 生成 CheckMacValue
+        const checkMacValue = generateCheckMacValue(formParams);
+        formParams.CheckMacValue = checkMacValue;
+
+        console.log('✅ 創建綠界訂單:', {
+            merchantTradeNo,
+            totalAmount,
+            checkMacValue: checkMacValue.substring(0, 10) + '...'
+        });
+
+        // 返回完整的參數（包含 CheckMacValue）
+        res.json({
+            success: true,
+            params: formParams,
+            actionUrl: ECPAY_CONFIG.actionUrl
+        });
+    } catch (error) {
+        console.error('❌ 創建綠界訂單失敗:', error);
+        res.status(500).json({ 
+            success: false,
+            error: '創建訂單失敗',
+            message: error.message 
+        });
+    }
+});
+
 // 獲取綠界金流配置（僅返回前端需要的非敏感資訊）
 router.get('/config', (req, res) => {
     // 只返回前端需要的配置，不包含 HashKey 和 HashIV
@@ -112,22 +197,6 @@ router.get('/config', (req, res) => {
         merchantID: ECPAY_CONFIG.merchantID,
         actionUrl: ECPAY_CONFIG.actionUrl
     });
-});
-
-// 生成 CheckMacValue 的 API（前端調用）
-router.post('/generate-checkmac', (req, res) => {
-    try {
-        const params = req.body.params;
-        if (!params) {
-            return res.status(400).json({ error: '參數不能為空' });
-        }
-        
-        const checkMacValue = generateCheckMacValue(params);
-        res.json({ checkMacValue });
-    } catch (error) {
-        console.error('生成 CheckMacValue 失敗:', error);
-        res.status(500).json({ error: '生成 CheckMacValue 失敗' });
-    }
 });
 
 // 綠界金流訂單結果查詢（OrderResultURL）

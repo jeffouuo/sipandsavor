@@ -104,7 +104,7 @@
 
         let orderData = null;
 
-        // 從後端獲取綠界金流配置
+        // 從後端獲取綠界金流配置（可選，用於顯示）
         async function loadEcpayConfig() {
             try {
                 const response = await fetch('/api/ecpay/config');
@@ -113,10 +113,9 @@
                 ECPAY_CONFIG.actionUrl = config.actionUrl;
                 return true;
             } catch (error) {
-                console.error('獲取綠界金流配置失敗:', error);
-                alert('無法載入支付配置，請稍後再試');
-                window.location.href = 'menu.html';
-                return false;
+                console.warn('獲取綠界金流配置失敗（將使用預設值）:', error);
+                // 使用預設值，不中斷流程
+                return true;
             }
         }
 
@@ -138,80 +137,65 @@
             }
         }
 
-        // 生成綠界金流表單
-        function generateEcpayForm() {
-            if (!orderData) return;
-
-            // 生成訂單編號（使用時間戳 + 隨機數）
-            const merchantTradeNo = 'EC' + Date.now() + Math.floor(Math.random() * 1000);
-            
-            // 格式化交易時間
-            const now = new Date();
-            const merchantTradeDate = now.getFullYear() + '/' + 
-                String(now.getMonth() + 1).padStart(2, '0') + '/' + 
-                String(now.getDate()).padStart(2, '0') + ' ' + 
-                String(now.getHours()).padStart(2, '0') + ':' + 
-                String(now.getMinutes()).padStart(2, '0') + ':' + 
-                String(now.getSeconds()).padStart(2, '0');
-
-            // 商品名稱（最多 400 字元）
-            const itemNames = orderData.items.map(item => `${item.name} x${item.quantity}`).join('#');
-            const itemName = itemNames.length > 400 ? itemNames.substring(0, 400) : itemNames;
-
-            // 交易描述
-            const tradeDesc = '飲茶趣訂單';
-
-            // 取得當前網站的基礎 URL
-            const baseUrl = window.location.origin;
-            const returnURL = `${baseUrl}/api/ecpay/return`;
-            const orderResultURL = `${baseUrl}/api/ecpay/result`;
-
-            // 準備表單參數
-            const formParams = {
-                MerchantID: ECPAY_CONFIG.merchantID,
-                MerchantTradeNo: merchantTradeNo,
-                MerchantTradeDate: merchantTradeDate,
-                PaymentType: 'aio',
-                TotalAmount: Math.round(orderData.totalAmount),
-                TradeDesc: tradeDesc,
-                ItemName: itemName,
-                ReturnURL: returnURL,
-                OrderResultURL: orderResultURL,
-                ChoosePayment: 'Credit',
-                EncryptType: '1'
-            };
-
-            // 從後端生成 CheckMacValue（保護敏感資訊）
-            generateCheckMacValueFromBackend(formParams).then(checkMacValue => {
-                formParams.CheckMacValue = checkMacValue;
-                submitForm(formParams);
-            }).catch(error => {
-                console.error('生成 CheckMacValue 失敗:', error);
-                alert('支付處理失敗，請稍後再試');
-                window.location.href = 'menu.html';
-            });
-        }
-
-        // 從後端生成 CheckMacValue（保護敏感資訊）
-        async function generateCheckMacValueFromBackend(params) {
-            const response = await fetch('/api/ecpay/generate-checkmac', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ params })
-            });
-
-            if (!response.ok) {
-                throw new Error('生成 CheckMacValue 失敗');
+        // 從後端獲取完整的綠界金流參數（包含 CheckMacValue）
+        async function getEcpayOrderParams() {
+            if (!orderData) {
+                throw new Error('訂單數據不存在');
             }
 
-            const data = await response.json();
-            return data.checkMacValue;
+            try {
+                const response = await fetch('/api/ecpay/create-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        items: orderData.items,
+                        totalAmount: orderData.totalAmount,
+                        paymentMethod: 'Credit'
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '創建訂單失敗');
+                }
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || '創建訂單失敗');
+                }
+
+                return {
+                    params: data.params,
+                    actionUrl: data.actionUrl
+                };
+            } catch (error) {
+                console.error('獲取綠界訂單參數失敗:', error);
+                throw error;
+            }
+        }
+
+        // 生成綠界金流表單
+        async function generateEcpayForm() {
+            if (!orderData) return;
+
+            try {
+                // 從後端獲取完整的訂單參數（包含 CheckMacValue）
+                const { params, actionUrl } = await getEcpayOrderParams();
+                
+                // 直接提交表單
+                submitForm(params, actionUrl);
+            } catch (error) {
+                console.error('生成支付表單失敗:', error);
+                alert('支付處理失敗：' + error.message);
+                window.location.href = 'menu.html';
+            }
         }
 
         // 提交表單（使用純 DOM 操作，避免 innerHTML）
-        function submitForm(formParams) {
+        function submitForm(formParams, actionUrl) {
             // 移除舊表單（如果存在）
             const oldForm = document.getElementById('ecpayForm');
             if (oldForm && oldForm.parentNode) {
@@ -222,7 +206,7 @@
             const form = document.createElement('form');
             form.id = 'ecpayForm';
             form.method = 'POST';
-            form.action = ECPAY_CONFIG.actionUrl;
+            form.action = actionUrl || ECPAY_CONFIG.actionUrl;
             form.style.display = 'none';
 
             // 使用純 DOM 操作添加所有參數到表單
@@ -241,7 +225,11 @@
             document.getElementById('infoBox').style.display = 'block';
 
             // 立即提交表單（讓瀏覽器直接跳轉到綠界）
-            console.log('📤 提交綠界金流表單:', formParams);
+            console.log('📤 提交綠界金流表單:', {
+                actionUrl: form.action,
+                merchantTradeNo: formParams.MerchantTradeNo,
+                totalAmount: formParams.TotalAmount
+            });
             form.submit();
         }
 
