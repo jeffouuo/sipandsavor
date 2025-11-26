@@ -84,35 +84,37 @@ function verifyCheckMacValue(params) {
     return receivedCheckMac === calculatedCheckMac;
 }
 
-// 綠界金流回調處理（ReturnURL）
-router.post('/return', async (req, res) => {
+// 綠界金流背景通知回調（ReturnURL）
+// 這是綠界背景呼叫的 API，用於更新訂單狀態
+// ⚠️ 重要：必須返回純文字 '1|OK' 或 '0|Fail' 給綠界
+router.post('/callback', async (req, res) => {
     console.log('═══════════════════════════════════════════════════════════');
-    console.log('📥 綠界金流回調（ReturnURL）:');
+    console.log('📥 綠界金流背景通知回調（ReturnURL /callback）:');
     console.log('───────────────────────────────────────────────────────────');
     console.log('req.body:', JSON.stringify(req.body, null, 2));
-    console.log('req.headers.origin:', req.headers.origin);
+    console.log('req.headers.content-type:', req.headers['content-type']);
     console.log('───────────────────────────────────────────────────────────');
     
     try {
         const params = req.body;
         
         // 檢查是否有參數
-        if (!params || Object.keys(params).length === 0) {
+        if (!params || typeof params !== 'object' || Object.keys(params).length === 0) {
             console.error('❌ 沒有收到任何參數');
-            return res.status(400).send('No parameters received');
+            return res.send('0|Fail');
         }
         
         // 驗證 CheckMacValue
         if (!verifyCheckMacValue(params)) {
             console.error('❌ CheckMacValue 驗證失敗');
             console.error('收到的參數:', params);
-            return res.status(400).send('CheckMacValue verification failed');
+            return res.send('0|Fail');
         }
 
         // 驗證 MerchantID
         if (params.MerchantID !== ECPAY_CONFIG.merchantID) {
             console.error('❌ MerchantID 不匹配');
-            return res.status(400).send('Invalid MerchantID');
+            return res.send('0|Fail');
         }
 
         // 處理訂單狀態
@@ -123,29 +125,80 @@ router.post('/return', async (req, res) => {
         console.log('📊 訂單資訊:', {
             merchantTradeNo,
             tradeStatus,
-            totalAmount
+            totalAmount,
+            rtnCode: params.RtnCode,
+            rtnMsg: params.RtnMsg
         });
 
         // 根據交易狀態更新訂單
         if (tradeStatus === '1' || params.RtnCode === '1') {
-            // 交易成功
-            console.log('✅ 交易成功');
+            // 交易成功 - 更新訂單狀態為 Paid
+            console.log('✅ 交易成功，開始更新訂單狀態...');
             
-            // 這裡可以更新訂單狀態到資料庫
-            // 由於我們使用 MerchantTradeNo，需要從中提取原始訂單資訊
-            // 或者可以將訂單資訊存儲在 session 或臨時存儲中
-            
-            // 返回成功響應給綠界
-            res.send('1|OK');
+            try {
+                // 根據 MerchantTradeNo（orderNumber）查找訂單
+                const order = await Order.findOne({ orderNumber: merchantTradeNo });
+                
+                if (order) {
+                    // 更新訂單狀態為 Paid
+                    order.paymentStatus = 'paid';
+                    order.status = 'pending'; // 保持 pending，等待處理
+                    order.updatedAt = new Date();
+                    await order.save();
+                    
+                    console.log('✅ 訂單狀態已更新為 Paid:', {
+                        orderId: order._id,
+                        orderNumber: merchantTradeNo,
+                        paymentStatus: 'paid'
+                    });
+                } else {
+                    console.warn('⚠️ 未找到訂單，訂單編號:', merchantTradeNo);
+                    // 即使找不到訂單，也返回成功（避免綠界重複通知）
+                }
+                
+                // ⚠️ 重要：返回純文字 '1|OK' 給綠界
+                return res.send('1|OK');
+            } catch (updateError) {
+                console.error('❌ 更新訂單狀態失敗:', updateError);
+                // 即使更新失敗，也返回成功（避免綠界重複通知）
+                // 可以稍後手動處理
+                return res.send('1|OK');
+            }
         } else {
             // 交易失敗
             console.log('❌ 交易失敗:', params.RtnMsg || 'Unknown error');
-            res.send('0|Fail');
+            
+            // 更新訂單狀態為 Failed（如果訂單存在）
+            try {
+                const order = await Order.findOne({ orderNumber: merchantTradeNo });
+                if (order) {
+                    order.paymentStatus = 'failed';
+                    order.updatedAt = new Date();
+                    await order.save();
+                    console.log('✅ 訂單狀態已更新為 Failed');
+                }
+            } catch (updateError) {
+                console.error('❌ 更新訂單狀態為失敗時發生錯誤:', updateError);
+            }
+            
+            // 返回失敗響應給綠界
+            return res.send('0|Fail');
         }
     } catch (error) {
-        console.error('❌ 處理綠界回調時發生錯誤:', error);
-        res.status(500).send('Internal server error');
+        console.error('❌ 處理綠界回調時發生錯誤:');
+        console.error('錯誤訊息:', error.message);
+        console.error('錯誤堆疊:', error.stack);
+        // 確保錯誤不會導致伺服器崩潰，返回響應給綠界
+        return res.send('0|Fail');
     }
+});
+
+// 保留舊的 /return 路由作為備用（向後兼容）
+router.post('/return', async (req, res) => {
+    console.log('⚠️ 使用舊的 /return 路由，建議改用 /callback');
+    // 重定向到新的 callback 路由
+    req.url = '/callback';
+    router.handle(req, res);
 });
 
 // 臨時存儲訂單資訊（用於支付成功後創建訂單）
