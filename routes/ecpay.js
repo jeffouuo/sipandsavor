@@ -243,24 +243,25 @@ router.get('/checkout', (req, res) => {
             html += `\n        <input type="hidden" name="${key}" value="${escapedValue}" />`;
         }
 
-        // 加上自動送出的 script（使用 window.onload 確保 DOM 已載入）
+        // 加上自動送出的 script（立即執行，不等待任何事件）
         html += `
     </form>
     <script>
-        // 確保 DOM 載入完成後再提交表單
+        // 立即提交表單，不等待任何事件
+        // 這會導致瀏覽器立即跳轉到綠界支付頁面
         (function() {
-            const form = document.getElementById("ecpay-form");
-            if (form) {
-                // 立即提交表單
-                form.submit();
-            } else {
-                // 如果表單還沒載入，等待 DOM 載入完成
-                window.addEventListener('DOMContentLoaded', function() {
-                    const form = document.getElementById("ecpay-form");
-                    if (form) {
-                        form.submit();
-                    }
-                });
+            try {
+                document.getElementById("ecpay-form").submit();
+            } catch(e) {
+                // 如果表單還沒載入，使用 DOMContentLoaded
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        document.getElementById("ecpay-form").submit();
+                    });
+                } else {
+                    // 如果已經載入完成，立即提交
+                    document.getElementById("ecpay-form").submit();
+                }
             }
         })();
     </script>
