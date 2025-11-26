@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const Order = require('../models/Order');
+const Product = require('../models/Product');
 
 // 綠界金流設定（從環境變數讀取）
 const ECPAY_CONFIG = {
