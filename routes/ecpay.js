@@ -147,10 +147,14 @@ router.post('/return', async (req, res) => {
     }
 });
 
+// 臨時存儲訂單資訊（用於支付成功後創建訂單）
+// 注意：生產環境應該使用 Redis 或資料庫，這裡使用內存存儲作為簡單方案
+const pendingOrders = new Map();
+
 // 獲取綠界金流參數（返回 JSON，供前端創建表單）
 router.post('/get-params', (req, res) => {
     try {
-        const { items, totalAmount, paymentMethod = 'Credit' } = req.body;
+        const { items, totalAmount, paymentMethod = 'Credit', deliveryMethod = 'pickup', notes = '' } = req.body;
         
         // 驗證必要參數
         if (!items || !Array.isArray(items) || items.length === 0) {
@@ -209,6 +213,21 @@ router.post('/get-params', (req, res) => {
         // 生成 CheckMacValue
         const checkMacValue = generateCheckMacValue(params);
         params.CheckMacValue = checkMacValue;
+
+        // 保存訂單資訊到臨時存儲（用於支付成功後創建訂單）
+        pendingOrders.set(merchantTradeNo, {
+            items,
+            totalAmount: Math.round(totalAmount),
+            paymentMethod: paymentMethod || 'Credit',
+            deliveryMethod: deliveryMethod || 'pickup',
+            notes: notes || '',
+            createdAt: new Date()
+        });
+
+        // 清理過期的訂單資訊（24小時後）
+        setTimeout(() => {
+            pendingOrders.delete(merchantTradeNo);
+        }, 24 * 60 * 60 * 1000);
 
         console.log('✅ 創建綠界訂單參數:', {
             merchantTradeNo,
@@ -554,8 +573,28 @@ router.post('/result', async (req, res) => {
 
         // 交易成功或失敗的處理
         if (tradeStatus === '1' || params.RtnCode === '1') {
-            // 交易成功，重定向到首頁並帶上訂單參數
-            console.log('✅ 交易成功，重定向到首頁');
+            // 交易成功
+            console.log('✅ 交易成功，開始創建訂單...');
+            
+            // 從臨時存儲獲取訂單資訊
+            const pendingOrder = pendingOrders.get(merchantTradeNo);
+            
+            if (pendingOrder) {
+                // 創建訂單到資料庫
+                try {
+                    await createOrderFromPayment(pendingOrder, merchantTradeNo);
+                    console.log('✅ 訂單已成功創建到資料庫');
+                    // 清理臨時存儲
+                    pendingOrders.delete(merchantTradeNo);
+                } catch (orderError) {
+                    console.error('❌ 創建訂單失敗:', orderError);
+                    // 即使創建訂單失敗，也繼續重定向（訂單資訊已保存在 pendingOrders 中，可以稍後手動處理）
+                }
+            } else {
+                console.warn('⚠️ 未找到待處理的訂單資訊，訂單編號:', merchantTradeNo);
+            }
+            
+            // 重定向到首頁並帶上訂單參數
             return res.status(200).redirect(`/?status=success&orderNo=${merchantTradeNo}&amount=${totalAmount}`);
         } else {
             // 交易失敗，重定向到首頁並帶上錯誤訊息
@@ -588,6 +627,63 @@ router.post('/result', async (req, res) => {
         }
     }
 });
+
+/**
+ * 從支付成功資訊創建訂單
+ */
+async function createOrderFromPayment(pendingOrder, merchantTradeNo) {
+    try {
+        const { items, totalAmount, paymentMethod, deliveryMethod, notes } = pendingOrder;
+        
+        // 準備訂單項目
+        const orderItems = [];
+        for (const item of items) {
+            // 提取基礎產品名稱
+            let baseProductName = item.name
+                .replace(/\s*\([^)]*\)/g, '')
+                .replace(/\s*\+[^)]*$/g, '')
+                .trim();
+            
+            // 查找產品（簡化版，實際應該從資料庫查詢）
+            const product = await Product.findOne({ name: baseProductName }).lean();
+            
+            orderItems.push({
+                name: item.name,
+                price: parseFloat(item.price) || 0,
+                quantity: parseInt(item.quantity) || 1,
+                subtotal: (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1)
+            });
+        }
+        
+        // 創建訂單
+        const orderData = {
+            items: orderItems,
+            totalAmount: parseFloat(totalAmount) || 0,
+            paymentMethod: paymentMethod || 'credit_card',
+            deliveryMethod: deliveryMethod || 'pickup',
+            notes: notes || '綠界金流支付',
+            orderNumber: merchantTradeNo,
+            status: 'pending',
+            paymentStatus: 'paid', // 已支付
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+        
+        const order = new Order(orderData);
+        await order.save();
+        
+        console.log('✅ 訂單已創建:', {
+            orderId: order._id,
+            orderNumber: merchantTradeNo,
+            totalAmount: totalAmount
+        });
+        
+        return order;
+    } catch (error) {
+        console.error('❌ 創建訂單時發生錯誤:', error);
+        throw error;
+    }
+}
 
 module.exports = router;
 
