@@ -484,32 +484,53 @@ router.get('/config', (req, res) => {
 });
 
 // 綠界金流訂單結果查詢（OrderResultURL）
-router.get('/result', async (req, res) => {
-    console.log('📥 綠界金流訂單結果查詢:', req.query);
+// 注意：綠界使用 POST application/x-www-form-urlencoded 傳送資料
+router.post('/result', async (req, res) => {
+    // 🔍 調試：印出完整的 req.body（用於 Vercel Logs 除錯）
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📥 綠界金流訂單結果查詢（OrderResultURL）:');
+    console.log('───────────────────────────────────────────────────────────');
+    console.log('req.body:', JSON.stringify(req.body, null, 2));
+    console.log('req.headers:', JSON.stringify(req.headers, null, 2));
+    console.log('───────────────────────────────────────────────────────────');
     
     try {
-        const params = req.query;
+        // 綠界使用 POST application/x-www-form-urlencoded，資料在 req.body
+        const params = req.body;
         
         // 驗證 CheckMacValue
         if (!verifyCheckMacValue(params)) {
             console.error('❌ CheckMacValue 驗證失敗');
-            return res.redirect('/payment-result.html?status=failed&message=驗證失敗');
+            console.error('收到的參數:', params);
+            return res.redirect('/payment-result.html?status=failed&message=' + encodeURIComponent('驗證失敗'));
         }
 
         const tradeStatus = params.TradeStatus || params.RtnCode;
         const merchantTradeNo = params.MerchantTradeNo;
         const totalAmount = params.TradeAmt || params.TotalAmount;
 
+        console.log('📊 訂單資訊:', {
+            merchantTradeNo,
+            tradeStatus,
+            totalAmount,
+            rtnCode: params.RtnCode,
+            rtnMsg: params.RtnMsg
+        });
+
         if (tradeStatus === '1' || params.RtnCode === '1') {
-            // 交易成功，重定向到成功頁面
-            return res.redirect(`/payment-result.html?status=success&orderNo=${merchantTradeNo}&amount=${totalAmount}`);
+            // 交易成功，重定向到訂單完成頁面
+            console.log('✅ 交易成功，重定向到訂單完成頁面');
+            return res.redirect(`/order-completed?status=success&orderNo=${merchantTradeNo}&amount=${totalAmount}`);
         } else {
             // 交易失敗
-            return res.redirect(`/payment-result.html?status=failed&message=${encodeURIComponent(params.RtnMsg || '交易失敗')}`);
+            console.log('❌ 交易失敗:', params.RtnMsg || 'Unknown error');
+            return res.redirect(`/order-completed?status=failed&message=${encodeURIComponent(params.RtnMsg || '交易失敗')}`);
         }
     } catch (error) {
-        console.error('❌ 處理訂單結果時發生錯誤:', error);
-        return res.redirect('/payment-result.html?status=error&message=系統錯誤');
+        console.error('❌ 處理訂單結果時發生錯誤:');
+        console.error('錯誤訊息:', error.message);
+        console.error('錯誤堆疊:', error.stack);
+        return res.redirect('/order-completed?status=error&message=' + encodeURIComponent('系統錯誤'));
     }
 });
 
