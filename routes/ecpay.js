@@ -519,7 +519,7 @@ router.post('/result', async (req, res) => {
             console.error('req.body:', req.body);
             console.error('req.body type:', typeof req.body);
             // 返回 400 而不是 500，避免伺服器崩潰
-            return res.status(400).redirect('/order-completed?status=error&message=' + encodeURIComponent('未收到訂單資料'));
+            return res.status(400).redirect('/?status=error&message=' + encodeURIComponent('未收到訂單資料'));
         }
         
         // 驗證 CheckMacValue
@@ -530,14 +530,14 @@ router.post('/result', async (req, res) => {
             console.error('❌ CheckMacValue 驗證過程發生錯誤:', verifyError.message);
             console.error('錯誤堆疊:', verifyError.stack);
             // 返回 400 而不是 500
-            return res.status(400).redirect('/order-completed?status=failed&message=' + encodeURIComponent('驗證過程發生錯誤'));
+            return res.status(400).redirect('/?status=failed&message=' + encodeURIComponent('驗證過程發生錯誤'));
         }
         
         if (!checkMacValid) {
             console.error('❌ CheckMacValue 驗證失敗');
             console.error('收到的參數:', params);
             // 返回 400 而不是 500
-            return res.status(400).redirect('/order-completed?status=failed&message=' + encodeURIComponent('驗證失敗'));
+            return res.status(400).redirect('/?status=failed&message=' + encodeURIComponent('驗證失敗'));
         }
 
         const tradeStatus = params.TradeStatus || params.RtnCode;
@@ -554,13 +554,13 @@ router.post('/result', async (req, res) => {
 
         // 交易成功或失敗的處理
         if (tradeStatus === '1' || params.RtnCode === '1') {
-            // 交易成功，重定向到訂單完成頁面
-            console.log('✅ 交易成功，重定向到訂單完成頁面');
-            return res.status(200).redirect(`/order-completed?status=success&orderNo=${merchantTradeNo}&amount=${totalAmount}`);
+            // 交易成功，重定向到首頁並帶上訂單參數
+            console.log('✅ 交易成功，重定向到首頁');
+            return res.status(200).redirect(`/?status=success&orderNo=${merchantTradeNo}&amount=${totalAmount}`);
         } else {
-            // 交易失敗
+            // 交易失敗，重定向到首頁並帶上錯誤訊息
             console.log('❌ 交易失敗:', params.RtnMsg || 'Unknown error');
-            return res.status(200).redirect(`/order-completed?status=failed&message=${encodeURIComponent(params.RtnMsg || '交易失敗')}`);
+            return res.status(200).redirect(`/?status=failed&message=${encodeURIComponent(params.RtnMsg || '交易失敗')}`);
         }
     } catch (error) {
         // 完整的錯誤處理，確保不會拋出 500
@@ -576,7 +576,7 @@ router.post('/result', async (req, res) => {
         // 確保返回響應，不要讓伺服器拋出 500
         try {
             // 嘗試重定向
-            return res.status(200).redirect('/order-completed?status=error&message=' + encodeURIComponent('系統錯誤'));
+            return res.status(200).redirect('/?status=error&message=' + encodeURIComponent('系統錯誤'));
         } catch (redirectError) {
             // 如果重定向也失敗，返回 JSON 響應
             console.error('❌ 重定向也失敗:', redirectError.message);

@@ -153,11 +153,251 @@
 
     <script src="script-enhanced.js"></script>
     <script>
-        // 檢測設備類型並設置QR碼行為
+        // ============================================
+        // 訂單完成處理邏輯（類似 useEffect）
+        // ============================================
         document.addEventListener('DOMContentLoaded', function() {
+            // 檢查 URL 參數
+            const urlParams = new URLSearchParams(window.location.search);
+            const status = urlParams.get('status');
+            const orderNo = urlParams.get('orderNo');
+            const amount = urlParams.get('amount');
+            const message = urlParams.get('message');
+
+            // 如果 status=success，執行訂單完成邏輯
+            if (status === 'success') {
+                console.log('🎉 付款成功，開始處理訂單完成邏輯...');
+                handleOrderSuccess(orderNo, amount);
+            } else if (status === 'failed' || status === 'error') {
+                // 處理失敗情況
+                console.log('❌ 付款失敗或發生錯誤');
+                handleOrderError(message);
+            }
+
+            // 原有的 QR 碼邏輯
+            initQRCode();
+        });
+
+        /**
+         * 處理訂單成功邏輯
+         */
+        function handleOrderSuccess(orderNo, amount) {
+            try {
+                // 執行動作 1: 清空購物車
+                console.log('🛒 清空購物車...');
+                clearCart();
+
+                // 執行動作 2: 讀取 diningMode 並顯示資訊
+                const dineInTableNumber = localStorage.getItem('dineInTableNumber');
+                const isDineIn = !!dineInTableNumber;
+
+                if (isDineIn) {
+                    // 內用：顯示送餐訊息
+                    console.log('🍽️ 內用訂單');
+                    showSuccessModal('付款成功！請回座稍候，我們將為您送餐', orderNo, amount);
+                } else {
+                    // 外帶：產生並顯示 4 碼隨機取餐號
+                    console.log('🥤 外帶訂單');
+                    const pickupCode = generatePickupCode();
+                    showSuccessModal(`付款成功！您的取餐號碼是 ${pickupCode}`, orderNo, amount, pickupCode);
+                }
+
+                // 執行動作 3: 清理 URL 參數和 localStorage
+                cleanupAfterOrder();
+            } catch (error) {
+                console.error('❌ 處理訂單成功時發生錯誤:', error);
+                alert('處理訂單時發生錯誤，請聯繫客服');
+            }
+        }
+
+        /**
+         * 處理訂單錯誤
+         */
+        function handleOrderError(message) {
+            const errorMsg = message ? decodeURIComponent(message) : '交易未能完成，請稍後再試。';
+            alert(errorMsg);
+            // 清理 URL 參數
+            cleanupAfterOrder();
+        }
+
+        /**
+         * 清空購物車
+         */
+        function clearCart() {
+            try {
+                // 清除 localStorage 中的購物車
+                localStorage.removeItem('cart');
+                localStorage.removeItem('pendingOrder');
+                
+                // 清除全局變量（如果存在）
+                if (typeof window.cart !== 'undefined') {
+                    window.cart = [];
+                }
+                
+                // 更新購物車顯示（如果購物車功能已初始化）
+                if (typeof updateCartDisplay === 'function') {
+                    updateCartDisplay();
+                }
+                
+                console.log('✅ 購物車已清除');
+            } catch (error) {
+                console.error('❌ 清除購物車失敗:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * 產生 4 碼隨機取餐號
+         */
+        function generatePickupCode() {
+            // 產生 1000-9999 之間的隨機數字
+            const code = Math.floor(Math.random() * 9000) + 1000;
+            return code.toString();
+        }
+
+        /**
+         * 顯示成功視窗
+         */
+        function showSuccessModal(message, orderNo, amount, pickupCode) {
+            // 創建 Modal 元素
+            const modal = document.createElement('div');
+            modal.className = 'order-success-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease;
+            `;
+
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white;
+                padding: 40px;
+                border-radius: 15px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+                text-align: center;
+                max-width: 400px;
+                width: 90%;
+                animation: slideUp 0.3s ease;
+            `;
+
+            let html = `
+                <div style="font-size: 60px; color: #2ed573; margin-bottom: 20px;">
+                    <span class="material-icons" style="font-size: 60px;">check_circle</span>
+                </div>
+                <h2 style="color: #2c3e50; margin-bottom: 15px; font-size: 24px;">${message}</h2>
+            `;
+
+            if (orderNo) {
+                html += `<p style="color: #666; margin: 10px 0; font-size: 14px;">訂單編號：${orderNo}</p>`;
+            }
+
+            if (amount) {
+                html += `<p style="color: #666; margin: 10px 0; font-size: 14px;">支付金額：NT$ ${parseInt(amount).toLocaleString()}</p>`;
+            }
+
+            if (pickupCode) {
+                html += `
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                        <p style="color: #2c3e50; font-size: 16px; margin-bottom: 10px;">取餐號碼</p>
+                        <p style="color: #2ed573; font-size: 48px; font-weight: bold; letter-spacing: 5px;">${pickupCode}</p>
+                    </div>
+                `;
+            }
+
+            html += `
+                <button id="closeSuccessModal" style="
+                    background: #2ed573;
+                    color: white;
+                    border: none;
+                    padding: 12px 30px;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    margin-top: 20px;
+                    transition: all 0.3s;
+                ">確定</button>
+            `;
+
+            modalContent.innerHTML = html;
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+
+            // 添加動畫樣式
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes slideUp {
+                    from {
+                        transform: translateY(20px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
+                }
+                .order-success-modal button:hover {
+                    background: #26c463;
+                }
+            `;
+            document.head.appendChild(style);
+
+            // 關閉按鈕事件
+            document.getElementById('closeSuccessModal').addEventListener('click', function() {
+                modal.style.animation = 'fadeIn 0.3s ease reverse';
+                setTimeout(() => {
+                    modal.remove();
+                    style.remove();
+                }, 300);
+            });
+
+            // 點擊背景關閉
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    document.getElementById('closeSuccessModal').click();
+                }
+            });
+        }
+
+        /**
+         * 清理 URL 參數和 localStorage
+         */
+        function cleanupAfterOrder() {
+            try {
+                // 使用 window.history.replaceState 清除網址上的參數
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+                console.log('✅ URL 參數已清除');
+
+                // 清除 localStorage 的 diningMode 相關資料
+                localStorage.removeItem('dineInTableNumber');
+                localStorage.removeItem('diningMode');
+                console.log('✅ localStorage 已清理');
+            } catch (error) {
+                console.error('❌ 清理時發生錯誤:', error);
+            }
+        }
+
+        /**
+         * 初始化 QR 碼邏輯
+         */
+        function initQRCode() {
             const qrContainer = document.getElementById('qrContainer');
             const qrText = document.getElementById('qrText');
             
+            if (!qrContainer || !qrText) return;
+
             // 檢測是否為移動設備
             function isMobileDevice() {
                 return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
@@ -187,7 +427,7 @@
                     this.style.transform = 'scale(1)';
                 });
             }
-        });
+        }
     </script>
 
 </body>
