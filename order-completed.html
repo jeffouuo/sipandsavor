@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>訂單完成 - 飲茶趣</title>
+    <link rel="icon" type="image/webp" href="/images/sipandsavor.webp">
+    <link rel="shortcut icon" type="image/webp" href="/images/sipandsavor.webp">
+    <link rel="stylesheet" href="style-optimized.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        .result-container {
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .result-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .success-icon {
+            color: #2ed573;
+        }
+
+        .failed-icon {
+            color: #e74c3c;
+        }
+
+        .error-icon {
+            color: #f39c12;
+        }
+
+        .result-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .result-message {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .order-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .order-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .order-info-item:last-child {
+            border-bottom: none;
+        }
+
+        .order-info-label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .order-info-value {
+            color: #666;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #2ed573;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #26c463;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="result-container">
+        <div id="resultContent">
+            <!-- 內容將由 JavaScript 動態生成 -->
+        </div>
+    </div>
+
+    <script>
+        // 從 URL 參數獲取結果
+        const urlParams = new URLSearchParams(window.location.search);
+        const status = urlParams.get('status');
+        const orderNo = urlParams.get('orderNo');
+        const amount = urlParams.get('amount');
+        const message = urlParams.get('message');
+
+        const resultContent = document.getElementById('resultContent');
+        let html = '';
+
+        if (status === 'success') {
+            html = `
+                <div class="result-icon success-icon">
+                    <span class="material-icons">check_circle</span>
+                </div>
+                <h1 class="result-title">訂單完成！</h1>
+                <p class="result-message">感謝您的購買，訂單已成功處理。</p>
+                ${orderNo || amount ? `
+                    <div class="order-info">
+                        ${orderNo ? `
+                            <div class="order-info-item">
+                                <span class="order-info-label">訂單編號：</span>
+                                <span class="order-info-value">${orderNo}</span>
+                            </div>
+                        ` : ''}
+                        ${amount ? `
+                            <div class="order-info-item">
+                                <span class="order-info-label">支付金額：</span>
+                                <span class="order-info-value">NT$ ${parseInt(amount).toLocaleString()}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : ''}
+                <div class="btn-group">
+                    <a href="menu.html" class="btn btn-primary">繼續購物</a>
+                    <a href="index.html" class="btn btn-secondary">返回首頁</a>
+                </div>
+            `;
+        } else if (status === 'failed') {
+            html = `
+                <div class="result-icon failed-icon">
+                    <span class="material-icons">cancel</span>
+                </div>
+                <h1 class="result-title">支付失敗</h1>
+                <p class="result-message">${message || '交易未能完成，請稍後再試。'}</p>
+                <div class="btn-group">
+                    <a href="payment.html" class="btn btn-primary">重新支付</a>
+                    <a href="menu.html" class="btn btn-secondary">返回菜單</a>
+                </div>
+            `;
+        } else {
+            html = `
+                <div class="result-icon error-icon">
+                    <span class="material-icons">error</span>
+                </div>
+                <h1 class="result-title">發生錯誤</h1>
+                <p class="result-message">${message || '系統發生錯誤，請稍後再試。'}</p>
+                <div class="btn-group">
+                    <a href="menu.html" class="btn btn-primary">返回菜單</a>
+                    <a href="index.html" class="btn btn-secondary">返回首頁</a>
+                </div>
+            `;
+        }
+
+        resultContent.innerHTML = html;
+
+        // 如果是成功狀態，清除購物車
+        if (status === 'success') {
+            try {
+                localStorage.removeItem('cart');
+                localStorage.removeItem('pendingOrder');
+                console.log('✅ 購物車已清除');
+            } catch (error) {
+                console.error('清除購物車失敗:', error);
+            }
+        }
+    </script>
+</body>
+</html>
+
