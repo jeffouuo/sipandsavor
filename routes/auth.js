@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const dbConnect = require('../utils/dbConnect');
 
 const router = express.Router();
 
@@ -108,6 +109,25 @@ router.post('/login', [
         .notEmpty()
         .withMessage('密碼不能為空')
 ], async (req, res) => {
+    // ⚠️ 關鍵：在 Serverless 環境中，確保資料庫連線已建立
+    try {
+        await dbConnect();
+    } catch (dbConnectionError) {
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('❌ 登入時資料庫連線失敗:');
+        console.error('錯誤名稱:', dbConnectionError.name);
+        console.error('錯誤訊息:', dbConnectionError.message);
+        console.error('錯誤堆疊:', dbConnectionError.stack);
+        console.error('═══════════════════════════════════════════════════════════');
+        
+        return res.status(500).json({
+            success: false,
+            message: '資料庫連接失敗，請稍後再試',
+            error: 'Database connection failed',
+            timestamp: new Date().toISOString()
+        });
+    }
+
     try {
         // 驗證輸入
         const errors = validationResult(req);
@@ -125,16 +145,25 @@ router.post('/login', [
         try {
             user = await User.findOne({ email }).select('+password');
         } catch (dbError) {
-            console.error('❌ 登入時資料庫查詢失敗:', dbError.message);
+            console.error('═══════════════════════════════════════════════════════════');
+            console.error('❌ 登入時資料庫查詢失敗:');
+            console.error('錯誤名稱:', dbError.name);
+            console.error('錯誤訊息:', dbError.message);
+            console.error('錯誤堆疊:', dbError.stack);
+            console.error('查詢條件:', { email });
+            console.error('═══════════════════════════════════════════════════════════');
+            
             return res.status(500).json({
                 success: false,
-                message: '資料庫連接失敗，請稍後再試',
-                error: dbError.message,
+                message: '資料庫查詢失敗，請稍後再試',
+                error: 'Database query failed',
                 timestamp: new Date().toISOString()
             });
         }
 
+        // ⚠️ 關鍵：檢查用戶是否存在（避免對 null 進行密碼比對）
         if (!user) {
+            console.log('⚠️ 登入失敗：用戶不存在', { email });
             return res.status(401).json({
                 success: false,
                 message: '電子郵件或密碼錯誤'
@@ -143,15 +172,36 @@ router.post('/login', [
 
         // 檢查用戶是否被禁用
         if (!user.isActive) {
+            console.log('⚠️ 登入失敗：帳戶已被禁用', { email, userId: user._id });
             return res.status(401).json({
                 success: false,
                 message: '帳戶已被禁用，請聯繫客服'
             });
         }
 
-        // 驗證密碼
-        const isPasswordValid = await user.comparePassword(password);
+        // 驗證密碼 - 確保用戶存在後才進行比對
+        let isPasswordValid = false;
+        try {
+            isPasswordValid = await user.comparePassword(password);
+        } catch (passwordError) {
+            console.error('═══════════════════════════════════════════════════════════');
+            console.error('❌ 密碼比對時發生錯誤:');
+            console.error('錯誤名稱:', passwordError.name);
+            console.error('錯誤訊息:', passwordError.message);
+            console.error('錯誤堆疊:', passwordError.stack);
+            console.error('用戶ID:', user._id);
+            console.error('═══════════════════════════════════════════════════════════');
+            
+            return res.status(500).json({
+                success: false,
+                message: '密碼驗證失敗，請稍後再試',
+                error: 'Password verification failed',
+                timestamp: new Date().toISOString()
+            });
+        }
+
         if (!isPasswordValid) {
+            console.log('⚠️ 登入失敗：密碼錯誤', { email, userId: user._id });
             return res.status(401).json({
                 success: false,
                 message: '電子郵件或密碼錯誤'
@@ -159,13 +209,38 @@ router.post('/login', [
         }
 
         // 更新最後登錄時間
-        user.lastLogin = new Date();
-        await user.save();
+        try {
+            user.lastLogin = new Date();
+            await user.save();
+        } catch (saveError) {
+            // 即使保存失敗，也繼續登入流程（記錄錯誤但不中斷）
+            console.error('⚠️ 更新最後登錄時間失敗:', saveError.message);
+        }
 
         // 生成Token
-        const token = generateToken(user._id);
+        let token;
+        try {
+            token = generateToken(user._id);
+        } catch (tokenError) {
+            console.error('═══════════════════════════════════════════════════════════');
+            console.error('❌ 生成 Token 時發生錯誤:');
+            console.error('錯誤名稱:', tokenError.name);
+            console.error('錯誤訊息:', tokenError.message);
+            console.error('錯誤堆疊:', tokenError.stack);
+            console.error('用戶ID:', user._id);
+            console.error('═══════════════════════════════════════════════════════════');
+            
+            return res.status(500).json({
+                success: false,
+                message: 'Token 生成失敗，請稍後再試',
+                error: 'Token generation failed',
+                timestamp: new Date().toISOString()
+            });
+        }
 
-        res.json({
+        console.log('✅ 登入成功', { email, userId: user._id, role: user.role });
+
+        return res.json({
             success: true,
             message: '登錄成功',
             data: {
@@ -181,10 +256,20 @@ router.post('/login', [
         });
 
     } catch (error) {
-        console.error('登錄錯誤:', error);
-        res.status(500).json({
+        // 完整的錯誤處理 - 記錄所有錯誤詳情
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('❌ 登入時發生未預期的錯誤:');
+        console.error('錯誤名稱:', error.name);
+        console.error('錯誤訊息:', error.message);
+        console.error('錯誤堆疊:', error.stack);
+        console.error('請求資料:', { email: req.body.email });
+        console.error('═══════════════════════════════════════════════════════════');
+        
+        return res.status(500).json({
             success: false,
-            message: '登錄失敗，請稍後再試'
+            message: '登錄失敗，請稍後再試',
+            error: 'Unexpected error occurred',
+            timestamp: new Date().toISOString()
         });
     }
 });
