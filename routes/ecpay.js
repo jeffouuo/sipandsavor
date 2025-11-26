@@ -3,11 +3,12 @@ const router = express.Router();
 const crypto = require('crypto');
 const Order = require('../models/Order');
 
-// 綠界金流測試環境設定
+// 綠界金流設定（從環境變數讀取）
 const ECPAY_CONFIG = {
-    merchantID: '3002607',
-    hashKey: 'pwFHCqoQZGmho4w6',
-    hashIV: 'EkRm7iFT261dpevs'
+    merchantID: process.env.ECPAY_MERCHANT_ID || '3002607',
+    hashKey: process.env.ECPAY_HASH_KEY || 'pwFHCqoQZGmho4w6',
+    hashIV: process.env.ECPAY_HASH_IV || 'EkRm7iFT261dpevs',
+    actionUrl: process.env.ECPAY_ACTION_URL || 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5'
 };
 
 // 生成 CheckMacValue（與前端邏輯一致）
@@ -101,6 +102,31 @@ router.post('/return', async (req, res) => {
     } catch (error) {
         console.error('❌ 處理綠界回調時發生錯誤:', error);
         res.status(500).send('Internal server error');
+    }
+});
+
+// 獲取綠界金流配置（僅返回前端需要的非敏感資訊）
+router.get('/config', (req, res) => {
+    // 只返回前端需要的配置，不包含 HashKey 和 HashIV
+    res.json({
+        merchantID: ECPAY_CONFIG.merchantID,
+        actionUrl: ECPAY_CONFIG.actionUrl
+    });
+});
+
+// 生成 CheckMacValue 的 API（前端調用）
+router.post('/generate-checkmac', (req, res) => {
+    try {
+        const params = req.body.params;
+        if (!params) {
+            return res.status(400).json({ error: '參數不能為空' });
+        }
+        
+        const checkMacValue = generateCheckMacValue(params);
+        res.json({ checkMacValue });
+    } catch (error) {
+        console.error('生成 CheckMacValue 失敗:', error);
+        res.status(500).json({ error: '生成 CheckMacValue 失敗' });
     }
 });
 

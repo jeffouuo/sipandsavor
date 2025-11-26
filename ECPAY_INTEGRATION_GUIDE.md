@@ -4,12 +4,18 @@
 
 已成功整合綠界金流（ECPay）測試環境，當用戶選擇「信用卡」支付方式時，會自動跳轉到綠界金流的支付頁面進行付款。
 
-## 測試環境資訊
+## 環境變數設定
 
-- **測試環境 URL**: `https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5`
-- **商店代號 (MerchantID)**: `3002607`
-- **HashKey**: `pwFHCqoQZGmho4w6`
-- **HashIV**: `EkRm7iFT261dpevs`
+**重要**：敏感資訊（HashKey、HashIV）已移至環境變數中，請在 `.env` 文件中設定：
+
+```env
+ECPAY_MERCHANT_ID=3002607
+ECPAY_HASH_KEY=pwFHCqoQZGmho4w6
+ECPAY_HASH_IV=EkRm7iFT261dpevs
+ECPAY_ACTION_URL=https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5
+```
+
+請參考 `.env.example` 文件進行設定。**請勿將 `.env` 文件提交到版本控制系統**。
 
 ## 測試信用卡資訊
 
@@ -113,15 +119,18 @@
    - 所有測試資料都不會影響真實帳戶
 
 2. **生產環境**
-   - 切換到生產環境時，需要：
-     - 更新 MerchantID、HashKey、HashIV
-     - 更新支付環境 URL
-     - 確保 SSL 憑證正確配置
+   - 切換到生產環境時，需要在 `.env` 文件中更新：
+     - `ECPAY_MERCHANT_ID` - 您的生產環境商店代號
+     - `ECPAY_HASH_KEY` - 您的生產環境 HashKey
+     - `ECPAY_HASH_IV` - 您的生產環境 HashIV
+     - `ECPAY_ACTION_URL` - 生產環境 URL: `https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5`
+   - 確保 SSL 憑證正確配置
 
 3. **安全性**
-   - HashKey 和 HashIV 應該保存在環境變數中
-   - 不要將敏感資訊提交到版本控制系統
-   - 生產環境應該使用 HTTPS
+   - ✅ HashKey 和 HashIV 已保存在環境變數中（`.env` 文件）
+   - ✅ `.env` 文件已加入 `.gitignore`，不會提交到版本控制系統
+   - ✅ 前端代碼不包含敏感資訊，所有敏感操作都在後端完成
+   - ✅ 生產環境應該使用 HTTPS
 
 4. **錯誤處理**
    - 如果支付失敗，用戶可以返回重新選擇支付方式

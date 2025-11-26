@@ -95,17 +95,30 @@
         </form>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.js"></script>
     <script>
-        // 綠界金流測試環境設定
-        const ECPAY_CONFIG = {
-            merchantID: '3002607',
-            hashKey: 'pwFHCqoQZGmho4w6',
-            hashIV: 'EkRm7iFT261dpevs',
-            actionUrl: 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5'
+        // 綠界金流配置（從後端獲取）
+        let ECPAY_CONFIG = {
+            merchantID: '',
+            actionUrl: ''
         };
 
         let orderData = null;
+
+        // 從後端獲取綠界金流配置
+        async function loadEcpayConfig() {
+            try {
+                const response = await fetch('/api/ecpay/config');
+                const config = await response.json();
+                ECPAY_CONFIG.merchantID = config.merchantID;
+                ECPAY_CONFIG.actionUrl = config.actionUrl;
+                return true;
+            } catch (error) {
+                console.error('獲取綠界金流配置失敗:', error);
+                alert('無法載入支付配置，請稍後再試');
+                window.location.href = 'menu.html';
+                return false;
+            }
+        }
 
         // 從 localStorage 獲取訂單數據
         function loadOrderData() {
@@ -118,7 +131,6 @@
 
             try {
                 orderData = JSON.parse(storedData);
-                generateEcpayForm();
             } catch (error) {
                 console.error('解析訂單數據失敗:', error);
                 alert('訂單數據格式錯誤，將返回菜單頁面');
@@ -169,9 +181,15 @@
                 EncryptType: '1'
             };
 
-            // 生成 CheckMacValue
-            const checkMacValue = generateCheckMacValue(formParams);
-            formParams.CheckMacValue = checkMacValue;
+            // 從後端生成 CheckMacValue（保護敏感資訊）
+            generateCheckMacValueFromBackend(formParams).then(checkMacValue => {
+                formParams.CheckMacValue = checkMacValue;
+                submitForm(formParams);
+            }).catch(error => {
+                console.error('生成 CheckMacValue 失敗:', error);
+                alert('支付處理失敗，請稍後再試');
+                window.location.href = 'menu.html';
+            });
 
             // 創建表單並自動提交
             const form = document.getElementById('ecpayForm');
@@ -198,51 +216,17 @@
             }, 1500);
         }
 
-        // 生成 CheckMacValue（綠界金流的檢查碼）
-        function generateCheckMacValue(params) {
-            // 1. 將參數按照字母順序排序（排除 CheckMacValue）
-            const sortedKeys = Object.keys(params).filter(key => key !== 'CheckMacValue').sort();
-            
-            // 2. 組合參數字串
-            let checkString = `HashKey=${ECPAY_CONFIG.hashKey}&`;
-            sortedKeys.forEach(key => {
-                checkString += `${key}=${params[key]}&`;
-            });
-            checkString += `HashIV=${ECPAY_CONFIG.hashIV}`;
-
-            // 3. URL Encode（小寫）
-            let encoded = encodeURIComponent(checkString).toLowerCase();
-            
-            // 4. 替換特殊字符
-            encoded = encoded.replace(/%20/g, '+')
-                            .replace(/%2d/g, '-')
-                            .replace(/%5f/g, '_')
-                            .replace(/%2e/g, '.')
-                            .replace(/%21/g, '!')
-                            .replace(/%2a/g, '*')
-                            .replace(/%28/g, '(')
-                            .replace(/%29/g, ')')
-                            .replace(/%2c/g, ',')
-                            .replace(/%2f/g, '/')
-                            .replace(/%3a/g, ':')
-                            .replace(/%3b/g, ';')
-                            .replace(/%3d/g, '=')
-                            .replace(/%3f/g, '?')
-                            .replace(/%40/g, '@')
-                            .replace(/%5b/g, '[')
-                            .replace(/%5d/g, ']');
-
-            // 5. 解碼
-            let decoded = decodeURIComponent(encoded);
-
-            // 6. 使用 MD5 加密並轉大寫
-            const hash = CryptoJS.MD5(decoded).toString();
-            return hash.toUpperCase();
-        }
 
         // 頁面載入時初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            loadOrderData();
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 先載入配置，再載入訂單數據
+            const configLoaded = await loadEcpayConfig();
+            if (configLoaded) {
+                loadOrderData();
+                if (orderData) {
+                    generateEcpayForm();
+                }
+            }
         });
     </script>
 </body>
