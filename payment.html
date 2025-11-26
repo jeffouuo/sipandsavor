@@ -334,7 +334,8 @@
                     body: JSON.stringify({
                         items: orderData.items,
                         totalAmount: orderData.totalAmount,
-                        paymentMethod: 'Credit'
+                        paymentMethod: 'Credit',
+                        diningMode: localStorage.getItem('dineInTableNumber') ? 'dine-in' : 'takeout' // 傳遞用餐模式給後端
                     })
                 });
 
