@@ -78,15 +78,13 @@ app.use(cors(corsOptions));
 
 // 針對綠界金流回調的特殊 CORS 設置（允許所有來源）
 // 綠界會從 payment-stage.ecpay.com.tw 調用我們的 API
-const ecpayCorsOptions = {
-    origin: '*', // 允許所有來源（因為綠界可能從不同網域調用）
+// 這是金流回調，我們會靠 CheckMacValue 驗證安全性，不需要擋 Origin
+const ecpayCallbackCors = cors({
+    origin: '*', // 直接允許所有來源
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'application/x-www-form-urlencoded'],
-    credentials: false // 不需要 credentials
-};
-
-// 綠界回調路由的特殊 CORS 中間件
-const ecpayCallbackCors = cors(ecpayCorsOptions);
+    credentials: false
+});
 
 // 設置 trust proxy 以支持 Vercel 環境
 app.set('trust proxy', true);
@@ -156,9 +154,10 @@ const checkoutLimiter = rateLimit({
 // app.use('/api/orders/checkout', checkoutLimiter);
 // app.use('/api', limiter);
 
-// 解析JSON和URL编码的数据
+// ⚠️ 重要：Body Parser 必須在所有路由定義之前
+// 綠界使用 application/x-www-form-urlencoded 傳送資料，必須先解析
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' })); // 確保能解析 Form Data
 app.use(cookieParser());
 
 

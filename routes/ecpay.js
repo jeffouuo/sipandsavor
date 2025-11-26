@@ -498,13 +498,15 @@ router.get('/config', (req, res) => {
 // 綠界金流訂單結果查詢（OrderResultURL）
 // 注意：綠界使用 POST application/x-www-form-urlencoded 傳送資料
 router.post('/result', async (req, res) => {
-    // 🔍 調試：印出完整的 req.body（用於 Vercel Logs 除錯）
+    // 🔍 調試：印出完整的請求資訊（用於 Vercel Logs 除錯）
     console.log('═══════════════════════════════════════════════════════════');
     console.log('📥 綠界金流訂單結果查詢（OrderResultURL）:');
     console.log('───────────────────────────────────────────────────────────');
+    console.log('req.method:', req.method);
+    console.log('req.headers.content-type:', req.headers['content-type']);
     console.log('req.body:', JSON.stringify(req.body, null, 2));
-    console.log('req.headers:', JSON.stringify(req.headers, null, 2));
-    console.log('req.headers.origin:', req.headers.origin);
+    console.log('req.body type:', typeof req.body);
+    console.log('req.body keys:', req.body ? Object.keys(req.body) : 'undefined');
     console.log('───────────────────────────────────────────────────────────');
     
     try {
@@ -512,16 +514,30 @@ router.post('/result', async (req, res) => {
         const params = req.body;
         
         // 檢查是否有參數
-        if (!params || Object.keys(params).length === 0) {
-            console.error('❌ 沒有收到任何參數');
-            return res.redirect('/order-completed?status=error&message=' + encodeURIComponent('未收到訂單資料'));
+        if (!params || typeof params !== 'object' || Object.keys(params).length === 0) {
+            console.error('❌ 沒有收到任何參數或參數格式錯誤');
+            console.error('req.body:', req.body);
+            console.error('req.body type:', typeof req.body);
+            // 返回 400 而不是 500，避免伺服器崩潰
+            return res.status(400).redirect('/order-completed?status=error&message=' + encodeURIComponent('未收到訂單資料'));
         }
         
         // 驗證 CheckMacValue
-        if (!verifyCheckMacValue(params)) {
+        let checkMacValid = false;
+        try {
+            checkMacValid = verifyCheckMacValue(params);
+        } catch (verifyError) {
+            console.error('❌ CheckMacValue 驗證過程發生錯誤:', verifyError.message);
+            console.error('錯誤堆疊:', verifyError.stack);
+            // 返回 400 而不是 500
+            return res.status(400).redirect('/order-completed?status=failed&message=' + encodeURIComponent('驗證過程發生錯誤'));
+        }
+        
+        if (!checkMacValid) {
             console.error('❌ CheckMacValue 驗證失敗');
             console.error('收到的參數:', params);
-            return res.redirect('/order-completed?status=failed&message=' + encodeURIComponent('驗證失敗'));
+            // 返回 400 而不是 500
+            return res.status(400).redirect('/order-completed?status=failed&message=' + encodeURIComponent('驗證失敗'));
         }
 
         const tradeStatus = params.TradeStatus || params.RtnCode;
@@ -536,26 +552,35 @@ router.post('/result', async (req, res) => {
             rtnMsg: params.RtnMsg
         });
 
+        // 交易成功或失敗的處理
         if (tradeStatus === '1' || params.RtnCode === '1') {
             // 交易成功，重定向到訂單完成頁面
             console.log('✅ 交易成功，重定向到訂單完成頁面');
-            return res.redirect(`/order-completed?status=success&orderNo=${merchantTradeNo}&amount=${totalAmount}`);
+            return res.status(200).redirect(`/order-completed?status=success&orderNo=${merchantTradeNo}&amount=${totalAmount}`);
         } else {
             // 交易失敗
             console.log('❌ 交易失敗:', params.RtnMsg || 'Unknown error');
-            return res.redirect(`/order-completed?status=failed&message=${encodeURIComponent(params.RtnMsg || '交易失敗')}`);
+            return res.status(200).redirect(`/order-completed?status=failed&message=${encodeURIComponent(params.RtnMsg || '交易失敗')}`);
         }
     } catch (error) {
-        console.error('❌ 處理訂單結果時發生錯誤:');
+        // 完整的錯誤處理，確保不會拋出 500
+        console.error('═══════════════════════════════════════════════════════════');
+        console.error('❌ 處理訂單結果時發生未預期的錯誤:');
+        console.error('錯誤名稱:', error.name);
         console.error('錯誤訊息:', error.message);
         console.error('錯誤堆疊:', error.stack);
-        // 確保錯誤不會導致伺服器崩潰，返回重定向響應
+        console.error('req.body:', req.body);
+        console.error('req.headers:', req.headers);
+        console.error('═══════════════════════════════════════════════════════════');
+        
+        // 確保返回響應，不要讓伺服器拋出 500
         try {
-            return res.redirect('/order-completed?status=error&message=' + encodeURIComponent('系統錯誤'));
+            // 嘗試重定向
+            return res.status(200).redirect('/order-completed?status=error&message=' + encodeURIComponent('系統錯誤'));
         } catch (redirectError) {
-            // 如果重定向也失敗，至少返回一個響應
-            console.error('❌ 重定向也失敗:', redirectError);
-            return res.status(500).json({ 
+            // 如果重定向也失敗，返回 JSON 響應
+            console.error('❌ 重定向也失敗:', redirectError.message);
+            return res.status(200).json({ 
                 success: false, 
                 error: '系統錯誤',
                 message: '處理訂單結果時發生錯誤，請聯繫客服'
