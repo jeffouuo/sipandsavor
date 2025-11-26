@@ -134,7 +134,7 @@ router.post('/checkout', [
     body('items.*.price').isFloat({ min: 0 }).withMessage('商品價格必須是非負數'),
     body('items.*.quantity').isInt({ min: 1 }).withMessage('商品數量至少為1'),
     body('totalAmount').isFloat({ min: 0 }).withMessage('總金額必須是非負數'),
-    body('paymentMethod').optional().isIn(['cash', 'credit_card', 'line_pay', 'apple_pay']).withMessage('無效的付款方式'),
+    body('paymentMethod').optional().isIn(['cash', 'credit_card', 'line_pay']).withMessage('無效的付款方式'),
     body('deliveryMethod').optional().isIn(['pickup', 'delivery']).withMessage('無效的取餐方式'),
     body('notes').optional().isLength({ max: 200 }).withMessage('備註不能超過200個字符')
 ], async (req, res) => {
@@ -539,7 +539,7 @@ router.post('/', auth, [
     body('items.*.productId').isMongoId().withMessage('無效的產品ID'),
     body('items.*.quantity').isInt({ min: 1 }).withMessage('商品數量至少為1'),
     body('deliveryMethod').isIn(['pickup', 'delivery']).withMessage('無效的取餐方式'),
-    body('paymentMethod').isIn(['cash', 'credit_card', 'line_pay', 'apple_pay']).withMessage('無效的付款方式'),
+    body('paymentMethod').isIn(['cash', 'credit_card', 'line_pay']).withMessage('無效的付款方式'),
     body('pickupTime').optional().isISO8601().withMessage('無效的取餐時間'),
     body('deliveryAddress').optional().isObject().withMessage('配送地址格式錯誤'),
     body('notes').optional().isLength({ max: 200 }).withMessage('備註不能超過200個字符')
