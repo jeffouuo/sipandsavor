@@ -28,6 +28,10 @@
       "dest": "/server.js"
     },
     {
+      "src": "/order-completed",
+      "dest": "/order-completed.html"
+    },
+    {
       "src": "/images/(.*)",
       "dest": "/images/$1"
     },

@@ -266,6 +266,12 @@ app.get('/favicon.ico', (req, res) => {
 });
 
 // 静态文件服务（除了admin.html和admin.js）
+// 靜態文件服務（HTML、CSS、JS等）
+// 特別處理 /order-completed 路由，映射到 order-completed.html
+app.get('/order-completed', (req, res) => {
+    res.sendFile(path.join(__dirname, 'order-completed.html'));
+});
+
 app.use(express.static(path.join(__dirname), {
     setHeaders: (res, path) => {
         console.log('📁 靜態文件請求:', path);
