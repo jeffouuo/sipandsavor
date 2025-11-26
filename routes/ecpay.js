@@ -11,16 +11,30 @@ const ECPAY_CONFIG = {
     actionUrl: process.env.ECPAY_ACTION_URL || 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5'
 };
 
+/**
+ * 綠界專用編碼函式
+ * 必須完全符合 .NET 的 UrlEncode 行為
+ */
+function ecpayEncode(text) {
+    return encodeURIComponent(text)
+        .replace(/%20/g, '+') // 關鍵！綠界要求空白變成 +
+        .replace(/%2d/g, '-')
+        .replace(/%5f/g, '_')
+        .replace(/%2e/g, '.')
+        .replace(/%21/g, '!')
+        .replace(/%2a/g, '*')
+        .replace(/%28/g, '(')
+        .replace(/%29/g, ')')
+        .toLowerCase(); // 最後轉小寫
+}
+
 // 生成 CheckMacValue（依照綠界官方文件）
-// 步驟：
-// 1. 將參數按 A-Z 排序（排除 CheckMacValue）
-// 2. 組成字串：HashKey=xxx&key1=value1&key2=value2&...&HashIV=xxx
-// 3. 進行 URL encode（encodeURIComponent）
-// 4. 轉換為小寫
-// 5. 替換特殊字元（綠界指定的字元）
-// 6. URL decode
-// 7. MD5 加密
-// 8. 轉大寫
+// 加密流程：
+// 1. 排序參數
+// 2. 串接 HashKey & HashIV
+// 3. ecpayEncode( rawString )  <-- 這裡最容易錯
+// 4. SHA256
+// 5. toUpperCase
 function generateCheckMacValue(params) {
     // 步驟 1：將參數按 A-Z 排序（排除 CheckMacValue）
     const sortedKeys = Object.keys(params).sort();
@@ -34,59 +48,29 @@ function generateCheckMacValue(params) {
     });
     checkString += `HashIV=${ECPAY_CONFIG.hashIV}`;
 
-    // 步驟 3：進行 URL encode
-    let encoded = encodeURIComponent(checkString);
-    
-    // 步驟 4：轉換為小寫
-    encoded = encoded.toLowerCase();
-    
-    // 步驟 5：替換特殊字元（依照綠界官方文件順序）
-    // 注意：必須在 toLowerCase() 之後進行替換
-    encoded = encoded.replace(/%20/g, '+')      // 空白轉 +
-                    .replace(/%2d/g, '-')        // - 保持
-                    .replace(/%5f/g, '_')       // _ 保持
-                    .replace(/%2e/g, '.')        // . 保持
-                    .replace(/%21/g, '!')        // ! 保持
-                    .replace(/%2a/g, '*')        // * 保持
-                    .replace(/%28/g, '(')        // ( 保持
-                    .replace(/%29/g, ')')        // ) 保持
-                    .replace(/%2c/g, ',')        // , 保持
-                    .replace(/%2f/g, '/')        // / 保持
-                    .replace(/%3a/g, ':')        // : 保持
-                    .replace(/%3b/g, ';')        // ; 保持
-                    .replace(/%3d/g, '=')        // = 保持
-                    .replace(/%3f/g, '?')        // ? 保持
-                    .replace(/%40/g, '@')        // @ 保持
-                    .replace(/%5b/g, '[')        // [ 保持
-                    .replace(/%5d/g, ']');       // ] 保持
-
-    // 步驟 6：URL decode
-    let decoded = decodeURIComponent(encoded);
-    
-    // 🔍 調試：印出 MD5 之前的完整字串（用於與綠界後台比對）
+    // 🔍 調試：印出原始字串
     console.log('═══════════════════════════════════════════════════════════');
     console.log('🔍 CheckMacValue 生成過程：');
     console.log('───────────────────────────────────────────────────────────');
     console.log('1. 原始參數（已排序）：', sortedKeys.filter(k => k !== 'CheckMacValue'));
     console.log('2. 組成字串（HashKey 在頭，HashIV 在尾）：');
     console.log('   ', checkString);
-    console.log('3. URL encode 後：');
-    console.log('   ', encodeURIComponent(checkString));
-    console.log('4. 轉小寫並替換特殊字元後：');
+    
+    // 步驟 3：使用 ecpayEncode 編碼（關鍵！）
+    const encoded = ecpayEncode(checkString);
+    console.log('3. ecpayEncode 後（SHA256 之前的完整字串）：');
     console.log('   ', encoded);
-    console.log('5. URL decode 後（MD5 之前的完整字串）：');
-    console.log('   ', decoded);
     console.log('───────────────────────────────────────────────────────────');
-    console.log('📋 請將上面的「MD5 之前的完整字串」與綠界後台比對');
+    console.log('📋 請將上面的「SHA256 之前的完整字串」與綠界後台比對');
     console.log('═══════════════════════════════════════════════════════════');
     
-    // 步驟 7：MD5 加密
-    const hash = crypto.createHash('md5').update(decoded, 'utf8').digest('hex');
+    // 步驟 4：SHA256 加密（不是 MD5！）
+    const hash = crypto.createHash('sha256').update(encoded, 'utf8').digest('hex');
     
-    // 步驟 8：轉大寫
+    // 步驟 5：轉大寫
     const checkMacValue = hash.toUpperCase();
     
-    console.log('6. MD5 加密後（最終 CheckMacValue）：', checkMacValue);
+    console.log('4. SHA256 加密後（最終 CheckMacValue）：', checkMacValue);
     console.log('═══════════════════════════════════════════════════════════\n');
     
     return checkMacValue;
