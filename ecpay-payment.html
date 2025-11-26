@@ -97,28 +97,7 @@
     </div>
 
     <script>
-        // 綠界金流配置（從後端獲取）
-        let ECPAY_CONFIG = {
-            merchantID: '',
-            actionUrl: ''
-        };
-
         let orderData = null;
-
-        // 從後端獲取綠界金流配置（可選，用於顯示）
-        async function loadEcpayConfig() {
-            try {
-                const response = await fetch('/api/ecpay/config');
-                const config = await response.json();
-                ECPAY_CONFIG.merchantID = config.merchantID;
-                ECPAY_CONFIG.actionUrl = config.actionUrl;
-                return true;
-            } catch (error) {
-                console.warn('獲取綠界金流配置失敗（將使用預設值）:', error);
-                // 使用預設值，不中斷流程
-                return true;
-            }
-        }
 
         // 從 localStorage 獲取訂單數據
         function loadOrderData() {
@@ -169,8 +148,7 @@
                 }
 
                 return {
-                    params: data.params,
-                    actionUrl: data.actionUrl
+                    params: data.params
                 };
             } catch (error) {
                 console.error('獲取綠界訂單參數失敗:', error);
@@ -190,12 +168,12 @@
                 
                 // 從後端獲取完整的訂單參數（包含 CheckMacValue）
                 // 注意：這裡的 fetch 是調用我們自己的後端 API，不是綠界
-                const { params, actionUrl } = await getEcpayOrderParams();
+                const { params } = await getEcpayOrderParams();
                 
-                console.log('✅ 已獲取訂單參數，準備提交表單');
+                console.log('✅ 已獲取訂單參數，準備提交到綠界');
                 
-                // 直接提交表單（會導致瀏覽器整頁跳轉）
-                submitForm(params, actionUrl);
+                // 使用 submitToEcpay 函數提交表單（會導致瀏覽器整頁跳轉）
+                submitToEcpay(params);
             } catch (error) {
                 console.error('❌ 生成支付表單失敗:', error);
                 alert('支付處理失敗：' + error.message);
@@ -203,70 +181,41 @@
             }
         }
 
-        // 提交表單（使用純 DOM 操作，確保瀏覽器整頁跳轉）
-        function submitForm(formParams, actionUrl) {
-            console.log('📤 開始創建綠界支付表單...');
+        // 提交到綠界金流（使用純 DOM 操作，確保瀏覽器整頁跳轉）
+        function submitToEcpay(paymentParams) {
+            // paymentParams 應該是後端算好回傳給前端的 JSON 物件
+            // 例如: { MerchantID: "3002607", MerchantTradeNo: "...", CheckMacValue: "..." }
             
-            // 移除舊表單（如果存在）
-            const oldForm = document.getElementById('ecpayForm');
-            if (oldForm && oldForm.parentNode) {
-                oldForm.parentNode.removeChild(oldForm);
-            }
-
-            // 動態創建新表單
+            console.log('📤 開始創建綠界支付表單...', paymentParams);
+            
+            // 1. 建立 form
             const form = document.createElement('form');
-            form.id = 'ecpayForm';
             form.method = 'POST';
-            form.action = actionUrl || ECPAY_CONFIG.actionUrl;
+            form.action = 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5'; // 綠界測試環境網址
             form.style.display = 'none';
-            form.target = '_self'; // 確保在同一視窗中提交
-
-            // 使用純 DOM 操作添加所有參數到表單
-            Object.keys(formParams).forEach(key => {
+            
+            // 2. 塞入參數
+            for (const [key, value] of Object.entries(paymentParams)) {
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = key;
-                input.value = String(formParams[key]); // 確保值為字串
+                input.value = value;
                 form.appendChild(input);
-            });
-
-            // 將表單添加到 body（必須在提交前加入 DOM）
-            document.body.appendChild(form);
-            
-            console.log('✅ 表單已創建並添加到 DOM');
-            console.log('📋 表單參數:', {
-                actionUrl: form.action,
-                method: form.method,
-                inputCount: form.querySelectorAll('input').length,
-                merchantTradeNo: formParams.MerchantTradeNo,
-                totalAmount: formParams.TotalAmount
-            });
-
-            // 立即提交表單（讓瀏覽器整頁跳轉到綠界）
-            // 注意：form.submit() 會導致頁面跳轉，後續代碼不會執行
-            try {
-                form.submit();
-                console.log('🚀 表單已提交，瀏覽器將跳轉到綠界支付頁面');
-            } catch (error) {
-                console.error('❌ 提交表單失敗:', error);
-                alert('支付處理失敗，請重試');
-                // 移除表單
-                if (form.parentNode) {
-                    form.parentNode.removeChild(form);
-                }
             }
+            
+            // 3. 插入 DOM 並送出
+            document.body.appendChild(form);
+            console.log('✅ 表單已創建並添加到 DOM，準備提交...');
+            form.submit(); // <--- 關鍵！這行執行後，瀏覽器會直接白屏並跳轉
         }
 
 
         // 頁面載入時初始化
-        document.addEventListener('DOMContentLoaded', async function() {
-            // 先載入配置，再載入訂單數據
-            const configLoaded = await loadEcpayConfig();
-            if (configLoaded) {
-                loadOrderData();
-                if (orderData) {
-                    generateEcpayForm();
-                }
+        document.addEventListener('DOMContentLoaded', function() {
+            // 載入訂單數據
+            loadOrderData();
+            if (orderData) {
+                generateEcpayForm();
             }
         });
     </script>
