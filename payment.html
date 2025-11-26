@@ -306,10 +306,15 @@
                 return;
             }
 
-            // 如果是信用卡支付，跳轉到綠界金流支付頁面
+            // 如果是信用卡支付，直接跳轉到後端路由（後端會返回自動提交的 HTML）
             if (selectedMethod.value === 'credit_card') {
-                localStorage.setItem('pendingOrder', JSON.stringify(orderData));
-                window.location.href = 'ecpay-payment.html';
+                // 將訂單數據編碼到 URL 參數中
+                const itemsParam = encodeURIComponent(JSON.stringify(orderData.items));
+                const totalParam = orderData.totalAmount;
+                const paymentParam = 'Credit';
+                
+                // 直接跳轉到後端路由，後端會返回自動提交的 HTML
+                window.location.href = `/api/ecpay/checkout?items=${itemsParam}&totalAmount=${totalParam}&paymentMethod=${paymentParam}`;
                 return;
             }
 

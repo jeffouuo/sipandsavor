@@ -105,7 +105,161 @@ router.post('/return', async (req, res) => {
     }
 });
 
-// 創建綠界金流訂單（計算所有參數包括 CheckMacValue）
+// 綠界金流支付頁面（返回自動提交的 HTML）
+router.get('/checkout', (req, res) => {
+    try {
+        // 從 query 參數獲取訂單數據（或從 session/資料庫獲取）
+        const { items, totalAmount, paymentMethod = 'Credit' } = req.query;
+        
+        // 如果沒有參數，嘗試從 body 獲取（POST 請求）
+        let orderData = null;
+        if (!items && req.body && req.body.items) {
+            orderData = req.body;
+        } else if (items) {
+            // 從 query 參數解析（JSON 字串）
+            try {
+                orderData = {
+                    items: JSON.parse(decodeURIComponent(items)),
+                    totalAmount: parseFloat(totalAmount),
+                    paymentMethod: paymentMethod || 'Credit'
+                };
+            } catch (e) {
+                return res.status(400).send('訂單數據格式錯誤');
+            }
+        } else {
+            return res.status(400).send('缺少訂單數據');
+        }
+
+        const { items: orderItems, totalAmount: orderTotal, paymentMethod: orderPaymentMethod } = orderData;
+        
+        // 驗證必要參數
+        if (!orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
+            return res.status(400).send('商品列表不能為空');
+        }
+        
+        if (!orderTotal || orderTotal <= 0) {
+            return res.status(400).send('交易金額必須大於 0');
+        }
+
+        // 生成訂單編號（使用時間戳 + 隨機數）
+        const merchantTradeNo = 'EC' + Date.now() + Math.floor(Math.random() * 1000);
+        
+        // 格式化交易時間
+        const now = new Date();
+        const merchantTradeDate = now.getFullYear() + '/' + 
+            String(now.getMonth() + 1).padStart(2, '0') + '/' + 
+            String(now.getDate()).padStart(2, '0') + ' ' + 
+            String(now.getHours()).padStart(2, '0') + ':' + 
+            String(now.getMinutes()).padStart(2, '0') + ':' + 
+            String(now.getSeconds()).padStart(2, '0');
+
+        // 商品名稱（最多 400 字元）
+        const itemNames = orderItems.map(item => `${item.name} x${item.quantity}`).join('#');
+        const itemName = itemNames.length > 400 ? itemNames.substring(0, 400) : itemNames;
+
+        // 交易描述
+        const tradeDesc = '飲茶趣訂單';
+
+        // 取得當前網站的基礎 URL
+        const baseUrl = req.protocol + '://' + req.get('host');
+        const returnURL = `${baseUrl}/api/ecpay/return`;
+        const orderResultURL = `${baseUrl}/api/ecpay/result`;
+
+        // 準備表單參數（不包含 CheckMacValue）
+        const params = {
+            MerchantID: ECPAY_CONFIG.merchantID,
+            MerchantTradeNo: merchantTradeNo,
+            MerchantTradeDate: merchantTradeDate,
+            PaymentType: 'aio',
+            TotalAmount: Math.round(orderTotal),
+            TradeDesc: tradeDesc,
+            ItemName: itemName,
+            ReturnURL: returnURL,
+            OrderResultURL: orderResultURL,
+            ChoosePayment: orderPaymentMethod || 'Credit',
+            EncryptType: '1'
+        };
+
+        // 生成 CheckMacValue
+        const checkMacValue = generateCheckMacValue(params);
+        params.CheckMacValue = checkMacValue;
+
+        // 綠界網址
+        const actionUrl = ECPAY_CONFIG.actionUrl;
+
+        console.log('✅ 創建綠界訂單並返回自動提交 HTML:', {
+            merchantTradeNo,
+            totalAmount: orderTotal
+        });
+
+        // 組裝自動送出的 HTML
+        let html = `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正在跳轉到支付頁面...</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #f5f5f5;
+        }
+        .loading {
+            text-align: center;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2ed573;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">
+        <div class="spinner"></div>
+        <p>正在跳轉到支付頁面...</p>
+    </div>
+    <form id="ecpay-form" action="${actionUrl}" method="POST">`;
+
+        // 把參數變成 input
+        for (const [key, value] of Object.entries(params)) {
+            // 轉義 HTML 特殊字符
+            const escapedValue = String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            html += `\n        <input type="hidden" name="${key}" value="${escapedValue}" />`;
+        }
+
+        // 加上自動送出的 script
+        html += `
+    </form>
+    <script>
+        // 立即提交表單
+        document.getElementById("ecpay-form").submit();
+    </script>
+</body>
+</html>`;
+
+        // 直接把這段 HTML 送給瀏覽器
+        res.send(html);
+    } catch (error) {
+        console.error('❌ 創建支付頁面失敗:', error);
+        res.status(500).send(`<html><body><h1>支付處理失敗</h1><p>${error.message}</p></body></html>`);
+    }
+});
+
+// 創建綠界金流訂單（計算所有參數包括 CheckMacValue）- 保留用於 API 調用
 router.post('/create-order', (req, res) => {
     try {
         const { items, totalAmount, paymentMethod = 'Credit' } = req.body;
