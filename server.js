@@ -76,6 +76,18 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// 針對綠界金流回調的特殊 CORS 設置（允許所有來源）
+// 綠界會從 payment-stage.ecpay.com.tw 調用我們的 API
+const ecpayCorsOptions = {
+    origin: '*', // 允許所有來源（因為綠界可能從不同網域調用）
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'application/x-www-form-urlencoded'],
+    credentials: false // 不需要 credentials
+};
+
+// 綠界回調路由的特殊 CORS 中間件
+const ecpayCallbackCors = cors(ecpayCorsOptions);
+
 // 設置 trust proxy 以支持 Vercel 環境
 app.set('trust proxy', true);
 
@@ -239,6 +251,10 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/news', require('./routes/news'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/reviews', require('./routes/reviews'));
+// 綠界金流路由
+// 針對綠界回調路由（/result 和 /return）使用特殊的 CORS 設置
+app.use('/api/ecpay/result', ecpayCallbackCors);
+app.use('/api/ecpay/return', ecpayCallbackCors);
 app.use('/api/ecpay', require('./routes/ecpay'));
 
 // Favicon 路由 - 使用品牌 logo 作为 favicon

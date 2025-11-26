@@ -85,14 +85,26 @@ function verifyCheckMacValue(params) {
 
 // 綠界金流回調處理（ReturnURL）
 router.post('/return', async (req, res) => {
-    console.log('📥 綠界金流回調（ReturnURL）:', req.body);
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📥 綠界金流回調（ReturnURL）:');
+    console.log('───────────────────────────────────────────────────────────');
+    console.log('req.body:', JSON.stringify(req.body, null, 2));
+    console.log('req.headers.origin:', req.headers.origin);
+    console.log('───────────────────────────────────────────────────────────');
     
     try {
         const params = req.body;
         
+        // 檢查是否有參數
+        if (!params || Object.keys(params).length === 0) {
+            console.error('❌ 沒有收到任何參數');
+            return res.status(400).send('No parameters received');
+        }
+        
         // 驗證 CheckMacValue
         if (!verifyCheckMacValue(params)) {
             console.error('❌ CheckMacValue 驗證失敗');
+            console.error('收到的參數:', params);
             return res.status(400).send('CheckMacValue verification failed');
         }
 
@@ -492,17 +504,24 @@ router.post('/result', async (req, res) => {
     console.log('───────────────────────────────────────────────────────────');
     console.log('req.body:', JSON.stringify(req.body, null, 2));
     console.log('req.headers:', JSON.stringify(req.headers, null, 2));
+    console.log('req.headers.origin:', req.headers.origin);
     console.log('───────────────────────────────────────────────────────────');
     
     try {
         // 綠界使用 POST application/x-www-form-urlencoded，資料在 req.body
         const params = req.body;
         
+        // 檢查是否有參數
+        if (!params || Object.keys(params).length === 0) {
+            console.error('❌ 沒有收到任何參數');
+            return res.redirect('/order-completed?status=error&message=' + encodeURIComponent('未收到訂單資料'));
+        }
+        
         // 驗證 CheckMacValue
         if (!verifyCheckMacValue(params)) {
             console.error('❌ CheckMacValue 驗證失敗');
             console.error('收到的參數:', params);
-            return res.redirect('/payment-result.html?status=failed&message=' + encodeURIComponent('驗證失敗'));
+            return res.redirect('/order-completed?status=failed&message=' + encodeURIComponent('驗證失敗'));
         }
 
         const tradeStatus = params.TradeStatus || params.RtnCode;
@@ -530,7 +549,18 @@ router.post('/result', async (req, res) => {
         console.error('❌ 處理訂單結果時發生錯誤:');
         console.error('錯誤訊息:', error.message);
         console.error('錯誤堆疊:', error.stack);
-        return res.redirect('/order-completed?status=error&message=' + encodeURIComponent('系統錯誤'));
+        // 確保錯誤不會導致伺服器崩潰，返回重定向響應
+        try {
+            return res.redirect('/order-completed?status=error&message=' + encodeURIComponent('系統錯誤'));
+        } catch (redirectError) {
+            // 如果重定向也失敗，至少返回一個響應
+            console.error('❌ 重定向也失敗:', redirectError);
+            return res.status(500).json({ 
+                success: false, 
+                error: '系統錯誤',
+                message: '處理訂單結果時發生錯誤，請聯繫客服'
+            });
+        }
     }
 });
 
