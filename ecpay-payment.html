@@ -92,10 +92,7 @@
             </p>
         </div>
 
-        <!-- 綠界金流表單（隱藏，自動提交） -->
-        <form id="ecpayForm" method="post" action="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5" style="display: none;">
-            <!-- 表單欄位將由 JavaScript 動態生成 -->
-        </form>
+        <!-- 表單將由 JavaScript 動態創建並提交 -->
     </div>
 
     <script>
@@ -213,31 +210,39 @@
             return data.checkMacValue;
         }
 
-        // 提交表單
+        // 提交表單（使用純 DOM 操作，避免 innerHTML）
         function submitForm(formParams) {
-            const form = document.getElementById('ecpayForm');
-            form.action = ECPAY_CONFIG.actionUrl;
-            
-            // 清空表單
-            form.innerHTML = '';
+            // 移除舊表單（如果存在）
+            const oldForm = document.getElementById('ecpayForm');
+            if (oldForm && oldForm.parentNode) {
+                oldForm.parentNode.removeChild(oldForm);
+            }
 
-            // 添加所有參數到表單
+            // 動態創建新表單
+            const form = document.createElement('form');
+            form.id = 'ecpayForm';
+            form.method = 'POST';
+            form.action = ECPAY_CONFIG.actionUrl;
+            form.style.display = 'none';
+
+            // 使用純 DOM 操作添加所有參數到表單
             Object.keys(formParams).forEach(key => {
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = key;
-                input.value = formParams[key];
+                input.value = String(formParams[key]); // 確保值為字串
                 form.appendChild(input);
             });
+
+            // 將表單添加到 body
+            document.body.appendChild(form);
 
             // 顯示測試資訊
             document.getElementById('infoBox').style.display = 'block';
 
-            // 延遲一下後自動提交表單（讓用戶看到載入畫面）
-            setTimeout(() => {
-                console.log('提交綠界金流表單:', formParams);
-                form.submit();
-            }, 1500);
+            // 立即提交表單（讓瀏覽器直接跳轉到綠界）
+            console.log('📤 提交綠界金流表單:', formParams);
+            form.submit();
         }
 
 
