@@ -289,7 +289,8 @@ router.post('/get-params', async (req, res) => {
 
         // 取得當前網站的基礎 URL
         const baseUrl = req.protocol + '://' + req.get('host');
-        const returnURL = `${baseUrl}/api/ecpay/return`;
+        // ⚠️ 關鍵：ReturnURL 指向 callback API（綠界背景通知）
+        const returnURL = `${baseUrl}/api/ecpay/callback`;
         const orderResultURL = `${baseUrl}/api/ecpay/result`;
 
         // 準備表單參數（不包含 CheckMacValue）
@@ -388,7 +389,8 @@ router.get('/checkout', (req, res) => {
 
         // 取得當前網站的基礎 URL
         const baseUrl = req.protocol + '://' + req.get('host');
-        const returnURL = `${baseUrl}/api/ecpay/return`;
+        // ⚠️ 關鍵：ReturnURL 指向 callback API（綠界背景通知）
+        const returnURL = `${baseUrl}/api/ecpay/callback`;
         const orderResultURL = `${baseUrl}/api/ecpay/result`;
 
         // 準備表單參數（不包含 CheckMacValue）
@@ -543,7 +545,8 @@ router.post('/create-order', (req, res) => {
 
         // 取得當前網站的基礎 URL
         const baseUrl = req.protocol + '://' + req.get('host');
-        const returnURL = `${baseUrl}/api/ecpay/return`;
+        // ⚠️ 關鍵：ReturnURL 指向 callback API（綠界背景通知）
+        const returnURL = `${baseUrl}/api/ecpay/callback`;
         const orderResultURL = `${baseUrl}/api/ecpay/result`;
 
         // 準備表單參數（不包含 CheckMacValue）
