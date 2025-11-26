@@ -190,9 +190,30 @@
                 alert('支付處理失敗，請稍後再試');
                 window.location.href = 'menu.html';
             });
+        }
 
-            // 創建表單並自動提交
+        // 從後端生成 CheckMacValue（保護敏感資訊）
+        async function generateCheckMacValueFromBackend(params) {
+            const response = await fetch('/api/ecpay/generate-checkmac', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ params })
+            });
+
+            if (!response.ok) {
+                throw new Error('生成 CheckMacValue 失敗');
+            }
+
+            const data = await response.json();
+            return data.checkMacValue;
+        }
+
+        // 提交表單
+        function submitForm(formParams) {
             const form = document.getElementById('ecpayForm');
+            form.action = ECPAY_CONFIG.actionUrl;
             
             // 清空表單
             form.innerHTML = '';
