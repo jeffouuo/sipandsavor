@@ -6,7 +6,8 @@
     <title>綠界金流支付 - 飲茶趣</title>
     <link rel="icon" type="image/webp" href="/images/sipandsavor.webp">
     <link rel="shortcut icon" type="image/webp" href="/images/sipandsavor.webp">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https:; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https:;">
+    <!-- 移除 CSP，讓表單提交可以正常工作 -->
+    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https:; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https:;"> -->
     <link rel="stylesheet" href="style-optimized.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
@@ -179,23 +180,33 @@
 
         // 生成綠界金流表單
         async function generateEcpayForm() {
-            if (!orderData) return;
+            if (!orderData) {
+                console.error('❌ 訂單數據不存在');
+                return;
+            }
 
             try {
+                console.log('🔄 開始獲取綠界訂單參數...');
+                
                 // 從後端獲取完整的訂單參數（包含 CheckMacValue）
+                // 注意：這裡的 fetch 是調用我們自己的後端 API，不是綠界
                 const { params, actionUrl } = await getEcpayOrderParams();
                 
-                // 直接提交表單
+                console.log('✅ 已獲取訂單參數，準備提交表單');
+                
+                // 直接提交表單（會導致瀏覽器整頁跳轉）
                 submitForm(params, actionUrl);
             } catch (error) {
-                console.error('生成支付表單失敗:', error);
+                console.error('❌ 生成支付表單失敗:', error);
                 alert('支付處理失敗：' + error.message);
                 window.location.href = 'menu.html';
             }
         }
 
-        // 提交表單（使用純 DOM 操作，避免 innerHTML）
+        // 提交表單（使用純 DOM 操作，確保瀏覽器整頁跳轉）
         function submitForm(formParams, actionUrl) {
+            console.log('📤 開始創建綠界支付表單...');
+            
             // 移除舊表單（如果存在）
             const oldForm = document.getElementById('ecpayForm');
             if (oldForm && oldForm.parentNode) {
@@ -208,6 +219,7 @@
             form.method = 'POST';
             form.action = actionUrl || ECPAY_CONFIG.actionUrl;
             form.style.display = 'none';
+            form.target = '_self'; // 確保在同一視窗中提交
 
             // 使用純 DOM 操作添加所有參數到表單
             Object.keys(formParams).forEach(key => {
@@ -218,19 +230,31 @@
                 form.appendChild(input);
             });
 
-            // 將表單添加到 body
+            // 將表單添加到 body（必須在提交前加入 DOM）
             document.body.appendChild(form);
-
-            // 顯示測試資訊
-            document.getElementById('infoBox').style.display = 'block';
-
-            // 立即提交表單（讓瀏覽器直接跳轉到綠界）
-            console.log('📤 提交綠界金流表單:', {
+            
+            console.log('✅ 表單已創建並添加到 DOM');
+            console.log('📋 表單參數:', {
                 actionUrl: form.action,
+                method: form.method,
+                inputCount: form.querySelectorAll('input').length,
                 merchantTradeNo: formParams.MerchantTradeNo,
                 totalAmount: formParams.TotalAmount
             });
-            form.submit();
+
+            // 立即提交表單（讓瀏覽器整頁跳轉到綠界）
+            // 注意：form.submit() 會導致頁面跳轉，後續代碼不會執行
+            try {
+                form.submit();
+                console.log('🚀 表單已提交，瀏覽器將跳轉到綠界支付頁面');
+            } catch (error) {
+                console.error('❌ 提交表單失敗:', error);
+                alert('支付處理失敗，請重試');
+                // 移除表單
+                if (form.parentNode) {
+                    form.parentNode.removeChild(form);
+                }
+            }
         }
 
 
