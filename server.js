@@ -53,13 +53,15 @@ app.use(helmet({
 // 动态CORS配置
 const corsOptions = {
     origin: function (origin, callback) {
-        // 允許的來源列表
+        // 允許的來源列表（包含綠界測試環境）
         const allowedOrigins = [
             'http://localhost:3000',
             'http://localhost:3001', 
             'http://127.0.0.1:3000',
             'http://127.0.0.1:3001',
-            'https://sipandsavor.vercel.app'  // 添加生產環境域名
+            'https://sipandsavor.vercel.app',  // 生產環境域名
+            'https://payment-stage.ecpay.com.tw',  // 綠界測試環境
+            'https://payment.ecpay.com.tw'  // 綠界正式環境（如果需要）
         ];
         
         // 如果沒有 origin（如同域請求）或在允許列表中，則允許
@@ -76,14 +78,16 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// 針對綠界金流回調的特殊 CORS 設置（允許所有來源）
+// 針對綠界金流回調的特殊 CORS 設置（完全關閉 CORS 檢查）
 // 綠界會從 payment-stage.ecpay.com.tw 調用我們的 API
 // 這是金流回調，我們會靠 CheckMacValue 驗證安全性，不需要擋 Origin
 const ecpayCallbackCors = cors({
-    origin: '*', // 直接允許所有來源
+    origin: true, // 允許所有來源（等同於 '*'，但更明確）
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'application/x-www-form-urlencoded'],
-    credentials: false
+    allowedHeaders: ['Content-Type', 'application/x-www-form-urlencoded', '*'],
+    credentials: false,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 });
 
 // 設置 trust proxy 以支持 Vercel 環境
