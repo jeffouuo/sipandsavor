@@ -317,10 +317,15 @@
             window.location.href = `payment-process.html?method=${selectedMethod.value}`;
         }
 
-        // 處理綠界金流支付（獲取參數並創建表單提交）
+        // 處理綠界金流支付
+        // ✅ 正確流程：
+        // 1. 前端從後端獲取 JSON 參數（不是 HTML）
+        // 2. 前端建立隱藏的 <form>，把參數填進去
+        // 3. 執行 form.submit()
+        // 4. 成功標誌：瀏覽器整頁白屏並換頁，網址列變成 payment-stage.ecpay.com.tw
         async function handleEcpayPayment() {
             try {
-                // 1. 從後端獲取 JSON 參數（不是 HTML）
+                // 步驟 1：從後端獲取 JSON 參數（不是 HTML）
                 const response = await fetch('/api/ecpay/get-params', {
                     method: 'POST',
                     headers: {
@@ -344,11 +349,11 @@
                     throw new Error(data.error || '獲取支付參數失敗');
                 }
 
-                // 2. 拿到參數後，動態建立表單並送出
+                // 步驟 2：建立隱藏的 <form>，把參數填進去
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5'; // 綠界測試環境網址
-                form.style.display = 'none';
+                form.style.display = 'none'; // 隱藏表單
 
                 // 將所有參數（除了 success）添加到表單
                 for (const [key, value] of Object.entries(data)) {
@@ -361,10 +366,12 @@
                     }
                 }
 
+                // 將表單添加到 body
                 document.body.appendChild(form);
 
-                // 3. 這行執行下去，網站會變白，然後跳去綠界
-                // _actions.js 會在綠界的網域下正常執行，不會在我們的 Console 報錯
+                // 步驟 3：執行 form.submit()
+                // ✅ 成功標誌：瀏覽器整頁白屏並換頁，網址列變成 payment-stage.ecpay.com.tw
+                // ✅ 此時您的網站已經消失，當然就不會有任何報錯
                 console.log('🚀 提交表單到綠界，瀏覽器將整頁跳轉...');
                 form.submit();
             } catch (error) {
