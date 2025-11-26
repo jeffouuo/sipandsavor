@@ -914,109 +914,22 @@ const initCheckout = () => {
             const isDineInPage = window.location.pathname.includes('dine-in-order.html');
             const tableNumber = localStorage.getItem('dineInTableNumber');
             
-            let fetchPromise;
+            // 保存訂單數據到 localStorage，準備跳轉到支付頁面
+            // 將訂單數據保存為待處理訂單
+            localStorage.setItem('pendingOrder', JSON.stringify(orderData));
             
-            if (isDineInPage && tableNumber) {
-                // 內用訂單
-                const dineInOrderData = {
-                    tableNumber: tableNumber,
-                    area: '內用區',
-                    items: orderData.items,
-                    total: orderData.totalAmount,
-                    orderType: 'dine-in',
-                    status: 'pending',
-                    orderTime: new Date().toISOString()
-                };
-                
-                console.log('📤 發送內用訂單數據:', dineInOrderData);
-                fetchPromise = fetch('/api/orders/dine-in', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(dineInOrderData)
-                });
-            } else {
-                // 外帶訂單
-                console.log('📤 發送外帶訂單數據:', orderData);
-                fetchPromise = fetch('/api/orders/checkout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(orderData)
-                });
+            // 重置結帳按鈕狀態（因為要跳轉頁面）
+            isCheckingOut = false;
+            const checkoutBtn = document.querySelector('.checkout-btn');
+            if (checkoutBtn) {
+                checkoutBtn.disabled = false;
+                checkoutBtn.textContent = '結帳';
+                checkoutBtn.style.opacity = '1';
             }
             
-            fetchPromise.then(response => {
-                console.log('📥 後端回應狀態:', response.status);
-                if (!response.ok) {
-                    return response.json().then(errorData => {
-                        console.error('❌ 後端錯誤:', errorData);
-                        // 顯示詳細的錯誤信息
-                        if (errorData.errors && errorData.errors.length > 0) {
-                            const errorMessages = errorData.errors.map(err => `${err.path}: ${err.msg}`).join(', ');
-                            throw new Error(`驗證錯誤: ${errorMessages}`);
-                        }
-                        throw new Error(errorData.message || '請求失敗');
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('✅ 後端回應數據:', data);
-                console.log('🔍 檢查訂單號碼:', {
-                    isDineInPage,
-                    hasData: !!data.data,
-                    orderNumber: data.data?.orderNumber,
-                    fullData: data.data
-                });
-                
-                if (data.success) {
-                    showNotification('訂單已成功提交！', 'success');
-                    
-                    // 如果是外帶訂單，顯示訂單號碼
-                    if (!isDineInPage && data.data && data.data.orderNumber) {
-                        const orderNumberLast4 = data.data.orderNumber.slice(-4);
-                        console.log('🔍 準備顯示訂單號碼:', orderNumberLast4);
-                        setTimeout(() => {
-                            showNotification(`您的訂單號碼：${orderNumberLast4}`, 'info');
-                        }, 1500);
-                    } else {
-                        console.log('⚠️ 未顯示訂單號碼的原因:', {
-                            isDineInPage,
-                            hasData: !!data.data,
-                            orderNumber: data.data?.orderNumber
-                        });
-                    }
-                    
-                    // 清空購物車
-                    window.cart.length = 0;
-                    localStorage.removeItem('cart');
-                    // 如果是內用訂單，清除桌號
-                    if (isDineInPage) {
-                        localStorage.removeItem('dineInTableNumber');
-                    }
-                    updateCartDisplay();
-                    closeCartSidebar();
-                } else {
-                    showNotification(data.message || '訂單提交失敗，請重試', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('❌ 結帳錯誤:', error);
-                showNotification(error.message || '結帳時發生錯誤，請重試', 'error');
-            })
-            .finally(() => {
-                // 重置結帳按鈕狀態
-                isCheckingOut = false;
-                const checkoutBtn = document.querySelector('.checkout-btn');
-                if (checkoutBtn) {
-                    checkoutBtn.disabled = false;
-                    checkoutBtn.textContent = '結帳';
-                    checkoutBtn.style.opacity = '1';
-                }
-            });
+            // 跳轉到支付選擇頁面
+            console.log('🔄 跳轉到支付選擇頁面');
+            window.location.href = 'payment.html';
         });
     }
 };

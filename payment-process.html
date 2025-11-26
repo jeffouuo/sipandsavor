@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>處理支付中 - 飲茶趣</title>
+    <link rel="icon" type="image/webp" href="/images/sipandsavor.webp">
+    <link rel="shortcut icon" type="image/webp" href="/images/sipandsavor.webp">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https:; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https:;">
+    <link rel="stylesheet" href="style-optimized.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        .payment-process-container {
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .payment-icon-large {
+            font-size: 80px;
+            color: #2ed573;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2ed573;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .payment-status {
+            margin: 30px 0;
+        }
+
+        .payment-status h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .payment-status p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .payment-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .payment-info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .payment-info-item:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #2c3e50;
+        }
+
+        .success-message {
+            color: #2ed573;
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .btn-primary {
+            background-color: #2ed573;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #26d0ce;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .test-controls {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff3cd;
+            border-radius: 10px;
+            border: 1px solid #ffc107;
+        }
+
+        .test-controls h3 {
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 1em;
+        }
+
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-test {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="payment-process-container">
+        <!-- 處理中狀態 -->
+        <div id="processingState">
+            <div class="payment-icon-large">
+                <span class="material-icons">payment</span>
+            </div>
+            <div class="spinner"></div>
+            <div class="payment-status">
+                <h2>處理支付中...</h2>
+                <p id="statusMessage">正在連接到支付系統，請稍候</p>
+            </div>
+            <div class="payment-info" id="paymentInfo">
+                <!-- 支付信息將動態顯示 -->
+            </div>
+        </div>
+
+        <!-- 成功狀態 -->
+        <div id="successState" class="hidden">
+            <div class="payment-icon-large" style="color: #2ed573;">
+                <span class="material-icons">check_circle</span>
+            </div>
+            <div class="payment-status">
+                <h2 class="success-message">支付成功！</h2>
+                <p>您的訂單已成功提交</p>
+            </div>
+            <div class="payment-info" id="successInfo">
+                <!-- 成功信息將動態顯示 -->
+            </div>
+            <button class="btn btn-primary" onclick="goToMenu()">返回菜單</button>
+        </div>
+
+        <!-- 失敗狀態 -->
+        <div id="errorState" class="hidden">
+            <div class="payment-icon-large" style="color: #e74c3c;">
+                <span class="material-icons">error</span>
+            </div>
+            <div class="payment-status">
+                <h2 class="error-message">支付失敗</h2>
+                <p id="errorMessage">支付處理失敗，請重試</p>
+            </div>
+            <div class="test-controls">
+                <h3>測試控制（僅用於測試）</h3>
+                <div class="test-buttons">
+                    <button class="btn-test btn-success" onclick="simulateSuccess()">模擬成功</button>
+                    <button class="btn-test btn-danger" onclick="simulateFailure()">模擬失敗</button>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="goBack()">返回重試</button>
+        </div>
+    </div>
+
+    <script>
+        let orderData = null;
+        let paymentMethod = 'credit_card';
+        let processingStep = 0;
+        const processingSteps = [
+            '正在連接到支付系統...',
+            '正在驗證支付信息...',
+            '正在處理支付請求...',
+            '正在確認支付結果...'
+        ];
+
+        function loadOrderData() {
+            const storedData = localStorage.getItem('pendingOrder');
+            if (!storedData) {
+                showError('沒有找到訂單數據');
+                return;
+            }
+
+            try {
+                orderData = JSON.parse(storedData);
+                
+                // 從 URL 參數獲取支付方式
+                const urlParams = new URLSearchParams(window.location.search);
+                paymentMethod = urlParams.get('method') || orderData.paymentMethod || 'credit_card';
+                orderData.paymentMethod = paymentMethod;
+
+                displayPaymentInfo();
+                startPaymentProcess();
+            } catch (error) {
+                console.error('解析訂單數據失敗:', error);
+                showError('訂單數據格式錯誤');
+            }
+        }
+
+        function displayPaymentInfo() {
+            if (!orderData) return;
+
+            const infoContainer = document.getElementById('paymentInfo');
+            const methodNames = {
+                'credit_card': '信用卡',
+                'line_pay': 'LINE Pay',
+                'apple_pay': 'Apple Pay',
+                'cash': '現金'
+            };
+
+            let html = `
+                <div class="payment-info-item">
+                    <span>支付方式</span>
+                    <span>${methodNames[paymentMethod] || paymentMethod}</span>
+                </div>
+                <div class="payment-info-item">
+                    <span>訂單金額</span>
+                    <span>NT$ ${orderData.totalAmount.toLocaleString()}</span>
+                </div>
+            `;
+
+            infoContainer.innerHTML = html;
+        }
+
+        function startPaymentProcess() {
+            // 模擬支付處理過程
+            const statusMessage = document.getElementById('statusMessage');
+            
+            // 更新處理狀態消息
+            const updateStatus = () => {
+                if (processingStep < processingSteps.length) {
+                    statusMessage.textContent = processingSteps[processingStep];
+                    processingStep++;
+                    setTimeout(updateStatus, 1500);
+                } else {
+                    // 模擬支付處理完成（隨機成功/失敗，測試用）
+                    // 在實際環境中，這裡應該調用真實的支付 API
+                    simulatePayment();
+                }
+            };
+
+            updateStatus();
+        }
+
+        function simulatePayment() {
+            // 模擬支付 API 調用
+            // 在真實環境中，這裡應該調用實際的支付服務
+            console.log('模擬支付處理中...');
+            
+            // 模擬網絡延遲
+            setTimeout(() => {
+                // 90% 的成功率（測試用）
+                const success = Math.random() > 0.1;
+                
+                if (success) {
+                    completePayment();
+                } else {
+                    showError('支付處理失敗：模擬錯誤（測試用）');
+                }
+            }, 2000);
+        }
+
+        function completePayment() {
+            // 隱藏處理中狀態
+            document.getElementById('processingState').classList.add('hidden');
+            
+            // 顯示成功狀態
+            const successState = document.getElementById('successState');
+            successState.classList.remove('hidden');
+
+            // 顯示成功信息
+            const successInfo = document.getElementById('successInfo');
+            successInfo.innerHTML = `
+                <div class="payment-info-item">
+                    <span>訂單號碼</span>
+                    <span id="orderNumber">處理中...</span>
+                </div>
+                <div class="payment-info-item">
+                    <span>支付金額</span>
+                    <span>NT$ ${orderData.totalAmount.toLocaleString()}</span>
+                </div>
+                <div class="payment-info-item">
+                    <span>支付時間</span>
+                    <span>${new Date().toLocaleString('zh-TW')}</span>
+                </div>
+            `;
+
+            // 提交訂單到後端
+            submitOrder();
+        }
+
+        function submitOrder() {
+            // 檢查是否為內用訂單
+            const isDineIn = localStorage.getItem('dineInTableNumber');
+            const url = isDineIn ? '/api/orders/dine-in' : '/api/orders/checkout';
+
+            let requestData;
+            if (isDineIn) {
+                requestData = {
+                    tableNumber: localStorage.getItem('dineInTableNumber'),
+                    area: '內用區',
+                    items: orderData.items,
+                    total: orderData.totalAmount,
+                    orderType: 'dine-in',
+                    status: 'pending',
+                    orderTime: new Date().toISOString(),
+                    paymentMethod: paymentMethod
+                };
+            } else {
+                requestData = orderData;
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 顯示訂單號碼
+                    const orderNumberEl = document.getElementById('orderNumber');
+                    if (data.data && data.data.orderNumber) {
+                        orderNumberEl.textContent = data.data.orderNumber;
+                    } else {
+                        orderNumberEl.textContent = '已提交';
+                    }
+
+                    // 清除待處理訂單
+                    localStorage.removeItem('pendingOrder');
+                    if (isDineIn) {
+                        localStorage.removeItem('dineInTableNumber');
+                    }
+                } else {
+                    showError(data.message || '訂單提交失敗');
+                }
+            })
+            .catch(error => {
+                console.error('提交訂單失敗:', error);
+                showError('提交訂單時發生錯誤，但支付已成功');
+            });
+        }
+
+        function showError(message) {
+            // 隱藏處理中狀態
+            document.getElementById('processingState').classList.add('hidden');
+            
+            // 顯示錯誤狀態
+            const errorState = document.getElementById('errorState');
+            errorState.classList.remove('hidden');
+            
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        function simulateSuccess() {
+            completePayment();
+        }
+
+        function simulateFailure() {
+            showError('模擬支付失敗（測試用）');
+        }
+
+        function goBack() {
+            window.location.href = 'payment.html';
+        }
+
+        function goToMenu() {
+            window.location.href = 'menu.html';
+        }
+
+        // 頁面載入時初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadOrderData();
+        });
+    </script>
+</body>
+</html>
+
