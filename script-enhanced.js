@@ -920,7 +920,7 @@ const initCheckout = () => {
             
             // 重置結帳按鈕狀態（因為要跳轉頁面）
             isCheckingOut = false;
-            const checkoutBtn = document.querySelector('.checkout-btn');
+            // 使用外層作用域的 checkoutBtn，不需要重新聲明
             if (checkoutBtn) {
                 checkoutBtn.disabled = false;
                 checkoutBtn.textContent = '結帳';
