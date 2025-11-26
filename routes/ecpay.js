@@ -205,10 +205,15 @@ router.post('/return', async (req, res) => {
 // 注意：生產環境應該使用 Redis 或資料庫，這裡使用內存存儲作為簡單方案
 const pendingOrders = new Map();
 
+// 生成 4 碼隨機取餐號
+function generatePickupNumber() {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
 // 獲取綠界金流參數（返回 JSON，供前端創建表單）
 router.post('/get-params', async (req, res) => {
     try {
-        const { items, totalAmount, paymentMethod = 'Credit', deliveryMethod = 'pickup', notes = '' } = req.body;
+        const { items, totalAmount, paymentMethod = 'Credit', deliveryMethod = 'pickup', notes = '', diningMode = 'takeout' } = req.body;
         
         // 驗證必要參數
         if (!items || !Array.isArray(items) || items.length === 0) {
@@ -242,6 +247,13 @@ router.post('/get-params', async (req, res) => {
             });
         }
         
+        // ⚠️ 如果是外帶 (takeout)，生成 4 碼隨機取餐號
+        let pickupNumber = null;
+        if (diningMode === 'takeout') {
+            pickupNumber = generatePickupNumber();
+            console.log('🎫 生成外帶取餐號:', pickupNumber);
+        }
+        
         // 創建訂單到資料庫（狀態為 Unpaid）
         const orderData = {
             items: orderItems,
@@ -250,6 +262,8 @@ router.post('/get-params', async (req, res) => {
             deliveryMethod: deliveryMethod || 'pickup',
             notes: notes || '綠界金流支付',
             orderNumber: merchantTradeNo, // 使用 MerchantTradeNo 作為訂單編號
+            pickupNumber: pickupNumber, // 外帶取餐號（僅外帶訂單有）
+            diningMode: diningMode || 'takeout', // 用餐模式
             status: 'pending',
             paymentStatus: 'pending', // Unpaid（未付款）
             createdAt: new Date(),
@@ -263,6 +277,8 @@ router.post('/get-params', async (req, res) => {
             console.log('✅ 訂單已建立到資料庫（狀態：Unpaid）:', {
                 orderId: order._id,
                 orderNumber: merchantTradeNo,
+                pickupNumber: pickupNumber,
+                diningMode: diningMode,
                 totalAmount: totalAmount
             });
         } catch (dbError) {
@@ -659,28 +675,37 @@ router.post('/result', async (req, res) => {
         // 交易成功或失敗的處理
         if (tradeStatus === '1' || params.RtnCode === '1') {
             // 交易成功
-            console.log('✅ 交易成功，開始創建訂單...');
+            console.log('✅ 交易成功（OrderResultURL）');
             
-            // 從臨時存儲獲取訂單資訊
-            const pendingOrder = pendingOrders.get(merchantTradeNo);
-            
-            if (pendingOrder) {
-                // 創建訂單到資料庫
-                try {
-                    await createOrderFromPayment(pendingOrder, merchantTradeNo);
-                    console.log('✅ 訂單已成功創建到資料庫');
-                    // 清理臨時存儲
-                    pendingOrders.delete(merchantTradeNo);
-                } catch (orderError) {
-                    console.error('❌ 創建訂單失敗:', orderError);
-                    // 即使創建訂單失敗，也繼續重定向（訂單資訊已保存在 pendingOrders 中，可以稍後手動處理）
+            // 確認訂單狀態（訂單應該已經在 /callback 中更新為 Paid）
+            // 查詢訂單的 pickupNumber
+            let pickupNumber = null;
+            try {
+                const order = await Order.findOne({ orderNumber: merchantTradeNo });
+                if (order) {
+                    pickupNumber = order.pickupNumber || null;
+                    console.log('📋 訂單狀態確認:', {
+                        orderId: order._id,
+                        orderNumber: merchantTradeNo,
+                        pickupNumber: pickupNumber,
+                        diningMode: order.diningMode,
+                        paymentStatus: order.paymentStatus,
+                        status: order.status
+                    });
+                } else {
+                    console.warn('⚠️ 未找到訂單，訂單編號:', merchantTradeNo);
                 }
-            } else {
-                console.warn('⚠️ 未找到待處理的訂單資訊，訂單編號:', merchantTradeNo);
+            } catch (checkError) {
+                console.error('❌ 確認訂單狀態時發生錯誤:', checkError);
             }
             
             // 重定向到首頁並帶上訂單參數
-            return res.status(200).redirect(`/?status=success&orderNo=${merchantTradeNo}&amount=${totalAmount}`);
+            // 如果有 pickupNumber，則帶在 URL 參數中
+            let redirectUrl = `/?status=success&orderNo=${merchantTradeNo}&amount=${totalAmount}`;
+            if (pickupNumber) {
+                redirectUrl += `&pickupNumber=${pickupNumber}`;
+            }
+            return res.status(200).redirect(redirectUrl);
         } else {
             // 交易失敗，重定向到首頁並帶上錯誤訊息
             console.log('❌ 交易失敗:', params.RtnMsg || 'Unknown error');

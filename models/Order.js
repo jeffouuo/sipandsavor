@@ -97,6 +97,17 @@ const orderSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    // 外帶取餐號碼（4碼）
+    pickupNumber: {
+        type: String,
+        required: false
+    },
+    // 用餐模式：'takeout' (外帶) 或 'dine-in' (內用)
+    diningMode: {
+        type: String,
+        enum: ['takeout', 'dine-in'],
+        required: false
+    },
     orderTime: {
         type: Date,
         default: Date.now

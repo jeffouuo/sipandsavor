@@ -178,37 +178,36 @@
             initQRCode();
         });
 
-        /**
-         * 處理訂單成功邏輯
-         */
-        function handleOrderSuccess(orderNo, amount) {
-            try {
-                // 執行動作 1: 清空購物車
-                console.log('🛒 清空購物車...');
-                clearCart();
-
-                // 執行動作 2: 讀取 diningMode 並顯示資訊
-                const dineInTableNumber = localStorage.getItem('dineInTableNumber');
-                const isDineIn = !!dineInTableNumber;
-
-                if (isDineIn) {
-                    // 內用：顯示送餐訊息
-                    console.log('🍽️ 內用訂單');
-                    showSuccessModal('付款成功！請回座稍候，我們將為您送餐', orderNo, amount);
-                } else {
-                    // 外帶：產生並顯示 4 碼隨機取餐號
-                    console.log('🥤 外帶訂單');
-                    const pickupCode = generatePickupCode();
-                    showSuccessModal(`付款成功！您的取餐號碼是 ${pickupCode}`, orderNo, amount, pickupCode);
+            /**
+             * 處理訂單成功邏輯
+             */
+            function handleOrderSuccess(orderNo, amount) {
+                try {
+                    // 執行動作 1: 清空購物車
+                    console.log('🛒 清空購物車...');
+                    clearCart();
+        
+                    // 執行動作 2: 讀取 URL 參數中的 pickupNumber（由後端傳回）
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const pickupNumber = urlParams.get('pickupNumber');
+        
+                    if (pickupNumber) {
+                        // 外帶：顯示後端傳回的取餐號
+                        console.log('🥤 外帶訂單，取餐號:', pickupNumber);
+                        showSuccessModal(`付款成功！您的取餐號碼是 ${pickupNumber}`, orderNo, amount, pickupNumber);
+                    } else {
+                        // 內用：顯示送餐訊息
+                        console.log('🍽️ 內用訂單');
+                        showSuccessModal('付款成功！請回座稍候，我們將為您送餐', orderNo, amount);
+                    }
+        
+                    // 執行動作 3: 清理 URL 參數和 localStorage
+                    cleanupAfterOrder();
+                } catch (error) {
+                    console.error('❌ 處理訂單成功時發生錯誤:', error);
+                    alert('處理訂單時發生錯誤，請聯繫客服');
                 }
-
-                // 執行動作 3: 清理 URL 參數和 localStorage
-                cleanupAfterOrder();
-            } catch (error) {
-                console.error('❌ 處理訂單成功時發生錯誤:', error);
-                alert('處理訂單時發生錯誤，請聯繫客服');
             }
-        }
 
         /**
          * 處理訂單錯誤
@@ -246,14 +245,6 @@
             }
         }
 
-        /**
-         * 產生 4 碼隨機取餐號
-         */
-        function generatePickupCode() {
-            // 產生 1000-9999 之間的隨機數字
-            const code = Math.floor(Math.random() * 9000) + 1000;
-            return code.toString();
-        }
 
         /**
          * 顯示成功視窗
