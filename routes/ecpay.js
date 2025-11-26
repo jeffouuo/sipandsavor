@@ -193,12 +193,14 @@ router.get('/checkout', (req, res) => {
         });
 
         // 組裝自動送出的 HTML
+        // 注意：不設置 CSP，讓表單提交可以正常工作
         let html = `<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>正在跳轉到支付頁面...</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -241,12 +243,26 @@ router.get('/checkout', (req, res) => {
             html += `\n        <input type="hidden" name="${key}" value="${escapedValue}" />`;
         }
 
-        // 加上自動送出的 script
+        // 加上自動送出的 script（使用 window.onload 確保 DOM 已載入）
         html += `
     </form>
     <script>
-        // 立即提交表單
-        document.getElementById("ecpay-form").submit();
+        // 確保 DOM 載入完成後再提交表單
+        (function() {
+            const form = document.getElementById("ecpay-form");
+            if (form) {
+                // 立即提交表單
+                form.submit();
+            } else {
+                // 如果表單還沒載入，等待 DOM 載入完成
+                window.addEventListener('DOMContentLoaded', function() {
+                    const form = document.getElementById("ecpay-form");
+                    if (form) {
+                        form.submit();
+                    }
+                });
+            }
+        })();
     </script>
 </body>
 </html>`;
