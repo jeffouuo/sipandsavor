@@ -105,7 +105,90 @@ router.post('/return', async (req, res) => {
     }
 });
 
-// 綠界金流支付頁面（返回自動提交的 HTML）
+// 獲取綠界金流參數（返回 JSON，供前端創建表單）
+router.post('/get-params', (req, res) => {
+    try {
+        const { items, totalAmount, paymentMethod = 'Credit' } = req.body;
+        
+        // 驗證必要參數
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ 
+                success: false,
+                error: '商品列表不能為空' 
+            });
+        }
+        
+        if (!totalAmount || totalAmount <= 0) {
+            return res.status(400).json({ 
+                success: false,
+                error: '交易金額必須大於 0' 
+            });
+        }
+
+        // 生成訂單編號（使用時間戳 + 隨機數）
+        const merchantTradeNo = 'EC' + Date.now() + Math.floor(Math.random() * 1000);
+        
+        // 格式化交易時間
+        const now = new Date();
+        const merchantTradeDate = now.getFullYear() + '/' + 
+            String(now.getMonth() + 1).padStart(2, '0') + '/' + 
+            String(now.getDate()).padStart(2, '0') + ' ' + 
+            String(now.getHours()).padStart(2, '0') + ':' + 
+            String(now.getMinutes()).padStart(2, '0') + ':' + 
+            String(now.getSeconds()).padStart(2, '0');
+
+        // 商品名稱（最多 400 字元）
+        const itemNames = items.map(item => `${item.name} x${item.quantity}`).join('#');
+        const itemName = itemNames.length > 400 ? itemNames.substring(0, 400) : itemNames;
+
+        // 交易描述
+        const tradeDesc = '飲茶趣訂單';
+
+        // 取得當前網站的基礎 URL
+        const baseUrl = req.protocol + '://' + req.get('host');
+        const returnURL = `${baseUrl}/api/ecpay/return`;
+        const orderResultURL = `${baseUrl}/api/ecpay/result`;
+
+        // 準備表單參數（不包含 CheckMacValue）
+        const params = {
+            MerchantID: ECPAY_CONFIG.merchantID,
+            MerchantTradeNo: merchantTradeNo,
+            MerchantTradeDate: merchantTradeDate,
+            PaymentType: 'aio',
+            TotalAmount: Math.round(totalAmount),
+            TradeDesc: tradeDesc,
+            ItemName: itemName,
+            ReturnURL: returnURL,
+            OrderResultURL: orderResultURL,
+            ChoosePayment: paymentMethod || 'Credit',
+            EncryptType: '1'
+        };
+
+        // 生成 CheckMacValue
+        const checkMacValue = generateCheckMacValue(params);
+        params.CheckMacValue = checkMacValue;
+
+        console.log('✅ 創建綠界訂單參數:', {
+            merchantTradeNo,
+            totalAmount: Math.round(totalAmount)
+        });
+
+        // 返回 JSON 參數（不是 HTML）
+        res.json({
+            success: true,
+            ...params  // 直接返回所有參數
+        });
+    } catch (error) {
+        console.error('❌ 創建綠界訂單參數失敗:', error);
+        res.status(500).json({ 
+            success: false,
+            error: '創建訂單參數失敗',
+            message: error.message 
+        });
+    }
+});
+
+// 綠界金流支付頁面（返回自動提交的 HTML）- 保留作為備用
 router.get('/checkout', (req, res) => {
     try {
         // 從 query 參數獲取訂單數據（或從 session/資料庫獲取）

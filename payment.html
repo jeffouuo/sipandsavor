@@ -306,21 +306,71 @@
                 return;
             }
 
-            // 如果是信用卡支付，直接跳轉到後端路由（後端會返回自動提交的 HTML）
+            // 如果是信用卡支付，從後端獲取參數並創建表單提交
             if (selectedMethod.value === 'credit_card') {
-                // 將訂單數據編碼到 URL 參數中
-                const itemsParam = encodeURIComponent(JSON.stringify(orderData.items));
-                const totalParam = orderData.totalAmount;
-                const paymentParam = 'Credit';
-                
-                // 直接跳轉到後端路由，後端會返回自動提交的 HTML
-                window.location.href = `/api/ecpay/checkout?items=${itemsParam}&totalAmount=${totalParam}&paymentMethod=${paymentParam}`;
+                handleEcpayPayment();
                 return;
             }
 
             // 其他線上支付（LINE Pay），跳轉到支付處理頁面
             localStorage.setItem('pendingOrder', JSON.stringify(orderData));
             window.location.href = `payment-process.html?method=${selectedMethod.value}`;
+        }
+
+        // 處理綠界金流支付（獲取參數並創建表單提交）
+        async function handleEcpayPayment() {
+            try {
+                // 1. 從後端獲取 JSON 參數（不是 HTML）
+                const response = await fetch('/api/ecpay/get-params', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        items: orderData.items,
+                        totalAmount: orderData.totalAmount,
+                        paymentMethod: 'Credit'
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '獲取支付參數失敗');
+                }
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || '獲取支付參數失敗');
+                }
+
+                // 2. 拿到參數後，動態建立表單並送出
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = 'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5'; // 綠界測試環境網址
+                form.style.display = 'none';
+
+                // 將所有參數（除了 success）添加到表單
+                for (const [key, value] of Object.entries(data)) {
+                    if (key !== 'success') {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = value;
+                        form.appendChild(input);
+                    }
+                }
+
+                document.body.appendChild(form);
+
+                // 3. 這行執行下去，網站會變白，然後跳去綠界
+                // _actions.js 會在綠界的網域下正常執行，不會在我們的 Console 報錯
+                console.log('🚀 提交表單到綠界，瀏覽器將整頁跳轉...');
+                form.submit();
+            } catch (error) {
+                console.error('❌ 支付處理失敗:', error);
+                alert('支付處理失敗：' + error.message);
+            }
         }
 
         function submitOrder() {
