@@ -841,7 +841,9 @@ router.post('/dine-in', [
             total,
             orderType,
             status = 'pending',
-            orderTime
+            orderTime,
+            specialRequest = null,
+            paymentMethod = 'cash'
         } = req.body;
         const tableNumberValue = String(tableNumber).trim();
         console.log('🟢 後端收到桌號:', tableNumberValue);
@@ -1008,11 +1010,15 @@ router.post('/dine-in', [
             orderType,
             status,
             deliveryMethod: 'dine-in',
-            paymentMethod: 'cash',
+            paymentMethod: paymentMethod || 'cash',
+            paymentStatus: 'unpaid',
             notes: '前台結帳',
             diningMode: 'dine-in',
             orderTime: orderTime ? new Date(orderTime) : new Date()
         };
+        if (specialRequest && String(specialRequest).trim()) {
+            orderData.specialRequest = String(specialRequest).trim();
+        }
         
         console.log('📤 準備保存的訂單數據:', JSON.stringify(orderData, null, 2));
         
