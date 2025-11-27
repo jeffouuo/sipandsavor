@@ -435,11 +435,20 @@
                     total: orderData.totalAmount,
                     orderType: 'dine-in',
                     status: 'pending',
-                    orderTime: new Date().toISOString()
+                    orderTime: new Date().toISOString(),
+                    specialRequest: orderData.specialRequest || null // 確保傳遞訂單級別的特殊需求
                 };
             } else {
-                requestData = orderData;
+                // 確保 orderData 包含 specialRequest 字段
+                requestData = {
+                    ...orderData,
+                    specialRequest: orderData.specialRequest || null // 明確指定 specialRequest
+                };
             }
+            
+            // 🔍 調試：記錄前端發送的數據
+            console.log('[Debug] 前端發送的訂單數據:', JSON.stringify(requestData, null, 2));
+            console.log('[Debug] 前端發送的 specialRequest:', requestData.specialRequest);
 
             fetch(url, {
                 method: 'POST',

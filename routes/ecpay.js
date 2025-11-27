@@ -257,7 +257,12 @@ router.post('/get-params', async (req, res) => {
         // specialRequest: 用戶前台輸入的特殊需求（例如 "多冰"）
         const systemNotes = noteFromBody || notesFromBody || '綠界金流支付';
         // ⚠️ 重要：優先使用 specialRequest，如果沒有則嘗試 note（向後兼容）
-        const userSpecialRequest = specialRequestFromBody || noteFromBody || null;
+        // 如果 specialRequest 是空字串，轉換為 null
+        const userSpecialRequest = (specialRequestFromBody && specialRequestFromBody.trim() !== '') 
+            ? specialRequestFromBody.trim() 
+            : (noteFromBody && noteFromBody.trim() !== '') 
+                ? noteFromBody.trim() 
+                : null;
         
         console.log('[Debug] [ECPay] 接收到的特殊需求 (req.body.specialRequest):', req.body.specialRequest);
         console.log('[Debug] [ECPay] 接收到的特殊需求 (req.body.note):', req.body.note);
@@ -315,7 +320,6 @@ router.post('/get-params', async (req, res) => {
             paymentMethod: 'credit_card', // 綠界支付
             deliveryMethod: deliveryMethod || 'pickup',
             notes: systemNotes, // 系統/金流備註（例如 "綠界金流支付"）
-            specialRequest: userSpecialRequest, // 訂單級別的特殊需求（用戶輸入，例如 "多冰"）
             orderNumber: merchantTradeNo, // 使用 MerchantTradeNo 作為訂單編號
             pickupNumber: pickupNumber, // 外帶取餐號（僅外帶訂單有）
             diningMode: diningMode || 'takeout', // 用餐模式
@@ -325,12 +329,18 @@ router.post('/get-params', async (req, res) => {
             updatedAt: new Date()
         };
         
+        // ⚠️ 關鍵：只有在 specialRequest 有值時才添加到 orderData
+        if (userSpecialRequest) {
+            orderData.specialRequest = userSpecialRequest;
+        }
+        
         console.log('[Debug] [ECPay] 創建的訂單數據 (orderData):', {
             notes: orderData.notes,
             specialRequest: orderData.specialRequest,
             orderNumber: orderData.orderNumber
         });
         console.log('[Debug] [ECPay] 確認 specialRequest 是否正確賦值:', orderData.specialRequest);
+        console.log('[Debug] [ECPay] orderData 完整內容:', JSON.stringify(orderData, null, 2));
         
         let order = null;
         try {

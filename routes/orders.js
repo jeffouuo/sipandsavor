@@ -140,6 +140,7 @@ router.post('/checkout', [
 ], async (req, res) => {
     // 🔍 全鏈路調試：記錄前端傳來的完整 Body
     console.log('═══════════════════════════════════════════════════════════');
+    console.log('API收到:', JSON.stringify(req.body, null, 2));
     console.log('📥 前端傳來的 Body:', JSON.stringify(req.body, null, 2));
     console.log('📥 req.body.notes:', req.body.notes);
     console.log('📥 req.body.note:', req.body.note);
@@ -187,7 +188,12 @@ router.post('/checkout', [
         // specialRequest: 用戶前台輸入的特殊需求（例如 "多冰"）
         const systemNotes = notesFromBody || noteFromBody || '前台結帳';
         // ⚠️ 重要：優先使用 specialRequest，如果沒有則嘗試 note（向後兼容）
-        const userSpecialRequest = specialRequestFromBody || noteFromBody || null;
+        // 如果 specialRequest 是空字串，轉換為 null
+        const userSpecialRequest = (specialRequestFromBody && specialRequestFromBody.trim() !== '') 
+            ? specialRequestFromBody.trim() 
+            : (noteFromBody && noteFromBody.trim() !== '') 
+                ? noteFromBody.trim() 
+                : null;
         
         console.log('[Debug] 接收到的特殊需求 (req.body.specialRequest):', req.body.specialRequest);
         console.log('[Debug] 接收到的特殊需求 (req.body.note):', req.body.note);
@@ -422,7 +428,6 @@ router.post('/checkout', [
             paymentMethod,
             deliveryMethod,
             notes: systemNotes, // 系統/金流備註（例如 "前台結帳"）
-            specialRequest: userSpecialRequest, // 訂單級別的特殊需求（用戶輸入，例如 "多冰"）
             orderNumber: finalOrderNumber,
             status: 'pending',
             paymentStatus: 'pending',
@@ -430,12 +435,18 @@ router.post('/checkout', [
             updatedAt: new Date()
         };
         
+        // ⚠️ 關鍵：只有在 specialRequest 有值時才添加到 orderData
+        if (userSpecialRequest) {
+            orderData.specialRequest = userSpecialRequest;
+        }
+        
         console.log('[Debug] 創建的訂單數據 (orderData):', {
             notes: orderData.notes,
             specialRequest: orderData.specialRequest,
             orderNumber: orderData.orderNumber
         });
         console.log('[Debug] 確認 specialRequest 是否正確賦值:', orderData.specialRequest);
+        console.log('[Debug] orderData 完整內容:', JSON.stringify(orderData, null, 2));
         
         let order = null;
         
