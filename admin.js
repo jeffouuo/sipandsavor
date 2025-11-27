@@ -793,7 +793,11 @@ function renderOrdersTable(orders, pagination) {
         let userDisplay = '';
         if (order.orderType === 'dine-in') {
             userDisplay = `<span style="color: #4CAF50; font-weight: bold; background: #e8f5e8; padding: 4px 8px; border-radius: 4px;">桌號: ${order.tableNumber || 'N/A'}</span>`;
+        } else if (order.pickupNumber && order.pickupNumber.trim()) {
+            // 優先顯示 pickupNumber（與ECPay付款完成後顯示的號碼一致）
+            userDisplay = `<span style="color: #2196F3; font-weight: bold; background: #e3f2fd; padding: 4px 8px; border-radius: 4px;">外帶: ${order.pickupNumber}</span>`;
         } else if (order.orderNumber && order.orderNumber.trim()) {
+            // 如果沒有 pickupNumber，則顯示 orderNumber 的最後4位（向後兼容）
             const orderNumberLast4 = order.orderNumber.slice(-4);
             userDisplay = `<span style="color: #2196F3; font-weight: bold; background: #e3f2fd; padding: 4px 8px; border-radius: 4px;">外帶: ${orderNumberLast4}</span>`;
         } else {
