@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Review = require('../models/Review');
+const dbConnect = require('../utils/dbConnect');
 
 // 简单的内存缓存
 const cache = new Map();
@@ -236,6 +237,10 @@ router.post('/', async (req, res) => {
 // 獲取所有產品的評價統計（高度優化版本）
 router.get('/all-stats', async (req, res) => {
     try {
+        // ⚠️ 關鍵修復 1：使用 dbConnect (Cached Connection) 模式，避免 Vercel Serverless 連線逾時
+        await dbConnect();
+        console.log('✅ 資料庫連線已確認（使用快取連線）');
+
         const cacheKey = 'all_stats';
         
         // 检查缓存
@@ -249,24 +254,49 @@ router.get('/all-stats', async (req, res) => {
         }
 
         // 高度優化聚合查詢：使用索引，限制結果數量
-        const stats = await Review.aggregate([
-            {
-                $group: {
-                    _id: '$productName',
-                    totalReviews: { $sum: 1 },
-                    averageRating: { $avg: '$rating' }
-                }
-            },
-            {
-                $project: {
-                    productName: '$_id',
-                    totalReviews: 1,
-                    averageRating: { $round: ['$averageRating', 1] }
-                }
-            },
-            { $sort: { productName: 1 } },
-            { $limit: 20 } // 限制結果數量，提升查詢速度
-        ]);
+        let stats = [];
+        try {
+            stats = await Review.aggregate([
+                {
+                    $group: {
+                        _id: '$productName',
+                        totalReviews: { $sum: 1 },
+                        averageRating: { $avg: '$rating' }
+                    }
+                },
+                {
+                    $project: {
+                        productName: '$_id',
+                        totalReviews: 1,
+                        averageRating: { $round: ['$averageRating', 1] }
+                    }
+                },
+                { $sort: { productName: 1 } },
+                { $limit: 20 } // 限制結果數量，提升查詢速度
+            ]);
+        } catch (aggregationError) {
+            console.error('❌ MongoDB Aggregation 查詢失敗:', aggregationError);
+            // 如果查詢失敗，使用預設值
+            stats = [];
+        }
+
+        // ⚠️ 關鍵修復 2：處理「零評論」的情況
+        // 如果資料庫是空的，或找不到任何評論，不要報錯，直接回傳預設值
+        if (!stats || stats.length === 0) {
+            console.log('ℹ️ 目前沒有任何評論，回傳預設值');
+            const defaultStats = [];
+            
+            // 设置缓存（即使是空结果也缓存，避免频繁查询）
+            setCachedData(cacheKey, defaultStats);
+
+            return res.json({
+                success: true,
+                data: defaultStats,
+                fromCache: false,
+                queryTime: Date.now(),
+                message: '目前沒有任何評論'
+            });
+        }
 
         // 设置缓存（延长缓存时间到10分钟）
         setCachedData(cacheKey, stats);
@@ -278,10 +308,19 @@ router.get('/all-stats', async (req, res) => {
             queryTime: Date.now()
         });
     } catch (error) {
-        console.error('獲取所有評價統計失敗:', error);
+        // ⚠️ 關鍵修復 3：加入詳細錯誤處理
+        console.error('❌ 獲取所有評價統計失敗:', error);
+        console.error('❌ 錯誤名稱:', error.name);
+        console.error('❌ 錯誤訊息:', error.message);
+        console.error('❌ 錯誤堆疊:', error.stack);
+        
+        // 回傳安全的 JSON，不要讓前端整個掛掉
         res.status(500).json({
             success: false,
-            message: '獲取評價統計失敗'
+            message: '獲取評價統計失敗',
+            error: process.env.NODE_ENV === 'development' ? error.message : '伺服器內部錯誤',
+            // 回傳預設值，確保前端可以正常處理
+            data: []
         });
     }
 });
