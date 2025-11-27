@@ -357,7 +357,9 @@ function buildAggregationLine(item = {}) {
         }
 
         function getTableNumberInputElement() {
-            return document.getElementById('tableNumber') || document.getElementById('orderTableNumber');
+            return document.getElementById('tableNumber') ||
+                document.getElementById('tableNumberInput') ||
+                document.getElementById('orderTableNumber');
         }
 
         function readTableNumberInputValue() {
@@ -409,6 +411,24 @@ function buildAggregationLine(item = {}) {
                 return current;
             }
             return '';
+        }
+
+        function captureLiveTableNumber() {
+            const input = getTableNumberInputElement();
+            if (!input) return '';
+            const raw = (input.value || '').trim();
+            if (!raw) {
+                return '';
+            }
+            const normalized = normalizeTableNumber(raw);
+            if (input.value !== normalized) {
+                input.value = normalized;
+            }
+            orderData = orderData || {};
+            orderData.tableNumber = normalized;
+            saveSessionDiningContext(normalized, orderData.diningMode || 'dine-in');
+            localStorage.setItem('dineInTableNumber', normalized);
+            return normalized;
         }
 
         function initTableNumberSection() {
@@ -738,23 +758,18 @@ function buildAggregationLine(item = {}) {
         async function handleEcpayPayment() {
             try {
                 // ⚠️ 關鍵修復 4：讀取訂單級別的備註輸入框（信用卡支付時也要讀取）
-            const noteInput = document.getElementById('orderSpecialRequest');
-            const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
-            const sessionContext = getSessionDiningContext();
-            const inputTableRaw = readTableNumberInputValue();
-            const normalizedInputTable = inputTableRaw ? normalizeTableNumber(inputTableRaw) : '';
-            const storageTableRaw = sessionContext.tableNumber ? sessionContext.tableNumber.trim() : '';
-            const savedSessionTable = storageTableRaw ? normalizeTableNumber(storageTableRaw) : '';
-            let resolvedTableNumber = normalizedInputTable || savedSessionTable;
-            if (!resolvedTableNumber) {
-                resolvedTableNumber = resolveTableNumberForSubmission();
-            }
+                const noteInput = document.getElementById('orderSpecialRequest');
+                const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
+                const sessionContext = getSessionDiningContext();
+                const liveTableNumber = captureLiveTableNumber();
+                const fallbackTableNumber = orderData && orderData.tableNumber ? normalizeTableNumber(orderData.tableNumber) : '';
+                const resolvedTableNumber = liveTableNumber || fallbackTableNumber;
                 const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
                 if (expectsTableNumber && !resolvedTableNumber) {
                     alert('請輸入內用桌號後再送出');
                     return;
                 }
-                console.log('結帳頁讀取到的桌號 (sessionStorage):', savedSessionTable || '(無)');
+                console.log('結帳頁讀取到的桌號 (輸入框):', liveTableNumber || '(無)');
                 
                 // 🔍 調試：記錄客人輸入的備註內容
                 console.log('客人輸入的備註內容 (信用卡支付):', specialRequestValue);
@@ -834,17 +849,12 @@ function buildAggregationLine(item = {}) {
             btn.textContent = '處理中...';
 
             // ⚠️ 關鍵修復 2：讀取訂單級別的備註輸入框（現金支付時也要讀取）
-                const noteInput = document.getElementById('orderSpecialRequest');
-                const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
-                const sessionContext = getSessionDiningContext();
-                const inputTableRaw = readTableNumberInputValue();
-                const normalizedInputTable = inputTableRaw ? normalizeTableNumber(inputTableRaw) : '';
-                const storageTableRaw = sessionContext.tableNumber ? sessionContext.tableNumber.trim() : '';
-                const savedSessionTable = storageTableRaw ? normalizeTableNumber(storageTableRaw) : '';
-                let resolvedTableNumber = normalizedInputTable || savedSessionTable;
-                if (!resolvedTableNumber) {
-                    resolvedTableNumber = resolveTableNumberForSubmission();
-                }
+            const noteInput = document.getElementById('orderSpecialRequest');
+            const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
+            const sessionContext = getSessionDiningContext();
+            const liveTableNumber = captureLiveTableNumber();
+            const fallbackTableNumber = orderData && orderData.tableNumber ? normalizeTableNumber(orderData.tableNumber) : '';
+            const resolvedTableNumber = liveTableNumber || fallbackTableNumber;
             const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
             if (expectsTableNumber && !resolvedTableNumber) {
                 alert('請輸入內用桌號後再送出');
@@ -854,7 +864,7 @@ function buildAggregationLine(item = {}) {
             }
             const finalTableNumber = expectsTableNumber ? resolvedTableNumber : '';
             console.log('前端準備送出的桌號:', expectsTableNumber ? finalTableNumber : '(非內用)');
-            console.log('結帳頁讀取到的桌號 (sessionStorage):', savedSessionTable || '(無)');
+            console.log('結帳頁讀取到的桌號 (輸入框):', liveTableNumber || '(無)');
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
