@@ -254,6 +254,11 @@
         // 從 localStorage 獲取訂單數據
         let orderData = null;
 
+        function isDineInOrder(data = orderData) {
+            if (!data) return false;
+            return data.diningMode === 'dine-in' || data.deliveryMethod === 'dine-in';
+        }
+
         function loadOrderData() {
             const storedData = localStorage.getItem('pendingOrder');
             if (!storedData) {
@@ -267,15 +272,26 @@
                 const sessionContext = getSessionDiningContext();
                 console.log('結帳頁讀取到的桌號 (sessionStorage):', sessionContext.tableNumber || '(無)');
                 const fallbackTableNumber = localStorage.getItem('dineInTableNumber');
-                if (!orderData.tableNumber) {
+                const sessionSuggestsDineIn = sessionContext.diningMode === 'dine-in';
+
+                if (!orderData.diningMode) {
+                    orderData.diningMode = sessionSuggestsDineIn
+                        ? 'dine-in'
+                        : (orderData.tableNumber ? 'dine-in' : 'takeout');
+                }
+
+                if (orderData.diningMode === 'dine-in' && !orderData.tableNumber) {
                     orderData.tableNumber = sessionContext.tableNumber || fallbackTableNumber || null;
                 }
-                if (!orderData.diningMode) {
-                    orderData.diningMode = sessionContext.diningMode || (orderData.tableNumber ? 'dine-in' : 'takeout');
+
+                if (orderData.diningMode !== 'dine-in') {
+                    orderData.tableNumber = null;
                 }
+
                 if (!orderData.deliveryMethod) {
                     orderData.deliveryMethod = orderData.diningMode === 'dine-in' ? 'dine-in' : 'pickup';
                 }
+
                 displayOrderSummary();
                 prefillSpecialRequest();
                 initTableNumberSection();
@@ -373,6 +389,10 @@ function buildAggregationLine(item = {}) {
         }
 
         function getCurrentTableNumber() {
+            if (!isDineInOrder()) {
+                return '';
+            }
+
             const inputValue = readTableNumberInputValue();
             if (inputValue) {
                 return normalizeTableNumber(inputValue);
@@ -381,14 +401,22 @@ function buildAggregationLine(item = {}) {
                 return normalizeTableNumber(orderData.tableNumber.trim());
             }
             const sessionContext = getSessionDiningContext();
-            if (sessionContext.tableNumber && sessionContext.tableNumber.trim()) {
+            if (sessionContext.diningMode === 'dine-in' && sessionContext.tableNumber && sessionContext.tableNumber.trim()) {
                 return normalizeTableNumber(sessionContext.tableNumber.trim());
             }
-            const stored = localStorage.getItem('dineInTableNumber');
+            const stored = sessionContext.diningMode === 'dine-in'
+                ? localStorage.getItem('dineInTableNumber')
+                : null;
             return stored ? normalizeTableNumber(stored) : '';
         }
 
         function resolveTableNumberForSubmission() {
+            if (!isDineInOrder()) {
+                orderData = orderData || {};
+                orderData.tableNumber = null;
+                return '';
+            }
+
             const inputValue = readTableNumberInputValue();
             if (inputValue) {
                 const normalized = normalizeTableNumber(inputValue);
@@ -414,6 +442,10 @@ function buildAggregationLine(item = {}) {
         }
 
         function captureLiveTableNumber() {
+            if (!isDineInOrder()) {
+                return '';
+            }
+
             const input = getTableNumberInputElement();
             if (!input) return '';
             const raw = (input.value || '').trim();
@@ -437,13 +469,13 @@ function buildAggregationLine(item = {}) {
             if (!section || !input) return;
 
             const sessionContext = getSessionDiningContext();
-            const storedCandidate = (sessionContext.tableNumber && sessionContext.tableNumber.trim())
-                ? sessionContext.tableNumber.trim()
-                : (localStorage.getItem('dineInTableNumber') || '');
-            const shouldShow = Boolean(
-                (orderData && (orderData.diningMode === 'dine-in' || orderData.deliveryMethod === 'dine-in')) ||
-                (storedCandidate && storedCandidate.trim())
-            );
+            const canUseStoredCandidate = sessionContext.diningMode === 'dine-in';
+            const storedCandidate = canUseStoredCandidate
+                ? (sessionContext.tableNumber && sessionContext.tableNumber.trim()
+                    ? sessionContext.tableNumber.trim()
+                    : (localStorage.getItem('dineInTableNumber') || ''))
+                : '';
+            const shouldShow = isDineInOrder();
 
             if (!shouldShow) {
                 section.style.display = 'none';
@@ -715,8 +747,8 @@ function buildAggregationLine(item = {}) {
             // ⚠️ 關鍵修復 1：讀取訂單級別的備註輸入框
             const noteInput = document.getElementById('orderSpecialRequest');
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
-            const resolvedTableNumber = resolveTableNumberForSubmission();
-            const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
+            const expectsTableNumber = isDineInOrder();
+            const resolvedTableNumber = expectsTableNumber ? resolveTableNumberForSubmission() : '';
             const finalTableNumber = expectsTableNumber ? resolvedTableNumber : '';
             if (expectsTableNumber && !finalTableNumber) {
                 alert('請輸入內用桌號後再送出');
@@ -731,7 +763,8 @@ function buildAggregationLine(item = {}) {
             orderData.paymentMethod = selectedMethod.value;
             orderData.specialRequest = specialRequestValue || null; // 明確設置 specialRequest
             orderData.tableNumber = expectsTableNumber ? (finalTableNumber || null) : null;
-            orderData.diningMode = expectsTableNumber ? 'dine-in' : (orderData.diningMode || 'takeout');
+            orderData.diningMode = expectsTableNumber ? 'dine-in' : 'takeout';
+            orderData.deliveryMethod = expectsTableNumber ? 'dine-in' : 'pickup';
 
             // 如果是現金支付，直接提交訂單
             if (selectedMethod.value === 'cash') {
@@ -761,24 +794,22 @@ function buildAggregationLine(item = {}) {
                 const noteInput = document.getElementById('orderSpecialRequest');
                 const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
                 const sessionContext = getSessionDiningContext();
+                const expectsTableNumber = isDineInOrder();
 
                 const tableInputEl = document.getElementById('tableNumber');
-                const domTableValue = tableInputEl ? (tableInputEl.value || '') : '';
-                console.log('🛑 [DEBUG] 按下按鈕瞬間抓到的桌號 (信用卡):', domTableValue);
-                const normalizedDomValue = normalizeTableNumber(domTableValue);
-                if (tableInputEl && tableInputEl.value !== normalizedDomValue) {
+                const domTableValue = expectsTableNumber && tableInputEl ? (tableInputEl.value || '') : '';
+                console.log('🛑 [DEBUG] 按下按鈕瞬間抓到的桌號 (信用卡):', expectsTableNumber ? domTableValue : '(非內用)');
+                const normalizedDomValue = expectsTableNumber ? normalizeTableNumber(domTableValue) : '';
+                if (expectsTableNumber && tableInputEl && tableInputEl.value !== normalizedDomValue) {
                     tableInputEl.value = normalizedDomValue;
                 }
-                const fallbackTableNumber = orderData && orderData.tableNumber
-                    ? normalizeTableNumber(orderData.tableNumber)
-                    : '';
-                const resolvedTableNumber = normalizedDomValue || fallbackTableNumber;
-                const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
+                const fallbackTableNumber = expectsTableNumber ? getCurrentTableNumber() : '';
+                const resolvedTableNumber = expectsTableNumber ? (normalizedDomValue || fallbackTableNumber) : '';
                 if (expectsTableNumber && !resolvedTableNumber) {
                     alert('請輸入內用桌號後再送出');
                     return;
                 }
-                console.log('結帳頁讀取到的桌號 (輸入框/信用卡):', normalizedDomValue || '(無)');
+                console.log('結帳頁讀取到的桌號 (輸入框/信用卡):', expectsTableNumber ? (normalizedDomValue || '(無)') : '(非內用)');
                 
                 // 🔍 調試：記錄客人輸入的備註內容
                 console.log('客人輸入的備註內容 (信用卡支付):', specialRequestValue);
@@ -786,7 +817,8 @@ function buildAggregationLine(item = {}) {
                 // 步驟 1：從後端獲取 JSON 參數（不是 HTML）
                 const tableNumber = expectsTableNumber ? (resolvedTableNumber || null) : null;
                 orderData.tableNumber = tableNumber;
-                orderData.diningMode = expectsTableNumber ? 'dine-in' : (sessionContext.diningMode || orderData.diningMode || 'takeout');
+                orderData.diningMode = expectsTableNumber ? 'dine-in' : 'takeout';
+                orderData.deliveryMethod = expectsTableNumber ? 'dine-in' : 'pickup';
                 const diningMode = orderData.diningMode;
 
                 const payload = {
@@ -860,19 +892,16 @@ function buildAggregationLine(item = {}) {
             // ⚠️ 關鍵修復 2：讀取訂單級別的備註輸入框（現金支付時也要讀取）
             const noteInput = document.getElementById('orderSpecialRequest');
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
-            const sessionContext = getSessionDiningContext();
-
-            // ✅ 重新讀取內用桌號（與 HTML id `tableNumber` 對應），確保送出前取得最新值
+            const expectsTableNumber = isDineInOrder();
             const tableInputEl = document.getElementById('tableNumber');
-            const domTableValue = tableInputEl ? (tableInputEl.value || '') : '';
-            console.log('🛑 [DEBUG] 按下按鈕瞬間抓到的桌號:', domTableValue);
-            const normalizedDomValue = normalizeTableNumber(domTableValue);
-            if (tableInputEl && tableInputEl.value !== normalizedDomValue) {
+            const domTableValue = expectsTableNumber && tableInputEl ? (tableInputEl.value || '') : '';
+            console.log('🛑 [DEBUG] 按下按鈕瞬間抓到的桌號:', expectsTableNumber ? domTableValue : '(非內用)');
+            const normalizedDomValue = expectsTableNumber ? normalizeTableNumber(domTableValue) : '';
+            if (expectsTableNumber && tableInputEl && tableInputEl.value !== normalizedDomValue) {
                 tableInputEl.value = normalizedDomValue;
             }
-            const fallbackTableNumber = orderData && orderData.tableNumber ? normalizeTableNumber(orderData.tableNumber) : '';
-            const resolvedTableNumber = normalizedDomValue || fallbackTableNumber;
-            const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
+            const fallbackTableNumber = expectsTableNumber ? getCurrentTableNumber() : '';
+            const resolvedTableNumber = expectsTableNumber ? (normalizedDomValue || fallbackTableNumber) : '';
             if (expectsTableNumber && !resolvedTableNumber) {
                 alert('請輸入內用桌號');
                 btn.disabled = false;
@@ -882,7 +911,7 @@ function buildAggregationLine(item = {}) {
             const finalTableNumber = expectsTableNumber ? resolvedTableNumber : '';
             console.log('🛑 [DEBUG] 準備送出的桌號:', finalTableNumber || '(空字串)');
             console.log('前端準備送出的桌號:', expectsTableNumber ? finalTableNumber : '(非內用)');
-            console.log('結帳頁讀取到的桌號 (輸入框):', normalizedDomValue || '(無)');
+            console.log('結帳頁讀取到的桌號 (輸入框):', expectsTableNumber ? (normalizedDomValue || '(無)') : '(非內用)');
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
@@ -893,7 +922,8 @@ function buildAggregationLine(item = {}) {
             }
             orderData.specialRequest = specialRequestValue || null; // 明確設置 specialRequest
             orderData.tableNumber = expectsTableNumber ? (finalTableNumber || null) : null;
-            orderData.diningMode = expectsTableNumber ? 'dine-in' : (sessionContext.diningMode || orderData.diningMode || 'takeout');
+            orderData.diningMode = expectsTableNumber ? 'dine-in' : 'takeout';
+            orderData.deliveryMethod = expectsTableNumber ? 'dine-in' : 'pickup';
 
             // 檢查是否為內用訂單
             const isDineIn = orderData.diningMode === 'dine-in';
@@ -901,7 +931,7 @@ function buildAggregationLine(item = {}) {
 
             const basePayload = {
                 specialRequest: specialRequestValue || null,
-                tableNumber: finalTableNumber || null,
+                tableNumber: expectsTableNumber ? (finalTableNumber || null) : null,
                 diningMode: orderData.diningMode || (isDineIn ? 'dine-in' : 'takeout')
             };
 
