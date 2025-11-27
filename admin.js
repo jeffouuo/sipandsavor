@@ -104,19 +104,27 @@ function formatOrderItemDisplay(item = {}) {
         display += ` (${baseParts.join(', ')})`;
     }
 
-    const extras = [];
+    return display;
+}
+
+function buildAdminItemNoteText(item = {}) {
+    const meta = getAdminItemMeta(item);
+    const noteSegments = [];
+
     if (meta.toppings.length) {
-        extras.push(meta.toppings.join(', '));
+        noteSegments.push(`+ ${meta.toppings.join(', ')}`);
     }
     if (meta.extras.length) {
-        extras.push(meta.extras.join(', '));
+        noteSegments.push(meta.extras.join(', '));
     }
 
-    if (extras.length) {
-        display += ` + ${extras.join(', ')}`;
+    const special = normalizeAdminString(item?.specialRequest || item?.note || item?.notes);
+    if (special) {
+        noteSegments.push(special);
     }
 
-    return display;
+    const noteContent = noteSegments.join(' ').trim();
+    return noteContent ? `備註：${noteContent}` : '';
 }
 
 // SSE 連接管理
@@ -849,7 +857,11 @@ function renderOrdersTable(orders, pagination) {
         const itemsHtml = (order.items || []).map(item => {
             const quantity = item.quantity || 1;
             const displayName = formatOrderItemDisplay(item);
-            return `<div class="order-item-line">${displayName} x${quantity}</div>`;
+            const noteText = buildAdminItemNoteText(item);
+            const noteHtml = noteText
+                ? `<div class="order-item-note text-red-500" style="color: #e74c3c; font-size: 12px; margin-top: 2px;">${noteText}</div>`
+                : '';
+            return `<div class="order-item-line">${displayName} x${quantity}</div>${noteHtml}`;
         }).join('');
         
         const statusClass = `status-${order.status}`;
@@ -858,37 +870,11 @@ function renderOrdersTable(orders, pagination) {
         const getSpecialRequests = () => {
             const specialRequests = [];
             
-            // 先處理商品級別的特殊需求
-            order.items.forEach(item => {
-                const itemSpecialDetails = [];
-                
-                // 檢查 customizations 字段（只顯示非標準客製化）
-                if (item.customizations && item.customizations.trim() !== '') {
-                    const customizations = item.customizations.trim();
-                    const standardCustomizations = ['無糖', '微糖', '半糖', '少糖', '全糖', '去冰', '微冰', '少冰', '正常冰', '熱飲'];
-                    
-                    // 檢查是否有加料或其他特殊需求
-                    const hasToppings = customizations.includes('+');
-                    const hasOtherSpecialRequests = customizations.split(',').some(part => {
-                        const trimmedPart = part.trim();
-                        return trimmedPart && 
-                               !standardCustomizations.some(standard => trimmedPart.includes(standard)) &&
-                               !trimmedPart.includes('+');
-                    });
-                    
-                    if (hasToppings || hasOtherSpecialRequests) {
-                        itemSpecialDetails.push(customizations);
-                    }
-                }
-                
-                // 檢查 specialRequest 字段（如果有，也加入）
-                if (item.specialRequest && item.specialRequest.trim() !== '') {
-                    itemSpecialDetails.push(`特殊需求: ${item.specialRequest.trim()}`);
-                }
-                
-                // 如果有任何特殊需求，添加到列表中
-                if (itemSpecialDetails.length > 0) {
-                    specialRequests.push(`${item.name}: ${itemSpecialDetails.join(' | ')}`);
+            (order.items || []).forEach(item => {
+                const noteText = buildAdminItemNoteText(item);
+                if (noteText) {
+                    const plainText = noteText.replace(/^備註：\s*/, '').trim();
+                    specialRequests.push(`${item.name}: ${plainText}`);
                 }
             });
             

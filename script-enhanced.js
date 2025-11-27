@@ -362,25 +362,22 @@ window.renderCartItems = () => {
             const cartHTML = window.cart.map((item, index) => {
         const price = parseFloat(item.price) || 0;
         const quantity = parseInt(item.quantity) || 0;
-        const specialRequest = item.specialRequest || (item.originalItem?.specialRequest) || '';
-        const displayName = formatItemDisplayName({
-            ...item,
-            specialRequest
-        });
+        const displayName = formatItemDisplayName(item);
+        const noteText = buildItemNoteText(item);
         
         console.log(`渲染購物車項目 ${index}:`, { 
             name: item.name,
             price, 
             quantity, 
             displayName,
-            specialRequest,
+            noteText,
             originalItem: item 
         });
         
-        const specialRequestHtml = specialRequest && specialRequest.trim()
+        const specialRequestHtml = noteText
             ? `
-                <div class="cart-item-special-request" style="color: #e74c3c; font-size: 12px; margin-top: 4px; font-weight: 500;">
-                    備註：${specialRequest.trim()}
+                <div class="cart-item-special-request text-red-500" style="color: #e74c3c; font-size: 12px; margin-top: 4px; font-weight: 500;">
+                    ${noteText}
                 </div>
             `
             : '';
@@ -884,19 +881,37 @@ const formatItemDisplayName = (item = {}) => {
         display += ` (${baseParts.join(', ')})`;
     }
 
-    const extraSegments = [];
+    return display;
+};
+
+const getItemSpecialRequest = (item = {}) => {
+    if (item?.specialRequest && item.specialRequest.trim()) {
+        return item.specialRequest.trim();
+    }
+    if (item?.originalItem?.specialRequest && item.originalItem.specialRequest.trim()) {
+        return item.originalItem.specialRequest.trim();
+    }
+    return '';
+};
+
+const buildItemNoteText = (item = {}) => {
+    const meta = getItemCustomizationMeta(item);
+    const noteSegments = [];
+
     if (meta.toppings.length) {
-        extraSegments.push(meta.toppings.join(', '));
+        noteSegments.push(`+ ${meta.toppings.join(', ')}`);
     }
     if (meta.extras.length) {
-        extraSegments.push(meta.extras.join(', '));
+        noteSegments.push(meta.extras.join(', '));
     }
 
-    if (extraSegments.length) {
-        display += ` + ${extraSegments.join(', ')}`;
+    const specialRequest = getItemSpecialRequest(item);
+    if (specialRequest) {
+        noteSegments.push(specialRequest);
     }
 
-    return display;
+    const noteContent = noteSegments.join(' ').trim();
+    return noteContent ? `備註：${noteContent}` : '';
 };
 
 const initCheckout = () => {

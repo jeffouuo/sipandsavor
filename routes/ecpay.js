@@ -84,6 +84,118 @@ function verifyCheckMacValue(params) {
     return receivedCheckMac === calculatedCheckMac;
 }
 
+const ECPAY_STANDARD_SUGAR_LEVELS = ['無糖', '微糖', '半糖', '少糖', '全糖', '正常糖'];
+const ECPAY_STANDARD_ICE_LEVELS = ['去冰', '微冰', '少冰', '正常冰', '熱飲'];
+
+const normalizeEcpayText = (value) => (typeof value === 'string' ? value.trim() : '');
+
+function parseEcpayLegacyCustomizations(customizations = '') {
+    const result = {
+        sugarLevel: '',
+        iceLevel: '',
+        toppings: [],
+        extras: []
+    };
+
+    if (!customizations || typeof customizations !== 'string') {
+        return result;
+    }
+
+    const trimmed = customizations.trim();
+    if (!trimmed) {
+        return result;
+    }
+
+    let baseText = trimmed;
+    const plusIndex = trimmed.indexOf('+');
+    if (plusIndex >= 0) {
+        const toppingsText = trimmed.slice(plusIndex + 1);
+        toppingsText.split(/[,，]/).forEach(topping => {
+            const clean = topping.trim();
+            if (clean) {
+                result.toppings.push(clean);
+            }
+        });
+        baseText = trimmed.slice(0, plusIndex);
+    }
+
+    baseText.split(',').forEach(token => {
+        const clean = token.trim();
+        if (!clean) return;
+
+        if (!result.sugarLevel && ECPAY_STANDARD_SUGAR_LEVELS.includes(clean)) {
+            result.sugarLevel = clean;
+        } else if (!result.iceLevel && ECPAY_STANDARD_ICE_LEVELS.includes(clean)) {
+            result.iceLevel = clean;
+        } else {
+            result.extras.push(clean);
+        }
+    });
+
+    return result;
+}
+
+function getEcpayItemMeta(item = {}) {
+    const meta = {
+        sugarLevel: normalizeEcpayText(item.sugarLevel),
+        iceLevel: normalizeEcpayText(item.iceLevel),
+        toppings: Array.isArray(item.toppings) ? item.toppings.map(t => normalizeEcpayText(t)).filter(Boolean) : [],
+        extras: []
+    };
+
+    if (Array.isArray(item.extras)) {
+        meta.extras = item.extras.map(extra => normalizeEcpayText(extra)).filter(Boolean);
+    }
+
+    const needsLegacy = (!meta.sugarLevel || !meta.iceLevel || meta.toppings.length === 0) && item.customizations;
+    if ((needsLegacy || meta.extras.length === 0) && item.customizations) {
+        const legacy = parseEcpayLegacyCustomizations(item.customizations);
+        if (!meta.sugarLevel && legacy.sugarLevel) meta.sugarLevel = legacy.sugarLevel;
+        if (!meta.iceLevel && legacy.iceLevel) meta.iceLevel = legacy.iceLevel;
+        if (meta.toppings.length === 0 && legacy.toppings.length > 0) meta.toppings = legacy.toppings;
+        if (meta.extras.length === 0 && legacy.extras.length > 0) meta.extras = legacy.extras;
+    }
+
+    return meta;
+}
+
+function buildEcpayNoteSegment(item = {}, meta = null) {
+    const effectiveMeta = meta || getEcpayItemMeta(item);
+    const segments = [];
+
+    if (effectiveMeta.toppings.length) {
+        segments.push(`+ ${effectiveMeta.toppings.join(', ')}`);
+    }
+    if (effectiveMeta.extras.length) {
+        segments.push(effectiveMeta.extras.join(', '));
+    }
+
+    const special = normalizeEcpayText(item.specialRequest || item.note || item.notes);
+    if (special) {
+        segments.push(special);
+    }
+
+    return segments.join(' ').trim();
+}
+
+function formatEcpayItemLine(item = {}) {
+    const meta = getEcpayItemMeta(item);
+    const baseParts = [];
+    if (meta.sugarLevel) baseParts.push(meta.sugarLevel);
+    if (meta.iceLevel) baseParts.push(meta.iceLevel);
+
+    let display = item?.name ? String(item.name) : '飲品';
+    if (baseParts.length) {
+        display += ` (${baseParts.join(', ')})`;
+    }
+
+    const noteSegment = buildEcpayNoteSegment(item, meta);
+    if (noteSegment) {
+        return `${display} # ${noteSegment}`;
+    }
+    return display;
+}
+
 // 綠界金流背景通知回調（ReturnURL）
 // 這是綠界背景呼叫的 API，用於更新訂單狀態
 // ⚠️ 重要：必須返回純文字 '1|OK' 或 '0|Fail' 給綠界
@@ -379,7 +491,11 @@ router.post('/get-params', async (req, res) => {
             String(now.getSeconds()).padStart(2, '0');
 
         // 商品名稱（最多 400 字元）
-        const itemNames = items.map(item => `${item.name} x${item.quantity}`).join('#');
+        const itemNames = items.map(item => {
+            const formatted = formatEcpayItemLine(item);
+            const quantity = parseInt(item.quantity) || 1;
+            return `${formatted} x${quantity}`;
+        }).join('#');
         const itemName = itemNames.length > 400 ? itemNames.substring(0, 400) : itemNames;
 
         // 交易描述
@@ -479,7 +595,11 @@ router.get('/checkout', (req, res) => {
             String(now.getSeconds()).padStart(2, '0');
 
         // 商品名稱（最多 400 字元）
-        const itemNames = orderItems.map(item => `${item.name} x${item.quantity}`).join('#');
+        const itemNames = orderItems.map(item => {
+            const formatted = formatEcpayItemLine(item);
+            const quantity = parseInt(item.quantity) || 1;
+            return `${formatted} x${quantity}`;
+        }).join('#');
         const itemName = itemNames.length > 400 ? itemNames.substring(0, 400) : itemNames;
 
         // 交易描述
@@ -635,7 +755,11 @@ router.post('/create-order', (req, res) => {
             String(now.getSeconds()).padStart(2, '0');
 
         // 商品名稱（最多 400 字元）
-        const itemNames = items.map(item => `${item.name} x${item.quantity}`).join('#');
+        const itemNames = items.map(item => {
+            const formatted = formatEcpayItemLine(item);
+            const quantity = parseInt(item.quantity) || 1;
+            return `${formatted} x${quantity}`;
+        }).join('#');
         const itemName = itemNames.length > 400 ? itemNames.substring(0, 400) : itemNames;
 
         // 交易描述

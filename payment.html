@@ -372,19 +372,41 @@
                 display += ` (${baseParts.join(', ')})`;
             }
 
-            const extraSegments = [];
+            return display;
+        }
+
+        function getItemSpecialRequest(item = {}) {
+            const candidates = [
+                item?.specialRequest,
+                item?.note,
+                item?.notes
+            ];
+            for (const value of candidates) {
+                if (value && String(value).trim()) {
+                    return String(value).trim();
+                }
+            }
+            return '';
+        }
+
+        function buildItemNoteText(item = {}) {
+            const meta = getItemCustomizationMeta(item);
+            const noteSegments = [];
+
             if (meta.toppings.length) {
-                extraSegments.push(meta.toppings.join(', '));
+                noteSegments.push(`+ ${meta.toppings.join(', ')}`);
             }
             if (meta.extras.length) {
-                extraSegments.push(meta.extras.join(', '));
+                noteSegments.push(meta.extras.join(', '));
             }
 
-            if (extraSegments.length) {
-                display += ` + ${extraSegments.join(', ')}`;
+            const specialRequest = getItemSpecialRequest(item);
+            if (specialRequest) {
+                noteSegments.push(specialRequest);
             }
 
-            return display;
+            const noteContent = noteSegments.join(' ').trim();
+            return noteContent ? `備註：${noteContent}` : '';
         }
 
         // ⚠️ 關鍵修復：自動帶入購物車商品的特殊需求
@@ -440,6 +462,7 @@
                 total += subtotal;
 
                 const displayName = formatItemDisplayName(item);
+                const noteText = buildItemNoteText(item);
                 
                 // 構建商品顯示內容
                 let itemHTML = `
@@ -450,11 +473,11 @@
                 `;
 
                 // 2. 特殊需求（獨立顯示在下方，紅色小字）
-                if (item.specialRequest && item.specialRequest.trim()) {
+                if (noteText) {
                     itemHTML += `
                         <div class="order-item-details">
-                            <span class="order-item-special" style="color: #e74c3c; font-size: 12px; font-weight: 500;">
-                                備註：${item.specialRequest.trim()}
+                            <span class="order-item-special text-red-500" style="color: #e74c3c; font-size: 12px; font-weight: 500;">
+                                ${noteText}
                             </span>
                         </div>
                     `;
