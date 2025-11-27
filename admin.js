@@ -790,27 +790,54 @@ function renderOrdersTable(orders, pagination) {
                 }
             });
             
-            // 處理訂單級別的 specialRequest 字段（用戶輸入的特殊需求）
-            // ⚠️ 重要：顯示 order.specialRequest（用戶輸入），不是 order.notes（系統備註）
-            console.log('🔍 [後台前端] 訂單 ID:', order._id);
-            console.log('🔍 [後台前端] order.specialRequest (用戶輸入):', order.specialRequest);
-            console.log('🔍 [後台前端] order.notes (系統備註):', order.notes);
-            
-            if (order.specialRequest && order.specialRequest.trim() !== '') {
-                // 顯示用戶輸入的特殊需求
-                specialRequests.push(`[特殊需求] ${order.specialRequest.trim()}`);
-            } else {
-                // 如果 specialRequest 為空字串或不存在，顯示「無特殊需求」以便區分
-                console.log('🔍 [後台前端] 訂單無特殊需求');
-            }
-            
+            // 注意：訂單級別的 specialRequest 將在下面單獨顯示，這裡只處理商品級別的特殊需求
             return specialRequests;
         };
         
         const specialRequests = getSpecialRequests();
-        const specialRequestsText = specialRequests.length > 0 
-            ? specialRequests.join('; ')
-            : '無';
+        
+        // 🔍 調試：檢查訂單級別的字段
+        console.log('🔍 [後台前端] 訂單 ID:', order._id);
+        console.log('🔍 [後台前端] order.specialRequest (客人輸入):', order.specialRequest);
+        console.log('🔍 [後台前端] order.notes (系統備註):', order.notes);
+        
+        // 構建完整的備註顯示（包含商品特殊需求、客人備註和系統備註）
+        const buildNotesDisplay = () => {
+            const notesParts = [];
+            
+            // HTML 轉義函數（簡單版本）
+            const escapeHtml = (text) => {
+                if (!text) return '';
+                return String(text)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            };
+            
+            // 1. 商品級別的特殊需求（如果有）
+            if (specialRequests.length > 0) {
+                const escapedItemRequests = specialRequests.map(req => escapeHtml(req)).join('; ');
+                notesParts.push(`<span style="color: #e74c3c; font-weight: 500;">${escapedItemRequests}</span>`);
+            }
+            
+            // 2. 訂單級別的客人備註（order.specialRequest）
+            const customerNote = order.specialRequest && order.specialRequest.trim() !== '' 
+                ? escapeHtml(order.specialRequest.trim())
+                : '無特殊需求';
+            notesParts.push(`<span style="color: #2196F3; font-weight: 500;">🗣️ 客人備註: ${customerNote}</span>`);
+            
+            // 3. 系統備註（order.notes）
+            const systemNote = order.notes && order.notes.trim() !== '' 
+                ? escapeHtml(order.notes.trim())
+                : '無';
+            notesParts.push(`<span style="color: #95a5a6; font-style: italic;">ℹ️ 系統備註: ${systemNote}</span>`);
+            
+            return notesParts.join('<br>');
+        };
+        
+        const notesDisplayHtml = buildNotesDisplay();
         
         // 構建用戶/桌號/訂單號顯示
         let userDisplay = '';
@@ -833,11 +860,10 @@ function renderOrdersTable(orders, pagination) {
                 <td>${userDisplay}</td>
                 <td>${itemsText}</td>
                 <td>NT$ ${order.totalAmount}</td>
-                <td style="max-width: 200px; word-wrap: break-word; line-height: 1.3;">
-                    ${specialRequests.length > 0 
-                        ? `<span style="color: #e74c3c; font-weight: 500; font-size: 14px; display: block; word-break: break-all; white-space: normal;">${specialRequestsText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`
-                        : '<span style="color: #95a5a6; font-size: 14px;">無</span>'
-                    }
+                <td style="max-width: 300px; word-wrap: break-word; line-height: 1.5;">
+                    <div style="font-size: 13px; color: #2c3e50;">
+                        ${notesDisplayHtml}
+                    </div>
                 </td>
                 <td><span class="status-badge ${statusClass}">${getStatusText(order.status)}</span></td>
                 <td>${new Date(order.createdAt).toLocaleString()}</td>
