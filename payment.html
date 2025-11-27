@@ -855,12 +855,14 @@ function buildAggregationLine(item = {}) {
 
             // ✅ 重新讀取內用桌號（與 HTML id `tableNumber` 對應），確保送出前取得最新值
             const tableInputEl = document.getElementById('tableNumber');
-            const liveInputValue = tableInputEl ? normalizeTableNumber(tableInputEl.value || '') : '';
-            if (tableInputEl && tableInputEl.value !== liveInputValue) {
-                tableInputEl.value = liveInputValue;
+            const domTableValue = tableInputEl ? (tableInputEl.value || '') : '';
+            console.log('🛑 [DEBUG] 按下按鈕瞬間抓到的桌號:', domTableValue);
+            const normalizedDomValue = normalizeTableNumber(domTableValue);
+            if (tableInputEl && tableInputEl.value !== normalizedDomValue) {
+                tableInputEl.value = normalizedDomValue;
             }
             const fallbackTableNumber = orderData && orderData.tableNumber ? normalizeTableNumber(orderData.tableNumber) : '';
-            const resolvedTableNumber = liveInputValue || fallbackTableNumber;
+            const resolvedTableNumber = normalizedDomValue || fallbackTableNumber;
             const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
             if (expectsTableNumber && !resolvedTableNumber) {
                 alert('請輸入內用桌號');
@@ -871,7 +873,7 @@ function buildAggregationLine(item = {}) {
             const finalTableNumber = expectsTableNumber ? resolvedTableNumber : '';
             console.log('🛑 [DEBUG] 準備送出的桌號:', finalTableNumber || '(空字串)');
             console.log('前端準備送出的桌號:', expectsTableNumber ? finalTableNumber : '(非內用)');
-            console.log('結帳頁讀取到的桌號 (輸入框):', liveInputValue || '(無)');
+            console.log('結帳頁讀取到的桌號 (輸入框):', normalizedDomValue || '(無)');
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
@@ -890,7 +892,7 @@ function buildAggregationLine(item = {}) {
 
             const basePayload = {
                 specialRequest: specialRequestValue || null,
-                tableNumber: orderData.tableNumber || null,
+                tableNumber: finalTableNumber || null,
                 diningMode: orderData.diningMode || (isDineIn ? 'dine-in' : 'takeout')
             };
 
