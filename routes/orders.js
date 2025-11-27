@@ -174,16 +174,24 @@ router.post('/checkout', [
             totalAmount,
             paymentMethod = 'cash',
             deliveryMethod = 'pickup',
-            notes: notesFromBody = '前台結帳',
+            notes: notesFromBody = null,
             note: noteFromBody = null, // 兼容 note 字段
+            specialRequest: specialRequestFromBody = null, // 訂單級別的特殊需求（用戶輸入）
             orderNumber = ''
         } = req.body;
         
-        // 🔍 調試：處理 notes 字段（兼容 note 和 notes）
-        const notes = noteFromBody || notesFromBody || '前台結帳';
-        console.log('🔍 處理後的 notes 值:', notes);
-        console.log('🔍 notesFromBody:', notesFromBody);
-        console.log('🔍 noteFromBody:', noteFromBody);
+        // 🔍 調試：處理 notes 和 specialRequest 字段
+        // notes: 系統/金流備註（例如 "綠界金流支付"、"前台結帳"）
+        // specialRequest: 用戶前台輸入的特殊需求（例如 "多冰"）
+        const systemNotes = notesFromBody || noteFromBody || '前台結帳';
+        const userSpecialRequest = specialRequestFromBody || null;
+        
+        console.log('🔍 處理後的字段值:');
+        console.log('  - systemNotes (notes):', systemNotes);
+        console.log('  - userSpecialRequest (specialRequest):', userSpecialRequest);
+        console.log('  - notesFromBody:', notesFromBody);
+        console.log('  - noteFromBody:', noteFromBody);
+        console.log('  - specialRequestFromBody:', specialRequestFromBody);
 
         // 快速驗證產品並更新庫存 - 優先使用內存數據
         const orderItems = [];
@@ -401,19 +409,27 @@ router.post('/checkout', [
         const finalOrderNumber = orderNumber || generateOrderNumber();
         
         // 創建訂單數據
+        // ⚠️ 重要：notes 存系統備註，specialRequest 存用戶輸入的特殊需求
         const orderData = {
             user: null,
             items: orderItems,
             totalAmount: totalAmount,
             paymentMethod,
             deliveryMethod,
-            notes,
+            notes: systemNotes, // 系統/金流備註（例如 "前台結帳"）
+            specialRequest: userSpecialRequest, // 訂單級別的特殊需求（用戶輸入，例如 "多冰"）
             orderNumber: finalOrderNumber,
             status: 'pending',
             paymentStatus: 'pending',
             createdAt: new Date(),
             updatedAt: new Date()
         };
+        
+        console.log('🔍 創建的訂單數據:', {
+            notes: orderData.notes,
+            specialRequest: orderData.specialRequest,
+            orderNumber: orderData.orderNumber
+        });
         
         let order = null;
         

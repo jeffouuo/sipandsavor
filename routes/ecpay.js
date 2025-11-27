@@ -140,11 +140,21 @@ router.post('/callback', async (req, res) => {
                 const order = await Order.findOne({ orderNumber: merchantTradeNo });
                 
                 if (order) {
-                    // 更新訂單狀態為 Paid
+                    // ⚠️ 重要：只更新 paymentStatus 和 notes（系統備註），絕對不動 specialRequest
+                    // 保存原有的 specialRequest（用戶輸入的特殊需求）
+                    const originalSpecialRequest = order.specialRequest;
+                    
                     order.paymentStatus = 'paid';
                     order.status = 'pending'; // 保持 pending，等待處理
+                    order.notes = '綠界金流支付'; // 更新系統備註
+                    // ⚠️ 絕對不要動 specialRequest，保持用戶輸入的原始值
                     order.updatedAt = new Date();
                     await order.save();
+                    
+                    console.log('🔍 [ECPay Callback] 更新後的訂單:');
+                    console.log('  - notes (系統備註):', order.notes);
+                    console.log('  - specialRequest (用戶輸入):', order.specialRequest);
+                    console.log('  - 原始 specialRequest 是否保留:', order.specialRequest === originalSpecialRequest);
                     
                     console.log('✅ 訂單狀態已更新為 Paid:', {
                         orderId: order._id,
@@ -169,12 +179,21 @@ router.post('/callback', async (req, res) => {
             console.log('❌ 交易失敗:', params.RtnMsg || 'Unknown error');
             
             // 更新訂單狀態為 Failed（如果訂單存在）
+            // ⚠️ 重要：只更新 paymentStatus，不動 notes 和 specialRequest
             try {
                 const order = await Order.findOne({ orderNumber: merchantTradeNo });
                 if (order) {
+                    const originalSpecialRequest = order.specialRequest;
+                    const originalNotes = order.notes;
+                    
                     order.paymentStatus = 'failed';
+                    // ⚠️ 絕對不要動 notes 和 specialRequest
                     order.updatedAt = new Date();
                     await order.save();
+                    
+                    console.log('🔍 [ECPay Callback] 失敗訂單更新:');
+                    console.log('  - notes 是否保留:', order.notes === originalNotes);
+                    console.log('  - specialRequest 是否保留:', order.specialRequest === originalSpecialRequest);
                     console.log('✅ 訂單狀態已更新為 Failed');
                 }
             } catch (updateError) {
@@ -220,13 +239,29 @@ router.post('/get-params', async (req, res) => {
         console.log('📥 [ECPay] req.body.note:', req.body.note);
         console.log('═══════════════════════════════════════════════════════════');
         
-        const { items, totalAmount, paymentMethod = 'Credit', deliveryMethod = 'pickup', notes: notesFromBody = '', note: noteFromBody = null, diningMode = 'takeout' } = req.body;
+        const { 
+            items, 
+            totalAmount, 
+            paymentMethod = 'Credit', 
+            deliveryMethod = 'pickup', 
+            notes: notesFromBody = null,
+            note: noteFromBody = null, // 兼容 note 字段
+            specialRequest: specialRequestFromBody = null, // 訂單級別的特殊需求（用戶輸入）
+            diningMode = 'takeout' 
+        } = req.body;
         
-        // 🔍 調試：處理 notes 字段（兼容 note 和 notes）
-        const notes = noteFromBody || notesFromBody || '綠界金流支付';
-        console.log('🔍 [ECPay] 處理後的 notes 值:', notes);
-        console.log('🔍 [ECPay] notesFromBody:', notesFromBody);
-        console.log('🔍 [ECPay] noteFromBody:', noteFromBody);
+        // 🔍 調試：處理 notes 和 specialRequest 字段
+        // notes: 系統/金流備註（例如 "綠界金流支付"）
+        // specialRequest: 用戶前台輸入的特殊需求（例如 "多冰"）
+        const systemNotes = noteFromBody || notesFromBody || '綠界金流支付';
+        const userSpecialRequest = specialRequestFromBody || null;
+        
+        console.log('🔍 [ECPay] 處理後的字段值:');
+        console.log('  - systemNotes (notes):', systemNotes);
+        console.log('  - userSpecialRequest (specialRequest):', userSpecialRequest);
+        console.log('  - notesFromBody:', notesFromBody);
+        console.log('  - noteFromBody:', noteFromBody);
+        console.log('  - specialRequestFromBody:', specialRequestFromBody);
         
         // 驗證必要參數
         if (!items || !Array.isArray(items) || items.length === 0) {
@@ -268,12 +303,14 @@ router.post('/get-params', async (req, res) => {
         }
         
         // 創建訂單到資料庫（狀態為 Unpaid）
+        // ⚠️ 重要：notes 存系統備註，specialRequest 存用戶輸入的特殊需求
         const orderData = {
             items: orderItems,
             totalAmount: parseFloat(totalAmount) || 0,
             paymentMethod: 'credit_card', // 綠界支付
             deliveryMethod: deliveryMethod || 'pickup',
-            notes: notes || '綠界金流支付',
+            notes: systemNotes, // 系統/金流備註（例如 "綠界金流支付"）
+            specialRequest: userSpecialRequest, // 訂單級別的特殊需求（用戶輸入，例如 "多冰"）
             orderNumber: merchantTradeNo, // 使用 MerchantTradeNo 作為訂單編號
             pickupNumber: pickupNumber, // 外帶取餐號（僅外帶訂單有）
             diningMode: diningMode || 'takeout', // 用餐模式
@@ -282,6 +319,12 @@ router.post('/get-params', async (req, res) => {
             createdAt: new Date(),
             updatedAt: new Date()
         };
+        
+        console.log('🔍 [ECPay] 創建的訂單數據:', {
+            notes: orderData.notes,
+            specialRequest: orderData.specialRequest,
+            orderNumber: orderData.orderNumber
+        });
         
         let order = null;
         try {

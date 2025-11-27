@@ -78,6 +78,12 @@ const orderSchema = new mongoose.Schema({
         type: String,
         maxlength: [200, '備註不能超過200個字符']
     },
+    // 訂單級別的特殊需求（用戶前台輸入的需求，例如 "多冰"）
+    specialRequest: {
+        type: String,
+        maxlength: [200, '特殊需求不能超過200個字符'],
+        required: false
+    },
     // 內用訂單相關字段
     tableNumber: {
         type: String,

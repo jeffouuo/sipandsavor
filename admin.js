@@ -790,20 +790,18 @@ function renderOrdersTable(orders, pagination) {
                 }
             });
             
-            // 處理訂單級別的 notes 字段（訂單備註）
-            // 🔍 調試：檢查 notes 和 note 字段
-            const orderNote = order.notes || order.note || '';
+            // 處理訂單級別的 specialRequest 字段（用戶輸入的特殊需求）
+            // ⚠️ 重要：顯示 order.specialRequest（用戶輸入），不是 order.notes（系統備註）
             console.log('🔍 [後台前端] 訂單 ID:', order._id);
-            console.log('🔍 [後台前端] order.notes:', order.notes);
-            console.log('🔍 [後台前端] order.note:', order.note);
-            console.log('🔍 [後台前端] 處理後的 orderNote:', orderNote);
+            console.log('🔍 [後台前端] order.specialRequest (用戶輸入):', order.specialRequest);
+            console.log('🔍 [後台前端] order.notes (系統備註):', order.notes);
             
-            if (orderNote && orderNote.trim() !== '' && orderNote.trim() !== '前台結帳' && orderNote.trim() !== '綠界金流支付') {
-                // 只顯示非默認的 notes（過濾掉系統自動生成的備註）
-                specialRequests.push(`[訂單備註] ${orderNote.trim()}`);
-            } else if (orderNote === '' || !orderNote) {
-                // 如果 notes 為空字串或不存在，顯示「無備註」以便區分
-                console.log('🔍 [後台前端] 訂單無備註');
+            if (order.specialRequest && order.specialRequest.trim() !== '') {
+                // 顯示用戶輸入的特殊需求
+                specialRequests.push(`[特殊需求] ${order.specialRequest.trim()}`);
+            } else {
+                // 如果 specialRequest 為空字串或不存在，顯示「無特殊需求」以便區分
+                console.log('🔍 [後台前端] 訂單無特殊需求');
             }
             
             return specialRequests;

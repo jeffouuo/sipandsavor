@@ -370,7 +370,8 @@
                         items: orderData.items,
                         totalAmount: orderData.totalAmount,
                         paymentMethod: 'Credit',
-                        diningMode: localStorage.getItem('dineInTableNumber') ? 'dine-in' : 'takeout' // 傳遞用餐模式給後端
+                        diningMode: localStorage.getItem('dineInTableNumber') ? 'dine-in' : 'takeout', // 傳遞用餐模式給後端
+                        specialRequest: orderData.specialRequest || null // 傳遞訂單級別的特殊需求（用戶輸入）
                     })
                 });
 

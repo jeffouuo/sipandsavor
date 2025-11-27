@@ -786,10 +786,11 @@ const initCheckout = () => {
                     const quantity = parseInt(item.quantity) || 0;
                     return sum + (price * quantity);
                 }, 0)) || 0,
-                paymentMethod: 'cash',
-                deliveryMethod: 'pickup',
-                notes: '前台結帳'
-            };
+                    paymentMethod: 'cash',
+                    deliveryMethod: 'pickup',
+                    notes: '前台結帳', // 系統備註
+                    specialRequest: null // 訂單級別的特殊需求（用戶輸入，目前為空，可擴展）
+                };
             
             // 驗證數據格式
             console.log('🔍 購物車原始數據:', window.cart);
@@ -869,7 +870,8 @@ const initCheckout = () => {
                     }, 0)) || 0,
                     paymentMethod: 'cash',
                     deliveryMethod: 'pickup',
-                    notes: '前台結帳'
+                    notes: '前台結帳', // 系統備註
+                    specialRequest: null // 訂單級別的特殊需求（用戶輸入，目前為空，可擴展）
                 };
                 
                 console.log('🔧 修復後的訂單數據:', orderData);
