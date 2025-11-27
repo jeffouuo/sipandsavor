@@ -756,6 +756,7 @@ function renderOrdersTable(orders, pagination) {
         const getSpecialRequests = () => {
             const specialRequests = [];
             
+            // 先處理商品級別的特殊需求
             order.items.forEach(item => {
                 const itemSpecialDetails = [];
                 
@@ -788,6 +789,12 @@ function renderOrdersTable(orders, pagination) {
                     specialRequests.push(`${item.name}: ${itemSpecialDetails.join(' | ')}`);
                 }
             });
+            
+            // 處理訂單級別的 notes 字段（訂單備註）
+            if (order.notes && order.notes.trim() !== '' && order.notes.trim() !== '前台結帳' && order.notes.trim() !== '綠界金流支付') {
+                // 只顯示非默認的 notes（過濾掉系統自動生成的備註）
+                specialRequests.push(`[訂單備註] ${order.notes.trim()}`);
+            }
             
             return specialRequests;
         };
