@@ -338,8 +338,6 @@
 
             const storedDiningMode = (sessionStorage.getItem('diningMode') || '').toLowerCase();
             const storedTableNumber = sessionStorage.getItem('tableNumber') || localStorage.getItem('dineInTableNumber');
-            const isLocked = sessionStorage.getItem('diningModeLocked') === 'true';
-
             let initialMode = storedDiningMode === 'dine-in'
                 ? 'dine-in'
                 : storedDiningMode === 'takeout'
@@ -354,9 +352,7 @@
             syncDiningModeRadios(initialMode);
 
             inputs.forEach(input => {
-                if (isLocked) {
-                    input.disabled = input.value !== initialMode;
-                }
+                input.disabled = false;
                 input.addEventListener('change', () => {
                     if (input.checked) {
                         applyDiningMode(input.value);
