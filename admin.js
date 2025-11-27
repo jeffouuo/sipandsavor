@@ -757,12 +757,10 @@ function renderOrdersTable(orders, pagination) {
             const specialRequests = [];
             
             order.items.forEach(item => {
-                // 檢查 specialRequest 字段
-                if (item.specialRequest && item.specialRequest.trim() !== '') {
-                    specialRequests.push(`${item.name}: ${item.specialRequest.trim()}`);
-                }
+                const itemSpecialDetails = [];
+                
                 // 檢查 customizations 字段（只顯示非標準客製化）
-                else if (item.customizations && item.customizations.trim() !== '') {
+                if (item.customizations && item.customizations.trim() !== '') {
                     const customizations = item.customizations.trim();
                     const standardCustomizations = ['無糖', '微糖', '半糖', '少糖', '全糖', '去冰', '微冰', '少冰', '正常冰', '熱飲'];
                     
@@ -776,8 +774,18 @@ function renderOrdersTable(orders, pagination) {
                     });
                     
                     if (hasToppings || hasOtherSpecialRequests) {
-                        specialRequests.push(`${item.name}: ${customizations}`);
+                        itemSpecialDetails.push(customizations);
                     }
+                }
+                
+                // 檢查 specialRequest 字段（如果有，也加入）
+                if (item.specialRequest && item.specialRequest.trim() !== '') {
+                    itemSpecialDetails.push(`特殊需求: ${item.specialRequest.trim()}`);
+                }
+                
+                // 如果有任何特殊需求，添加到列表中
+                if (itemSpecialDetails.length > 0) {
+                    specialRequests.push(`${item.name}: ${itemSpecialDetails.join(' | ')}`);
                 }
             });
             

@@ -44,14 +44,30 @@
         }
 
         .order-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
+            padding: 12px 0;
             border-bottom: 1px solid #e0e0e0;
         }
 
         .order-item:last-child {
             border-bottom: none;
+        }
+
+        .order-item-main {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .order-item-details {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 4px;
+            padding-left: 0;
+        }
+
+        .order-item-special {
+            color: #e74c3c;
+            font-weight: 500;
         }
 
         .order-total {
@@ -256,10 +272,37 @@
                 const subtotal = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
                 total += subtotal;
 
-                itemDiv.innerHTML = `
-                    <span>${item.name} x ${item.quantity}</span>
-                    <span>NT$ ${subtotal.toLocaleString()}</span>
+                // 構建商品顯示內容
+                let itemHTML = `
+                    <div class="order-item-main">
+                        <span>${item.name} x ${item.quantity}</span>
+                        <span>NT$ ${subtotal.toLocaleString()}</span>
+                    </div>
                 `;
+
+                // 顯示特殊需求（客制化信息和特殊需求）
+                const specialDetails = [];
+                
+                // 添加客制化信息（如果有）
+                if (item.customizations && item.customizations.trim()) {
+                    specialDetails.push(item.customizations.trim());
+                }
+                
+                // 添加特殊需求（如果有）
+                if (item.specialRequest && item.specialRequest.trim()) {
+                    specialDetails.push(`特殊需求: ${item.specialRequest.trim()}`);
+                }
+
+                // 如果有特殊需求，顯示在商品下方
+                if (specialDetails.length > 0) {
+                    itemHTML += `
+                        <div class="order-item-details">
+                            <span class="order-item-special">${specialDetails.join(' | ')}</span>
+                        </div>
+                    `;
+                }
+
+                itemDiv.innerHTML = itemHTML;
                 itemsContainer.appendChild(itemDiv);
             });
 
