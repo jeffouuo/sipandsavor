@@ -994,6 +994,14 @@ function buildAggregationLine(item = {}) {
             btn.disabled = true;
             btn.textContent = '處理中...';
 
+            const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked');
+            if (!selectedMethod) {
+                alert('請選擇支付方式');
+                btn.disabled = false;
+                btn.textContent = '前往支付';
+                return;
+            }
+
             // ⚠️ 關鍵修復 2：讀取訂單級別的備註輸入框（現金支付時也要讀取）
             const noteInput = document.getElementById('orderSpecialRequest');
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
