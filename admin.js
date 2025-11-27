@@ -854,15 +854,31 @@ function renderOrdersTable(orders, pagination) {
         console.log('🟢 訂單項目:', order.items);
         console.log('檢查桌號:', order.tableNumber, '用餐模式:', order.diningMode);
         
-        // 正確顯示商品和數量（包含甜度/冰塊與加料）
+        // 正確顯示商品和數量（格式：主行顯示飲料名稱 x 數量，備註行顯示甜度/冰塊/加料/特殊需求）
         const itemsHtml = (order.items || []).map(item => {
             const quantity = item.quantity || 1;
-            const displayName = formatOrderItemDisplay(item);
-            const noteText = buildAdminItemNoteText(item);
-            const noteHtml = noteText
-                ? `<div class="order-item-note text-red-500" style="color: #e74c3c; font-size: 12px; margin-top: 2px;">${noteText}</div>`
+            const meta = getAdminItemMeta(item);
+            
+            // 主行：只顯示飲料名稱和數量
+            const itemName = item?.name ? String(item.name) : '未知商品';
+            const mainLine = `<div class="order-item-line" style="font-weight: 500;">${itemName} x${quantity}</div>`;
+            
+            // 備註行：組合甜度、冰塊、加料、特殊需求
+            const noteParts = [];
+            if (meta.sugarLevel) noteParts.push(meta.sugarLevel);
+            if (meta.iceLevel) noteParts.push(meta.iceLevel);
+            if (meta.toppings.length) noteParts.push(`+ ${meta.toppings.join(', ')}`);
+            if (meta.extras.length) noteParts.push(meta.extras.join(', '));
+            
+            const special = normalizeAdminString(item?.specialRequest || item?.note || item?.notes);
+            if (special) noteParts.push(special);
+            
+            const noteContent = noteParts.join(' ').trim();
+            const noteHtml = noteContent
+                ? `<div class="order-item-note" style="color: #666; font-size: 12px; margin-top: 2px; padding-left: 8px;">${noteContent}</div>`
                 : '';
-            return `<div class="order-item-line">${displayName} x${quantity}</div>${noteHtml}`;
+            
+            return mainLine + noteHtml;
         }).join('');
         
         const statusClass = `status-${order.status}`;
@@ -924,19 +940,28 @@ function renderOrdersTable(orders, pagination) {
         
         const specialRequestDisplayHtml = buildSpecialRequestDisplay();
         
-        // 構建用戶/桌號/訂單號顯示
+        // 構建用戶/桌號/訂單號顯示（統一格式：[模式]: [號碼] [付款狀態標籤]）
         let userDisplay = '';
         const isDineInDisplay = order.diningMode === 'dine-in' || order.orderType === 'dine-in' || order.deliveryMethod === 'dine-in';
+        
+        // 判斷付款方式標籤
+        const paymentMethod = order.paymentMethod || 'cash';
+        const paymentTag = paymentMethod === 'cash' 
+            ? '<span class="payment-tag cash-tag" style="background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px;">[櫃台結帳]</span>'
+            : (paymentMethod === 'credit_card' 
+                ? '<span class="payment-tag card-tag" style="background: #3498db; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px;">[ECPay]</span>'
+                : '');
+        
         if (isDineInDisplay) {
             const tableLabel = order.tableNumber ? `內用: ${order.tableNumber}` : '內用: 未填寫';
-            userDisplay = `<span class="text-blue-600 font-bold">${tableLabel}</span>`;
+            userDisplay = `<span class="text-blue-600 font-bold">${tableLabel}</span>${paymentTag}`;
         } else if (order.pickupNumber && order.pickupNumber.trim()) {
-            userDisplay = `<span class="text-green-600 font-bold">外帶: ${order.pickupNumber}</span>`;
+            userDisplay = `<span class="text-green-600 font-bold">外帶: ${order.pickupNumber}</span>${paymentTag}`;
         } else if (order.orderNumber && order.orderNumber.trim()) {
             const orderNumberLast4 = order.orderNumber.slice(-4);
-            userDisplay = `<span class="text-green-600 font-bold">外帶: ${orderNumberLast4}</span>`;
+            userDisplay = `<span class="text-green-600 font-bold">外帶: ${orderNumberLast4}</span>${paymentTag}`;
         } else {
-            userDisplay = order.user?.username || 'N/A';
+            userDisplay = (order.user?.username || 'N/A') + paymentTag;
         }
         
         html += `
