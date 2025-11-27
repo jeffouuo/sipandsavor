@@ -213,7 +213,20 @@ function generatePickupNumber() {
 // 獲取綠界金流參數（返回 JSON，供前端創建表單）
 router.post('/get-params', async (req, res) => {
     try {
-        const { items, totalAmount, paymentMethod = 'Credit', deliveryMethod = 'pickup', notes = '', diningMode = 'takeout' } = req.body;
+        // 🔍 全鏈路調試：記錄前端傳來的完整 Body
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('📥 [ECPay] 前端傳來的 Body:', JSON.stringify(req.body, null, 2));
+        console.log('📥 [ECPay] req.body.notes:', req.body.notes);
+        console.log('📥 [ECPay] req.body.note:', req.body.note);
+        console.log('═══════════════════════════════════════════════════════════');
+        
+        const { items, totalAmount, paymentMethod = 'Credit', deliveryMethod = 'pickup', notes: notesFromBody = '', note: noteFromBody = null, diningMode = 'takeout' } = req.body;
+        
+        // 🔍 調試：處理 notes 字段（兼容 note 和 notes）
+        const notes = noteFromBody || notesFromBody || '綠界金流支付';
+        console.log('🔍 [ECPay] 處理後的 notes 值:', notes);
+        console.log('🔍 [ECPay] notesFromBody:', notesFromBody);
+        console.log('🔍 [ECPay] noteFromBody:', noteFromBody);
         
         // 驗證必要參數
         if (!items || !Array.isArray(items) || items.length === 0) {
@@ -273,13 +286,22 @@ router.post('/get-params', async (req, res) => {
         let order = null;
         try {
             order = new Order(orderData);
-            await order.save();
+            const savedOrder = await order.save();
+            
+            // 🔍 全鏈路調試：記錄存入後的完整資料
+            console.log('═══════════════════════════════════════════════════════════');
+            console.log('💾 [ECPay] 存入後的資料:', JSON.stringify(savedOrder.toObject(), null, 2));
+            console.log('💾 [ECPay] savedOrder.notes:', savedOrder.notes);
+            console.log('💾 [ECPay] savedOrder.note:', savedOrder.note);
+            console.log('═══════════════════════════════════════════════════════════');
+            
             console.log('✅ 訂單已建立到資料庫（狀態：Unpaid）:', {
-                orderId: order._id,
+                orderId: savedOrder._id,
                 orderNumber: merchantTradeNo,
                 pickupNumber: pickupNumber,
                 diningMode: diningMode,
-                totalAmount: totalAmount
+                totalAmount: totalAmount,
+                notes: savedOrder.notes
             });
         } catch (dbError) {
             console.error('❌ 建立訂單到資料庫失敗:', dbError);

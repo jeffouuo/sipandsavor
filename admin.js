@@ -791,9 +791,19 @@ function renderOrdersTable(orders, pagination) {
             });
             
             // 處理訂單級別的 notes 字段（訂單備註）
-            if (order.notes && order.notes.trim() !== '' && order.notes.trim() !== '前台結帳' && order.notes.trim() !== '綠界金流支付') {
+            // 🔍 調試：檢查 notes 和 note 字段
+            const orderNote = order.notes || order.note || '';
+            console.log('🔍 [後台前端] 訂單 ID:', order._id);
+            console.log('🔍 [後台前端] order.notes:', order.notes);
+            console.log('🔍 [後台前端] order.note:', order.note);
+            console.log('🔍 [後台前端] 處理後的 orderNote:', orderNote);
+            
+            if (orderNote && orderNote.trim() !== '' && orderNote.trim() !== '前台結帳' && orderNote.trim() !== '綠界金流支付') {
                 // 只顯示非默認的 notes（過濾掉系統自動生成的備註）
-                specialRequests.push(`[訂單備註] ${order.notes.trim()}`);
+                specialRequests.push(`[訂單備註] ${orderNote.trim()}`);
+            } else if (orderNote === '' || !orderNote) {
+                // 如果 notes 為空字串或不存在，顯示「無備註」以便區分
+                console.log('🔍 [後台前端] 訂單無備註');
             }
             
             return specialRequests;

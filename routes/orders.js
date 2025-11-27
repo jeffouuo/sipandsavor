@@ -138,6 +138,13 @@ router.post('/checkout', [
     body('deliveryMethod').optional().isIn(['pickup', 'delivery']).withMessage('無效的取餐方式'),
     body('notes').optional().isLength({ max: 200 }).withMessage('備註不能超過200個字符')
 ], async (req, res) => {
+    // 🔍 全鏈路調試：記錄前端傳來的完整 Body
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📥 前端傳來的 Body:', JSON.stringify(req.body, null, 2));
+    console.log('📥 req.body.notes:', req.body.notes);
+    console.log('📥 req.body.note:', req.body.note);
+    console.log('═══════════════════════════════════════════════════════════');
+    
     console.log('🚀 結帳請求開始:', new Date().toISOString());
     const startTime = Date.now();
     
@@ -167,9 +174,16 @@ router.post('/checkout', [
             totalAmount,
             paymentMethod = 'cash',
             deliveryMethod = 'pickup',
-            notes = '前台結帳',
+            notes: notesFromBody = '前台結帳',
+            note: noteFromBody = null, // 兼容 note 字段
             orderNumber = ''
         } = req.body;
+        
+        // 🔍 調試：處理 notes 字段（兼容 note 和 notes）
+        const notes = noteFromBody || notesFromBody || '前台結帳';
+        console.log('🔍 處理後的 notes 值:', notes);
+        console.log('🔍 notesFromBody:', notesFromBody);
+        console.log('🔍 noteFromBody:', noteFromBody);
 
         // 快速驗證產品並更新庫存 - 優先使用內存數據
         const orderItems = [];
@@ -413,6 +427,13 @@ router.post('/checkout', [
                     const newOrder = new Order(orderData);
                     const savedOrder = await newOrder.save();
                     
+                    // 🔍 全鏈路調試：記錄存入後的完整資料
+                    console.log('═══════════════════════════════════════════════════════════');
+                    console.log('💾 存入後的資料:', JSON.stringify(savedOrder.toObject(), null, 2));
+                    console.log('💾 savedOrder.notes:', savedOrder.notes);
+                    console.log('💾 savedOrder.note:', savedOrder.note);
+                    console.log('═══════════════════════════════════════════════════════════');
+                    
                     console.log(`✅ 訂單保存成功！耗時: ${Date.now() - saveStart}ms`);
                     return savedOrder;
                     
@@ -449,6 +470,11 @@ router.post('/checkout', [
                     try {
                         const backgroundOrder = new Order(orderData);
                         const saved = await backgroundOrder.save();
+                        
+                        // 🔍 全鏈路調試：記錄背景保存後的資料
+                        console.log('💾 [背景保存] 存入後的資料:', JSON.stringify(saved.toObject(), null, 2));
+                        console.log('💾 [背景保存] saved.notes:', saved.notes);
+                        
                         console.log(`✅ 極速背景保存成功！真實 ID: ${saved._id} (第 ${retry} 次嘗試)`);
                         return;
                         
@@ -484,7 +510,12 @@ router.post('/checkout', [
                     for (let retry = 1; retry <= 10; retry++) {
                         try {
                             const backgroundOrder = new Order(orderData);
-                            await backgroundOrder.save();
+                            const saved = await backgroundOrder.save();
+                            
+                            // 🔍 全鏈路調試：記錄開發環境背景保存後的資料
+                            console.log('💾 [開發環境背景保存] 存入後的資料:', JSON.stringify(saved.toObject(), null, 2));
+                            console.log('💾 [開發環境背景保存] saved.notes:', saved.notes);
+                            
                             console.log(`🎉 開發環境後台保存成功！(第 ${retry} 次嘗試)`);
                             return;
                             
@@ -1400,12 +1431,24 @@ router.get('/admin/all', adminAuth, [
             return acc;
         }, {}));
         
+        // 🔍 全鏈路調試：記錄撈出的第一筆訂單完整資料
+        if (orders.length > 0) {
+            console.log('═══════════════════════════════════════════════════════════');
+            console.log('📋 撈出的第一筆訂單:', JSON.stringify(orders[0].toObject ? orders[0].toObject() : orders[0], null, 2));
+            console.log('📋 第一筆訂單的 notes 字段:', orders[0].notes);
+            console.log('📋 第一筆訂單的 note 字段:', orders[0].note);
+            console.log('📋 第一筆訂單的所有字段:', Object.keys(orders[0].toObject ? orders[0].toObject() : orders[0]));
+            console.log('═══════════════════════════════════════════════════════════');
+        }
+        
         if (process.env.NODE_ENV === 'development') {
             console.log('🟢 後台API回傳的訂單資料:', orders.map(order => ({
                 _id: order._id,
                 tableNumber: order.tableNumber,
                 orderType: order.orderType,
-                status: order.status
+                status: order.status,
+                notes: order.notes,
+                note: order.note
             })));
         }
 
