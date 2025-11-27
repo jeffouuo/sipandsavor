@@ -212,13 +212,6 @@
                     <span>信用卡</span>
                 </label>
             </div>
-            <div class="payment-option" data-method="line_pay">
-                <input type="radio" name="paymentMethod" id="line_pay" value="line_pay">
-                <label for="line_pay">
-                    <span class="material-icons payment-icon">account_balance_wallet</span>
-                    <span>LINE Pay</span>
-                </label>
-            </div>
             <div class="payment-option" data-method="cash">
                 <input type="radio" name="paymentMethod" id="cash" value="cash">
                 <label for="cash">
@@ -355,9 +348,8 @@
                 return;
             }
 
-            // 其他線上支付（LINE Pay），跳轉到支付處理頁面
-            localStorage.setItem('pendingOrder', JSON.stringify(orderData));
-            window.location.href = `payment-process.html?method=${selectedMethod.value}`;
+            // 如果選擇了不支持的支付方式
+            alert('不支持的支付方式，請選擇信用卡或現金支付');
         }
 
         // 處理綠界金流支付
