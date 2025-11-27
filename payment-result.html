@@ -116,6 +116,29 @@
     </div>
 
     <script>
+        function getSessionTableNumber() {
+            if (typeof sessionStorage === 'undefined') return null;
+            try {
+                const value = sessionStorage.getItem('tableNumber');
+                return value ? value.trim() : null;
+            } catch (error) {
+                console.warn('讀取 sessionStorage 失敗:', error);
+                return null;
+            }
+        }
+
+        function clearDiningContextStorage() {
+            localStorage.removeItem('dineInTableNumber');
+            if (typeof sessionStorage !== 'undefined') {
+                try {
+                    sessionStorage.removeItem('tableNumber');
+                    sessionStorage.removeItem('diningMode');
+                } catch (error) {
+                    console.warn('無法清除 sessionStorage:', error);
+                }
+            }
+        }
+
         // 從 URL 參數獲取支付結果
         const urlParams = new URLSearchParams(window.location.search);
         const status = urlParams.get('status');
@@ -172,7 +195,8 @@
                 const orderData = JSON.parse(pendingOrder);
                 
                 // 檢查是否為內用訂單
-                const storedTableNumber = localStorage.getItem('dineInTableNumber');
+                const sessionTable = getSessionTableNumber();
+                const storedTableNumber = sessionTable || localStorage.getItem('dineInTableNumber');
                 const tableNumberValue = orderData.tableNumber || storedTableNumber || null;
                 const isDineIn = Boolean(tableNumberValue);
                 const url = isDineIn ? '/api/orders/dine-in' : '/api/orders/checkout';
@@ -215,9 +239,7 @@
                         console.log('✅ 訂單已提交到後端');
                         // 清除待處理訂單
                         localStorage.removeItem('pendingOrder');
-                        if (isDineIn && storedTableNumber) {
-                            localStorage.removeItem('dineInTableNumber');
-                        }
+                        clearDiningContextStorage();
                     }
                 })
                 .catch(error => {
@@ -229,6 +251,7 @@
         }
 
         function goToMenu() {
+            clearDiningContextStorage();
             window.location.href = 'menu.html';
         }
 

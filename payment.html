@@ -264,15 +264,17 @@
 
             try {
                 orderData = JSON.parse(storedData);
+                const sessionContext = getSessionDiningContext();
+                console.log('結帳頁讀取到的桌號 (sessionStorage):', sessionContext.tableNumber || '(無)');
                 const fallbackTableNumber = localStorage.getItem('dineInTableNumber');
-                if (fallbackTableNumber && !orderData.tableNumber) {
-                    orderData.tableNumber = fallbackTableNumber;
+                if (!orderData.tableNumber) {
+                    orderData.tableNumber = sessionContext.tableNumber || fallbackTableNumber || null;
                 }
                 if (!orderData.diningMode) {
-                    orderData.diningMode = fallbackTableNumber ? 'dine-in' : 'takeout';
+                    orderData.diningMode = sessionContext.diningMode || (orderData.tableNumber ? 'dine-in' : 'takeout');
                 }
                 if (!orderData.deliveryMethod) {
-                    orderData.deliveryMethod = fallbackTableNumber ? 'dine-in' : 'pickup';
+                    orderData.deliveryMethod = orderData.diningMode === 'dine-in' ? 'dine-in' : 'pickup';
                 }
                 displayOrderSummary();
                 prefillSpecialRequest();
@@ -309,6 +311,51 @@ function buildAggregationLine(item = {}) {
             return lines.join('\n');
         }
 
+        function getSessionDiningContext() {
+            if (typeof sessionStorage === 'undefined') {
+                return { tableNumber: null, diningMode: null };
+            }
+            try {
+                return {
+                    tableNumber: sessionStorage.getItem('tableNumber'),
+                    diningMode: sessionStorage.getItem('diningMode')
+                };
+            } catch (error) {
+                console.warn('讀取 sessionStorage 失敗:', error);
+                return { tableNumber: null, diningMode: null };
+            }
+        }
+
+        function saveSessionDiningContext(tableNumber, diningMode) {
+            if (typeof sessionStorage === 'undefined') return;
+            try {
+                if (tableNumber && tableNumber.trim()) {
+                    sessionStorage.setItem('tableNumber', tableNumber.trim());
+                } else {
+                    sessionStorage.removeItem('tableNumber');
+                }
+                if (diningMode) {
+                    sessionStorage.setItem('diningMode', diningMode);
+                } else {
+                    sessionStorage.removeItem('diningMode');
+                }
+            } catch (error) {
+                console.warn('無法寫入 sessionStorage:', error);
+            }
+        }
+
+        function clearDiningContextStorage() {
+            localStorage.removeItem('dineInTableNumber');
+            if (typeof sessionStorage !== 'undefined') {
+                try {
+                    sessionStorage.removeItem('tableNumber');
+                    sessionStorage.removeItem('diningMode');
+                } catch (error) {
+                    console.warn('無法清除 sessionStorage:', error);
+                }
+            }
+        }
+
         function getTableNumberInputElement() {
             return document.getElementById('tableNumber') || document.getElementById('orderTableNumber');
         }
@@ -320,82 +367,97 @@ function buildAggregationLine(item = {}) {
         }
 
         function normalizeTableNumber(value = '') {
-    return value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-}
+            return value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+        }
 
-function getCurrentTableNumber() {
-            const input = getTableNumberInputElement();
-    if (input && input.value.trim()) {
-        return normalizeTableNumber(input.value.trim());
-    }
-    if (orderData && orderData.tableNumber && orderData.tableNumber.trim()) {
-        return normalizeTableNumber(orderData.tableNumber.trim());
-    }
-    const stored = localStorage.getItem('dineInTableNumber');
-    return stored ? normalizeTableNumber(stored) : '';
-}
+        function getCurrentTableNumber() {
+            const inputValue = readTableNumberInputValue();
+            if (inputValue) {
+                return normalizeTableNumber(inputValue);
+            }
+            if (orderData && orderData.tableNumber && orderData.tableNumber.trim()) {
+                return normalizeTableNumber(orderData.tableNumber.trim());
+            }
+            const sessionContext = getSessionDiningContext();
+            if (sessionContext.tableNumber && sessionContext.tableNumber.trim()) {
+                return normalizeTableNumber(sessionContext.tableNumber.trim());
+            }
+            const stored = localStorage.getItem('dineInTableNumber');
+            return stored ? normalizeTableNumber(stored) : '';
+        }
 
-function resolveTableNumberForSubmission() {
-    const input = getTableNumberInputElement();
-    if (input && input.value && input.value.trim()) {
-        const normalized = normalizeTableNumber(input.value.trim());
-        input.value = normalized;
-        orderData = orderData || {};
-        orderData.tableNumber = normalized;
-        localStorage.setItem('dineInTableNumber', normalized);
-        return normalized;
-    }
-    const current = getCurrentTableNumber();
-    if (current) {
-        orderData = orderData || {};
-        orderData.tableNumber = current;
-        localStorage.setItem('dineInTableNumber', current);
-        return current;
-    }
-    return '';
-}
+        function resolveTableNumberForSubmission() {
+            const inputValue = readTableNumberInputValue();
+            if (inputValue) {
+                const normalized = normalizeTableNumber(inputValue);
+                const input = getTableNumberInputElement();
+                if (input) {
+                    input.value = normalized;
+                }
+                orderData = orderData || {};
+                orderData.tableNumber = normalized;
+                saveSessionDiningContext(normalized, 'dine-in');
+                localStorage.setItem('dineInTableNumber', normalized);
+                return normalized;
+            }
+            const current = getCurrentTableNumber();
+            if (current) {
+                orderData = orderData || {};
+                orderData.tableNumber = current;
+                saveSessionDiningContext(current, orderData.diningMode || 'dine-in');
+                localStorage.setItem('dineInTableNumber', current);
+                return current;
+            }
+            return '';
+        }
 
         function initTableNumberSection() {
             const section = document.getElementById('dineInTableSection');
             const input = getTableNumberInputElement();
             if (!section || !input) return;
 
-    const stored = localStorage.getItem('dineInTableNumber');
-    const shouldShow = Boolean(
-        (orderData && (orderData.diningMode === 'dine-in' || orderData.deliveryMethod === 'dine-in')) ||
-        (stored && stored.trim())
-    );
+            const sessionContext = getSessionDiningContext();
+            const storedCandidate = (sessionContext.tableNumber && sessionContext.tableNumber.trim())
+                ? sessionContext.tableNumber.trim()
+                : (localStorage.getItem('dineInTableNumber') || '');
+            const shouldShow = Boolean(
+                (orderData && (orderData.diningMode === 'dine-in' || orderData.deliveryMethod === 'dine-in')) ||
+                (storedCandidate && storedCandidate.trim())
+            );
 
-    if (!shouldShow) {
-        section.style.display = 'none';
-        input.value = '';
-        return;
-    }
+            if (!shouldShow) {
+                section.style.display = 'none';
+                input.value = '';
+                return;
+            }
 
-    section.style.display = 'block';
-    const initialValue = normalizeTableNumber(
-        (orderData && orderData.tableNumber) ||
-        stored ||
-        ''
-    );
-    if (initialValue) {
-        input.value = initialValue;
-        orderData.tableNumber = initialValue;
-        orderData.diningMode = 'dine-in';
-    }
+            section.style.display = 'block';
+            const initialValue = normalizeTableNumber(
+                (orderData && orderData.tableNumber) ||
+                storedCandidate ||
+                ''
+            );
+            if (initialValue) {
+                input.value = initialValue;
+                orderData.tableNumber = initialValue;
+                orderData.diningMode = orderData.diningMode || 'dine-in';
+            }
 
-    input.addEventListener('input', () => {
-        const normalized = normalizeTableNumber(input.value);
-        if (input.value !== normalized) {
-            input.value = normalized;
+            input.addEventListener('input', () => {
+                const normalized = normalizeTableNumber(input.value);
+                if (input.value !== normalized) {
+                    input.value = normalized;
+                }
+                orderData.tableNumber = normalized || null;
+                if (normalized) {
+                    orderData.diningMode = 'dine-in';
+                    saveSessionDiningContext(normalized, 'dine-in');
+                    localStorage.setItem('dineInTableNumber', normalized);
+                } else {
+                    saveSessionDiningContext('', orderData.diningMode);
+                }
+            });
         }
-        orderData.tableNumber = normalized || null;
-        if (normalized) {
-            orderData.diningMode = 'dine-in';
-            localStorage.setItem('dineInTableNumber', normalized);
-        }
-    });
-}
 
         const STANDARD_SUGAR_LEVELS = ['無糖', '微糖', '半糖', '少糖', '全糖', '正常糖'];
         const STANDARD_ICE_LEVELS = ['去冰', '微冰', '少冰', '正常冰', '熱飲'];
@@ -678,12 +740,15 @@ function resolveTableNumberForSubmission() {
                 // ⚠️ 關鍵修復 4：讀取訂單級別的備註輸入框（信用卡支付時也要讀取）
                 const noteInput = document.getElementById('orderSpecialRequest');
                 const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
-                const resolvedTableNumber = resolveTableNumberForSubmission();
+                const sessionContext = getSessionDiningContext();
+                const savedSessionTable = sessionContext.tableNumber ? normalizeTableNumber(sessionContext.tableNumber) : '';
+                const resolvedTableNumber = savedSessionTable || resolveTableNumberForSubmission();
                 const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
                 if (expectsTableNumber && !resolvedTableNumber) {
                     alert('請輸入內用桌號後再送出');
                     return;
                 }
+                console.log('結帳頁讀取到的桌號 (sessionStorage):', savedSessionTable || '(無)');
                 
                 // 🔍 調試：記錄客人輸入的備註內容
                 console.log('客人輸入的備註內容 (信用卡支付):', specialRequestValue);
@@ -691,7 +756,7 @@ function resolveTableNumberForSubmission() {
                 // 步驟 1：從後端獲取 JSON 參數（不是 HTML）
                 const tableNumber = expectsTableNumber ? (resolvedTableNumber || null) : null;
                 orderData.tableNumber = tableNumber;
-                orderData.diningMode = expectsTableNumber ? 'dine-in' : (orderData.diningMode || 'takeout');
+                orderData.diningMode = expectsTableNumber ? 'dine-in' : (sessionContext.diningMode || orderData.diningMode || 'takeout');
                 const diningMode = orderData.diningMode;
 
                 const payload = {
@@ -765,7 +830,9 @@ function resolveTableNumberForSubmission() {
             // ⚠️ 關鍵修復 2：讀取訂單級別的備註輸入框（現金支付時也要讀取）
             const noteInput = document.getElementById('orderSpecialRequest');
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
-            const resolvedTableNumber = resolveTableNumberForSubmission();
+            const sessionContext = getSessionDiningContext();
+            const savedSessionTable = sessionContext.tableNumber ? normalizeTableNumber(sessionContext.tableNumber) : '';
+            const resolvedTableNumber = savedSessionTable || resolveTableNumberForSubmission();
             const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
             if (expectsTableNumber && !resolvedTableNumber) {
                 alert('請輸入內用桌號後再送出');
@@ -775,6 +842,7 @@ function resolveTableNumberForSubmission() {
             }
             const finalTableNumber = expectsTableNumber ? resolvedTableNumber : '';
             console.log('前端準備送出的桌號:', expectsTableNumber ? finalTableNumber : '(非內用)');
+            console.log('結帳頁讀取到的桌號 (sessionStorage):', savedSessionTable || '(無)');
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
@@ -785,10 +853,7 @@ function resolveTableNumberForSubmission() {
             }
             orderData.specialRequest = specialRequestValue || null; // 明確設置 specialRequest
             orderData.tableNumber = expectsTableNumber ? (finalTableNumber || null) : null;
-            orderData.diningMode = expectsTableNumber ? 'dine-in' : (orderData.diningMode || 'takeout');
-
-            orderData.tableNumber = expectsTableNumber ? (finalTableNumber || null) : null;
-            orderData.diningMode = expectsTableNumber ? 'dine-in' : (orderData.diningMode || 'takeout');
+            orderData.diningMode = expectsTableNumber ? 'dine-in' : (sessionContext.diningMode || orderData.diningMode || 'takeout');
 
             // 檢查是否為內用訂單
             const isDineIn = orderData.diningMode === 'dine-in';
@@ -839,9 +904,7 @@ function resolveTableNumberForSubmission() {
                 if (data.success) {
                     // 清除待處理訂單
                     localStorage.removeItem('pendingOrder');
-                    if (isDineIn && storedTableNumber) {
-                        localStorage.removeItem('dineInTableNumber');
-                    }
+                    clearDiningContextStorage();
                     
                     // 清空購物車
                     localStorage.removeItem('cart');

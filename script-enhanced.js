@@ -781,6 +781,26 @@ let isCheckingOut = false; // 防止重複點擊的標誌
 const STANDARD_SUGAR_LEVELS = ['無糖', '微糖', '半糖', '少糖', '全糖', '正常糖'];
 const STANDARD_ICE_LEVELS = ['去冰', '微冰', '少冰', '正常冰', '熱飲'];
 
+const persistDiningContextToSession = (tableNumber, diningMode) => {
+    if (typeof sessionStorage === 'undefined') {
+        return;
+    }
+    try {
+        if (tableNumber && tableNumber.trim()) {
+            sessionStorage.setItem('tableNumber', tableNumber.trim());
+        } else {
+            sessionStorage.removeItem('tableNumber');
+        }
+        if (diningMode) {
+            sessionStorage.setItem('diningMode', diningMode);
+        } else {
+            sessionStorage.removeItem('diningMode');
+        }
+    } catch (error) {
+        console.warn('無法保存桌號到 sessionStorage:', error);
+    }
+};
+
 const parseLegacyCustomizations = (customizations = '') => {
     const result = {
         sugarLevel: '',
@@ -936,10 +956,14 @@ const initCheckout = () => {
             checkoutBtn.textContent = '處理中...';
             checkoutBtn.style.opacity = '0.6';
             const orderLevelSpecialRequest = buildSpecialRequestSummary(window.cart || []);
-            const dineInTableNumber = localStorage.getItem('dineInTableNumber');
+            const sessionTableNumber = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('tableNumber'))
+                ? sessionStorage.getItem('tableNumber').trim()
+                : null;
+            const dineInTableNumber = sessionTableNumber || localStorage.getItem('dineInTableNumber');
             const isDineInOrder = Boolean(dineInTableNumber);
             const orderDeliveryMethod = isDineInOrder ? 'dine-in' : 'pickup';
             const diningMode = isDineInOrder ? 'dine-in' : 'takeout';
+            persistDiningContextToSession(dineInTableNumber || '', diningMode);
 
             // 準備訂單數據
             let orderData = {
