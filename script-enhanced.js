@@ -375,17 +375,43 @@ window.renderCartItems = () => {
                     customizations = '';
                 }
                 
-                console.log(`渲染購物車項目 ${index}:`, { name, price, quantity, customizations, originalItem: item });
-        // 構建完整的商品顯示名稱
+                // 獲取特殊需求（從 item.specialRequest，不要從 customizations 中提取）
+                let specialRequest = item.specialRequest || '';
+                if (!specialRequest && item.originalItem && item.originalItem.specialRequest) {
+                    specialRequest = item.originalItem.specialRequest;
+                }
+                
+                console.log(`渲染購物車項目 ${index}:`, { 
+                    name, 
+                    price, 
+                    quantity, 
+                    customizations, 
+                    specialRequest,
+                    originalItem: item 
+                });
+        
+        // ⚠️ 重要：分離甜度冰塊（customizations）和特殊需求（specialRequest）
+        // 1. 商品名稱 + 甜度冰塊（在括號內）
         let displayName = name;
         if (customizations && customizations.trim()) {
             displayName += ` (${customizations.trim()})`;
+        }
+        
+        // 2. 特殊需求（獨立顯示在下方，紅色小字）
+        let specialRequestHtml = '';
+        if (specialRequest && specialRequest.trim()) {
+            specialRequestHtml = `
+                <div class="cart-item-special-request" style="color: #e74c3c; font-size: 12px; margin-top: 4px; font-weight: 500;">
+                    備註：${specialRequest.trim()}
+                </div>
+            `;
         }
         
         return `
             <div class="cart-item" data-index="${index}">
                 <div class="cart-item-info">
                     <div class="cart-item-title">${displayName}</div>
+                    ${specialRequestHtml}
                     <div class="cart-item-price">NT$ ${price}</div>
                 </div>
                 <div class="cart-item-quantity">

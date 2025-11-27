@@ -265,32 +265,28 @@
                 const subtotal = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
                 total += subtotal;
 
+                // ⚠️ 重要：分離甜度冰塊（customizations）和特殊需求（specialRequest）
+                // 1. 商品名稱 + 甜度冰塊（在括號內）
+                let displayName = item.name;
+                if (item.customizations && item.customizations.trim()) {
+                    displayName += ` (${item.customizations.trim()})`;
+                }
+                
                 // 構建商品顯示內容
                 let itemHTML = `
                     <div class="order-item-main">
-                        <span>${item.name} x ${item.quantity}</span>
+                        <span>${displayName} x ${item.quantity}</span>
                         <span>NT$ ${subtotal.toLocaleString()}</span>
                     </div>
                 `;
 
-                // 顯示特殊需求（客制化信息和特殊需求）
-                const specialDetails = [];
-                
-                // 添加客制化信息（如果有）
-                if (item.customizations && item.customizations.trim()) {
-                    specialDetails.push(item.customizations.trim());
-                }
-                
-                // 添加特殊需求（如果有）
+                // 2. 特殊需求（獨立顯示在下方，紅色小字）
                 if (item.specialRequest && item.specialRequest.trim()) {
-                    specialDetails.push(`特殊需求: ${item.specialRequest.trim()}`);
-                }
-
-                // 如果有特殊需求，顯示在商品下方
-                if (specialDetails.length > 0) {
                     itemHTML += `
                         <div class="order-item-details">
-                            <span class="order-item-special">${specialDetails.join(' | ')}</span>
+                            <span class="order-item-special" style="color: #e74c3c; font-size: 12px; font-weight: 500;">
+                                備註：${item.specialRequest.trim()}
+                            </span>
                         </div>
                     `;
                 }
