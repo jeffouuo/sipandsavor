@@ -636,7 +636,11 @@ function resolveTableNumberForSubmission() {
             const resolvedTableNumber = resolveTableNumberForSubmission();
             const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
             const finalTableNumber = expectsTableNumber ? resolvedTableNumber : '';
-            console.log('前端準備送出的桌號:', expectsTableNumber ? (finalTableNumber || '(未填寫)') : '(非內用)');
+            if (expectsTableNumber && !finalTableNumber) {
+                alert('請輸入內用桌號後再送出');
+                return;
+            }
+            console.log('前端準備送出的桌號:', expectsTableNumber ? finalTableNumber : '(非內用)');
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
@@ -676,6 +680,10 @@ function resolveTableNumberForSubmission() {
                 const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
                 const resolvedTableNumber = resolveTableNumberForSubmission();
                 const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
+                if (expectsTableNumber && !resolvedTableNumber) {
+                    alert('請輸入內用桌號後再送出');
+                    return;
+                }
                 
                 // 🔍 調試：記錄客人輸入的備註內容
                 console.log('客人輸入的備註內容 (信用卡支付):', specialRequestValue);
@@ -697,6 +705,7 @@ function resolveTableNumberForSubmission() {
 
                 console.log('送出的特殊需求:', payload.specialRequest);
                 console.log('準備送出的桌號:', payload.tableNumber || (expectsTableNumber ? '(未填寫)' : '(非內用)'));
+                console.log('前端送出的 Payload:', payload);
 
                 const response = await fetch('/api/ecpay/get-params', {
                     method: 'POST',
@@ -758,8 +767,14 @@ function resolveTableNumberForSubmission() {
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
             const resolvedTableNumber = resolveTableNumberForSubmission();
             const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
+            if (expectsTableNumber && !resolvedTableNumber) {
+                alert('請輸入內用桌號後再送出');
+                btn.disabled = false;
+                btn.textContent = '前往支付';
+                return;
+            }
             const finalTableNumber = expectsTableNumber ? resolvedTableNumber : '';
-            console.log('前端準備送出的桌號:', expectsTableNumber ? (finalTableNumber || '(未填寫)') : '(非內用)');
+            console.log('前端準備送出的桌號:', expectsTableNumber ? finalTableNumber : '(非內用)');
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
@@ -769,6 +784,9 @@ function resolveTableNumberForSubmission() {
                 orderData = {};
             }
             orderData.specialRequest = specialRequestValue || null; // 明確設置 specialRequest
+            orderData.tableNumber = expectsTableNumber ? (finalTableNumber || null) : null;
+            orderData.diningMode = expectsTableNumber ? 'dine-in' : (orderData.diningMode || 'takeout');
+
             orderData.tableNumber = expectsTableNumber ? (finalTableNumber || null) : null;
             orderData.diningMode = expectsTableNumber ? 'dine-in' : (orderData.diningMode || 'takeout');
 
@@ -806,7 +824,7 @@ function resolveTableNumberForSubmission() {
             console.log('[Debug] 前端發送的 specialRequest:', payload.specialRequest);
             console.log('送出的特殊需求:', payload.specialRequest);
             console.log('準備送出的桌號:', payload.tableNumber || '(未填寫)');
-            console.log('最終送出的 Payload:', payload);
+            console.log('前端送出的 Payload:', payload);
             console.log('[Debug] 確認 specialRequest 是否正確包含在 payload 中:', payload.hasOwnProperty('specialRequest'));
 
             fetch(url, {

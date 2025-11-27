@@ -27,6 +27,7 @@ async function getCachedProduct(name) {
     }
     
     try {
+        console.log('[Create Order Debug] 收到 body:', JSON.stringify(req.body, null, 2));
         const product = await Product.findOne({ name });
         productCache.set(name, {
             product,
@@ -232,6 +233,7 @@ router.post('/checkout', [
             paymentMethod = 'cash',
             deliveryMethod = 'pickup',
             tableNumber: tableNumberFromBody = '',
+            tableNum: altTableNumber = '',
             diningMode: diningModeFromBody = null,
             notes: notesFromBody = null,
             note: noteFromBody = null, // 兼容 note 字段
@@ -268,10 +270,10 @@ router.post('/checkout', [
         console.log('  - specialRequestFromBody:', specialRequestFromBody);
         console.log('  - 最終使用的 specialRequest:', userSpecialRequest);
 
-        const tableNumberFromRequest = typeof tableNumberFromBody === 'string'
+        const tableNumberFromRequest = (typeof tableNumberFromBody === 'string' && tableNumberFromBody.trim())
             ? tableNumberFromBody.trim()
-            : '';
-        console.log('[API Debug] checkout tableNumber:', tableNumberFromRequest || '(空值)');
+            : (typeof altTableNumber === 'string' && altTableNumber.trim() ? altTableNumber.trim() : '');
+        console.log('[Create Order Debug] 準備存入的桌號:', tableNumberFromRequest || '(空值)');
         const resolvedTableNumber = tableNumberFromRequest || null;
         const resolvedDiningMode = diningModeFromBody || (resolvedTableNumber ? 'dine-in' : (deliveryMethod === 'dine-in' ? 'dine-in' : 'takeout'));
         const resolvedDeliveryMethod = resolvedDiningMode === 'dine-in' ? 'dine-in' : deliveryMethod;
@@ -511,6 +513,9 @@ router.post('/checkout', [
             createdAt: new Date(),
             updatedAt: new Date()
         };
+
+        orderData.tableNumber = resolvedTableNumber || '';
+        orderData.diningMode = resolvedDiningMode;
         
         // ⚠️ 關鍵：只有在 specialRequest 有值時才添加到 orderData
         if (userSpecialRequest) {
