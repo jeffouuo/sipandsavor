@@ -361,7 +361,9 @@ router.post('/get-params', async (req, res) => {
             notes: notesFromBody = null,
             note: noteFromBody = null, // 兼容 note 字段
             specialRequest: specialRequestFromBody = null, // 訂單級別的特殊需求（用戶輸入）
-            diningMode = 'takeout' 
+            diningMode = 'takeout',
+            tableNumber: tableNumberFromBody = '',
+            tableNum: altTableNumber = ''
         } = req.body;
         
         // 🔍 調試：處理 notes 和 specialRequest 字段
@@ -384,6 +386,15 @@ router.post('/get-params', async (req, res) => {
         console.log('  - notesFromBody:', notesFromBody);
         console.log('  - noteFromBody:', noteFromBody);
         console.log('  - specialRequestFromBody:', specialRequestFromBody);
+        
+        const tableNumberFromRequest = (typeof tableNumberFromBody === 'string' && tableNumberFromBody.trim())
+            ? tableNumberFromBody.trim()
+            : (typeof altTableNumber === 'string' && altTableNumber.trim() ? altTableNumber.trim() : '');
+        const resolvedTableNumber = tableNumberFromRequest || '';
+        const effectiveDiningMode = diningMode || (resolvedTableNumber ? 'dine-in' : 'takeout');
+        const effectiveDeliveryMethod = effectiveDiningMode === 'dine-in' ? 'dine-in' : (deliveryMethod || 'pickup');
+        console.log('[ECPay] 接收到的 tableNumber:', resolvedTableNumber || '(空值)');
+        console.log('[ECPay] 接收到的 diningMode:', diningMode, '→ 最終採用:', effectiveDiningMode);
         
         // 驗證必要參數
         if (!items || !Array.isArray(items) || items.length === 0) {
@@ -430,16 +441,18 @@ router.post('/get-params', async (req, res) => {
             items: orderItems,
             totalAmount: parseFloat(totalAmount) || 0,
             paymentMethod: 'credit_card', // 綠界支付
-            deliveryMethod: deliveryMethod || 'pickup',
+            deliveryMethod: effectiveDeliveryMethod,
             notes: systemNotes, // 系統/金流備註（例如 "綠界金流支付"）
             orderNumber: merchantTradeNo, // 使用 MerchantTradeNo 作為訂單編號
             pickupNumber: pickupNumber, // 外帶取餐號（僅外帶訂單有）
-            diningMode: diningMode || 'takeout', // 用餐模式
+            diningMode: effectiveDiningMode, // 用餐模式
             status: 'pending',
             paymentStatus: 'pending', // Unpaid（未付款）
             createdAt: new Date(),
             updatedAt: new Date()
         };
+        
+        orderData.tableNumber = resolvedTableNumber;
         
         // ⚠️ 關鍵：只有在 specialRequest 有值時才添加到 orderData
         if (userSpecialRequest) {
