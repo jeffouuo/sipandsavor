@@ -381,20 +381,36 @@ window.renderCartItems = () => {
                     specialRequest = item.originalItem.specialRequest;
                 }
                 
+                // ⚠️ 重要：清理 customizations，確保不包含 specialRequest 的內容
+                // 如果 customizations 中包含了 specialRequest，則從 customizations 中移除
+                let cleanCustomizations = customizations || '';
+                if (specialRequest && specialRequest.trim() && cleanCustomizations) {
+                    // 從 customizations 中移除 specialRequest 的內容
+                    const specialRequestText = specialRequest.trim();
+                    // 移除整個 specialRequest 文本（包括前後的逗號和空格）
+                    cleanCustomizations = cleanCustomizations
+                        .replace(new RegExp(`,\\s*${specialRequestText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g'), '') // 移除 ", 特殊需求"
+                        .replace(new RegExp(`${specialRequestText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*,`, 'g'), '') // 移除 "特殊需求, "
+                        .replace(new RegExp(specialRequestText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '') // 移除單獨的 "特殊需求"
+                        .replace(/,\s*,/g, ',') // 清理多餘的逗號
+                        .replace(/^,\s*|\s*,$/g, '') // 清理開頭和結尾的逗號
+                        .trim();
+                }
+                
                 console.log(`渲染購物車項目 ${index}:`, { 
                     name, 
                     price, 
                     quantity, 
-                    customizations, 
+                    customizations: cleanCustomizations, 
                     specialRequest,
                     originalItem: item 
                 });
         
         // ⚠️ 重要：分離甜度冰塊（customizations）和特殊需求（specialRequest）
-        // 1. 商品名稱 + 甜度冰塊（在括號內）
+        // 1. 商品名稱 + 甜度冰塊（在括號內，只顯示清理後的 customizations）
         let displayName = name;
-        if (customizations && customizations.trim()) {
-            displayName += ` (${customizations.trim()})`;
+        if (cleanCustomizations && cleanCustomizations.trim()) {
+            displayName += ` (${cleanCustomizations.trim()})`;
         }
         
         // 2. 特殊需求（獨立顯示在下方，紅色小字）

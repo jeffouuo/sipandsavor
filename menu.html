@@ -1356,7 +1356,9 @@
                 // 構建商品名稱（只顯示基本名稱，客製化信息放在customizations字段中）
                 let displayName = name;
                 
-                // 構建客制化字符串
+                // ⚠️ 重要：構建客制化字符串（只包含甜度、冰塊、加料，不包含特殊需求）
+                // customizations 只包含固定選項（甜度、冰塊、加料）
+                // specialRequest 是獨立欄位，不應混入 customizations
                 let customizations = '';
                 const parts = [];
                 if (sugar) parts.push(sugar);
@@ -1364,9 +1366,7 @@
                 if (selectedToppings.length > 0) {
                     parts.push(`+${selectedToppings.join(',')}`);
                 }
-                if (specialRequest && specialRequest.trim()) {
-                    parts.push(specialRequest);
-                }
+                // ⚠️ 不要將 specialRequest 加入 customizations
                 customizations = parts.join(', ');
                 
                 // 添加到購物車

@@ -266,10 +266,24 @@
                 total += subtotal;
 
                 // ⚠️ 重要：分離甜度冰塊（customizations）和特殊需求（specialRequest）
-                // 1. 商品名稱 + 甜度冰塊（在括號內）
+                // 1. 清理 customizations，確保不包含 specialRequest 的內容
+                let cleanCustomizations = item.customizations || '';
+                if (item.specialRequest && item.specialRequest.trim() && cleanCustomizations) {
+                    // 從 customizations 中移除 specialRequest 的內容
+                    const specialRequestText = item.specialRequest.trim();
+                    cleanCustomizations = cleanCustomizations
+                        .replace(new RegExp(`,\\s*${specialRequestText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g'), '') // 移除 ", 特殊需求"
+                        .replace(new RegExp(`${specialRequestText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*,`, 'g'), '') // 移除 "特殊需求, "
+                        .replace(new RegExp(specialRequestText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '') // 移除單獨的 "特殊需求"
+                        .replace(/,\s*,/g, ',') // 清理多餘的逗號
+                        .replace(/^,\s*|\s*,$/g, '') // 清理開頭和結尾的逗號
+                        .trim();
+                }
+                
+                // 2. 商品名稱 + 甜度冰塊（在括號內，只顯示清理後的 customizations）
                 let displayName = item.name;
-                if (item.customizations && item.customizations.trim()) {
-                    displayName += ` (${item.customizations.trim()})`;
+                if (cleanCustomizations && cleanCustomizations.trim()) {
+                    displayName += ` (${cleanCustomizations.trim()})`;
                 }
                 
                 // 構建商品顯示內容
