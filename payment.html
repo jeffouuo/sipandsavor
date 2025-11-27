@@ -738,11 +738,17 @@ function buildAggregationLine(item = {}) {
         async function handleEcpayPayment() {
             try {
                 // ⚠️ 關鍵修復 4：讀取訂單級別的備註輸入框（信用卡支付時也要讀取）
-                const noteInput = document.getElementById('orderSpecialRequest');
-                const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
-                const sessionContext = getSessionDiningContext();
-                const savedSessionTable = sessionContext.tableNumber ? normalizeTableNumber(sessionContext.tableNumber) : '';
-                const resolvedTableNumber = savedSessionTable || resolveTableNumberForSubmission();
+            const noteInput = document.getElementById('orderSpecialRequest');
+            const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
+            const sessionContext = getSessionDiningContext();
+            const storageTableRaw = sessionContext.tableNumber ? sessionContext.tableNumber.trim() : '';
+            const savedSessionTable = storageTableRaw ? normalizeTableNumber(storageTableRaw) : '';
+            const inputTableRaw = readTableNumberInputValue();
+            const normalizedInputTable = inputTableRaw ? normalizeTableNumber(inputTableRaw) : '';
+            let resolvedTableNumber = savedSessionTable || normalizedInputTable;
+            if (!resolvedTableNumber) {
+                resolvedTableNumber = resolveTableNumberForSubmission();
+            }
                 const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
                 if (expectsTableNumber && !resolvedTableNumber) {
                     alert('請輸入內用桌號後再送出');
@@ -828,11 +834,17 @@ function buildAggregationLine(item = {}) {
             btn.textContent = '處理中...';
 
             // ⚠️ 關鍵修復 2：讀取訂單級別的備註輸入框（現金支付時也要讀取）
-            const noteInput = document.getElementById('orderSpecialRequest');
-            const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
-            const sessionContext = getSessionDiningContext();
-            const savedSessionTable = sessionContext.tableNumber ? normalizeTableNumber(sessionContext.tableNumber) : '';
-            const resolvedTableNumber = savedSessionTable || resolveTableNumberForSubmission();
+                const noteInput = document.getElementById('orderSpecialRequest');
+                const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
+                const sessionContext = getSessionDiningContext();
+                const storageTableRaw = sessionContext.tableNumber ? sessionContext.tableNumber.trim() : '';
+                const savedSessionTable = storageTableRaw ? normalizeTableNumber(storageTableRaw) : '';
+                const inputTableRaw = readTableNumberInputValue();
+                const normalizedInputTable = inputTableRaw ? normalizeTableNumber(inputTableRaw) : '';
+                let resolvedTableNumber = savedSessionTable || normalizedInputTable;
+                if (!resolvedTableNumber) {
+                    resolvedTableNumber = resolveTableNumberForSubmission();
+                }
             const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
             if (expectsTableNumber && !resolvedTableNumber) {
                 alert('請輸入內用桌號後再送出');
@@ -889,7 +901,10 @@ function buildAggregationLine(item = {}) {
             console.log('[Debug] 前端發送的 specialRequest:', payload.specialRequest);
             console.log('送出的特殊需求:', payload.specialRequest);
             console.log('準備送出的桌號:', payload.tableNumber || '(未填寫)');
+                console.log('前端送出的 Payload:', payload);
+                console.log('🚀 最終送出的 Payload:', payload);
             console.log('前端送出的 Payload:', payload);
+            console.log('🚀 最終送出的 Payload:', payload);
             console.log('[Debug] 確認 specialRequest 是否正確包含在 payload 中:', payload.hasOwnProperty('specialRequest'));
 
             fetch(url, {
