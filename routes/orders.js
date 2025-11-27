@@ -1557,6 +1557,7 @@ router.get('/admin/all', adminAuth, [
             console.log('📋 第一筆訂單的 notes 字段:', orders[0].notes);
             console.log('📋 第一筆訂單的 note 字段:', orders[0].note);
             console.log('📋 第一筆訂單的所有字段:', Object.keys(orders[0].toObject ? orders[0].toObject() : orders[0]));
+            console.log('[API Debug] Order ID:', orders[0]._id, 'Table:', orders[0].tableNumber);
             console.log('═══════════════════════════════════════════════════════════');
         }
         
@@ -1569,6 +1570,9 @@ router.get('/admin/all', adminAuth, [
                 notes: order.notes,
                 note: order.note
             })));
+            orders.forEach(order => {
+                console.log('[API Debug] Order ID:', order._id, 'Table:', order.tableNumber);
+            });
         }
 
         // 計算分頁信息

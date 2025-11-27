@@ -852,6 +852,7 @@ function renderOrdersTable(orders, pagination) {
     orders.forEach(order => {
         console.log('🟢 後台渲染訂單:', order._id);
         console.log('🟢 訂單項目:', order.items);
+        console.log('檢查桌號:', order.tableNumber, '用餐模式:', order.diningMode);
         
         // 正確顯示商品和數量（包含甜度/冰塊與加料）
         const itemsHtml = (order.items || []).map(item => {
@@ -927,15 +928,13 @@ function renderOrdersTable(orders, pagination) {
         let userDisplay = '';
         const isDineInDisplay = order.diningMode === 'dine-in' || order.orderType === 'dine-in' || order.deliveryMethod === 'dine-in';
         if (isDineInDisplay) {
-            const tableLabel = order.tableNumber ? `內用: ${order.tableNumber}` : '內用';
-            userDisplay = `<span style="color: #4CAF50; font-weight: bold; background: #e8f5e8; padding: 4px 8px; border-radius: 4px;">${tableLabel}</span>`;
+            const tableLabel = order.tableNumber ? `內用: ${order.tableNumber}` : '內用: 未填寫';
+            userDisplay = `<span class="text-blue-600 font-bold">${tableLabel}</span>`;
         } else if (order.pickupNumber && order.pickupNumber.trim()) {
-            // 優先顯示 pickupNumber（與ECPay付款完成後顯示的號碼一致）
-            userDisplay = `<span style="color: #2196F3; font-weight: bold; background: #e3f2fd; padding: 4px 8px; border-radius: 4px;">外帶: ${order.pickupNumber}</span>`;
+            userDisplay = `<span class="text-green-600 font-bold">外帶: ${order.pickupNumber}</span>`;
         } else if (order.orderNumber && order.orderNumber.trim()) {
-            // 如果沒有 pickupNumber，則顯示 orderNumber 的最後4位（向後兼容）
             const orderNumberLast4 = order.orderNumber.slice(-4);
-            userDisplay = `<span style="color: #2196F3; font-weight: bold; background: #e3f2fd; padding: 4px 8px; border-radius: 4px;">外帶: ${orderNumberLast4}</span>`;
+            userDisplay = `<span class="text-green-600 font-bold">外帶: ${orderNumberLast4}</span>`;
         } else {
             userDisplay = order.user?.username || 'N/A';
         }
