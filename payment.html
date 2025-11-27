@@ -616,6 +616,10 @@ function initTableNumberSection() {
             const noteInput = document.getElementById('orderSpecialRequest');
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
             const tableNumberValue = syncTableNumberFromInput();
+            const tableNumberInput = document.getElementById('orderTableNumber');
+            console.log('送出的桌號:', tableNumberInput ? tableNumberInput.value : '(無輸入)');
+            const tableNumberInput = document.getElementById('orderTableNumber');
+            console.log('送出的桌號:', tableNumberInput ? tableNumberInput.value : '(無輸入)');
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
@@ -738,6 +742,8 @@ function initTableNumberSection() {
             const noteInput = document.getElementById('orderSpecialRequest');
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
             const tableNumberValue = syncTableNumberFromInput();
+            const tableNumberInput = document.getElementById('orderTableNumber');
+            console.log('送出的桌號:', tableNumberInput ? tableNumberInput.value : '(無輸入)');
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);

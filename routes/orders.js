@@ -269,6 +269,8 @@ router.post('/checkout', [
         console.log('  - 最終使用的 specialRequest:', userSpecialRequest);
 
         const resolvedTableNumber = tableNumberFromBody ? String(tableNumberFromBody).trim() : null;
+        console.log('API 接收到的桌號:', req.body.tableNumber, '→', resolvedTableNumber);
+        console.log('API 接收到的桌號:', req.body.tableNumber, '→', resolvedTableNumber);
         const resolvedDiningMode = diningModeFromBody || (resolvedTableNumber ? 'dine-in' : (deliveryMethod === 'dine-in' ? 'dine-in' : 'takeout'));
         const resolvedDeliveryMethod = resolvedDiningMode === 'dine-in' ? 'dine-in' : deliveryMethod;
         const resolvedOrderType = resolvedDiningMode === 'dine-in' ? 'dine-in' : 'regular';
