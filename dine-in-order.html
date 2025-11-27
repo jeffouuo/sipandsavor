@@ -806,6 +806,12 @@
             
             // 將桌號保存到localStorage，供結帳時使用
             localStorage.setItem('dineInTableNumber', tableNumber);
+            try {
+                sessionStorage.setItem('tableNumber', tableNumber);
+                sessionStorage.setItem('diningMode', 'dine-in');
+            } catch (error) {
+                console.warn('無法寫入 sessionStorage:', error);
+            }
             
             // 隱藏桌號輸入區域，顯示點餐區域
             document.getElementById('tableInputSection').style.display = 'none';
