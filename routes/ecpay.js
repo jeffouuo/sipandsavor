@@ -237,6 +237,8 @@ router.post('/get-params', async (req, res) => {
         console.log('📥 [ECPay] 前端傳來的 Body:', JSON.stringify(req.body, null, 2));
         console.log('📥 [ECPay] req.body.notes:', req.body.notes);
         console.log('📥 [ECPay] req.body.note:', req.body.note);
+        console.log('[Debug] [ECPay] 接收到的特殊需求 (req.body.specialRequest):', req.body.specialRequest);
+        console.log('[Debug] [ECPay] 接收到的特殊需求 (req.body.note):', req.body.note);
         console.log('═══════════════════════════════════════════════════════════');
         
         const { 
@@ -254,8 +256,11 @@ router.post('/get-params', async (req, res) => {
         // notes: 系統/金流備註（例如 "綠界金流支付"）
         // specialRequest: 用戶前台輸入的特殊需求（例如 "多冰"）
         const systemNotes = noteFromBody || notesFromBody || '綠界金流支付';
-        const userSpecialRequest = specialRequestFromBody || null;
+        // ⚠️ 重要：優先使用 specialRequest，如果沒有則嘗試 note（向後兼容）
+        const userSpecialRequest = specialRequestFromBody || noteFromBody || null;
         
+        console.log('[Debug] [ECPay] 接收到的特殊需求 (req.body.specialRequest):', req.body.specialRequest);
+        console.log('[Debug] [ECPay] 接收到的特殊需求 (req.body.note):', req.body.note);
         console.log('🔍 [ECPay] 處理後的字段值:');
         console.log('  - systemNotes (notes):', systemNotes);
         console.log('  - userSpecialRequest (specialRequest):', userSpecialRequest);
@@ -320,11 +325,12 @@ router.post('/get-params', async (req, res) => {
             updatedAt: new Date()
         };
         
-        console.log('🔍 [ECPay] 創建的訂單數據:', {
+        console.log('[Debug] [ECPay] 創建的訂單數據 (orderData):', {
             notes: orderData.notes,
             specialRequest: orderData.specialRequest,
             orderNumber: orderData.orderNumber
         });
+        console.log('[Debug] [ECPay] 確認 specialRequest 是否正確賦值:', orderData.specialRequest);
         
         let order = null;
         try {
@@ -334,8 +340,9 @@ router.post('/get-params', async (req, res) => {
             // 🔍 全鏈路調試：記錄存入後的完整資料
             console.log('═══════════════════════════════════════════════════════════');
             console.log('💾 [ECPay] 存入後的資料:', JSON.stringify(savedOrder.toObject(), null, 2));
-            console.log('💾 [ECPay] savedOrder.notes:', savedOrder.notes);
-            console.log('💾 [ECPay] savedOrder.note:', savedOrder.note);
+            console.log('[Debug] [ECPay] savedOrder.notes:', savedOrder.notes);
+            console.log('[Debug] [ECPay] savedOrder.specialRequest:', savedOrder.specialRequest);
+            console.log('[Debug] [ECPay] 確認 specialRequest 是否成功存入:', savedOrder.specialRequest);
             console.log('═══════════════════════════════════════════════════════════');
             
             console.log('✅ 訂單已建立到資料庫（狀態：Unpaid）:', {

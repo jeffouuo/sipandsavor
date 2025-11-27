@@ -143,6 +143,8 @@ router.post('/checkout', [
     console.log('📥 前端傳來的 Body:', JSON.stringify(req.body, null, 2));
     console.log('📥 req.body.notes:', req.body.notes);
     console.log('📥 req.body.note:', req.body.note);
+    console.log('[Debug] 接收到的特殊需求 (req.body.specialRequest):', req.body.specialRequest);
+    console.log('[Debug] 接收到的特殊需求 (req.body.note):', req.body.note);
     console.log('═══════════════════════════════════════════════════════════');
     
     console.log('🚀 結帳請求開始:', new Date().toISOString());
@@ -184,8 +186,11 @@ router.post('/checkout', [
         // notes: 系統/金流備註（例如 "綠界金流支付"、"前台結帳"）
         // specialRequest: 用戶前台輸入的特殊需求（例如 "多冰"）
         const systemNotes = notesFromBody || noteFromBody || '前台結帳';
-        const userSpecialRequest = specialRequestFromBody || null;
+        // ⚠️ 重要：優先使用 specialRequest，如果沒有則嘗試 note（向後兼容）
+        const userSpecialRequest = specialRequestFromBody || noteFromBody || null;
         
+        console.log('[Debug] 接收到的特殊需求 (req.body.specialRequest):', req.body.specialRequest);
+        console.log('[Debug] 接收到的特殊需求 (req.body.note):', req.body.note);
         console.log('🔍 處理後的字段值:');
         console.log('  - systemNotes (notes):', systemNotes);
         console.log('  - userSpecialRequest (specialRequest):', userSpecialRequest);
@@ -425,11 +430,12 @@ router.post('/checkout', [
             updatedAt: new Date()
         };
         
-        console.log('🔍 創建的訂單數據:', {
+        console.log('[Debug] 創建的訂單數據 (orderData):', {
             notes: orderData.notes,
             specialRequest: orderData.specialRequest,
             orderNumber: orderData.orderNumber
         });
+        console.log('[Debug] 確認 specialRequest 是否正確賦值:', orderData.specialRequest);
         
         let order = null;
         
@@ -446,8 +452,9 @@ router.post('/checkout', [
                     // 🔍 全鏈路調試：記錄存入後的完整資料
                     console.log('═══════════════════════════════════════════════════════════');
                     console.log('💾 存入後的資料:', JSON.stringify(savedOrder.toObject(), null, 2));
-                    console.log('💾 savedOrder.notes:', savedOrder.notes);
-                    console.log('💾 savedOrder.note:', savedOrder.note);
+                    console.log('[Debug] savedOrder.notes:', savedOrder.notes);
+                    console.log('[Debug] savedOrder.specialRequest:', savedOrder.specialRequest);
+                    console.log('[Debug] 確認 specialRequest 是否成功存入:', savedOrder.specialRequest);
                     console.log('═══════════════════════════════════════════════════════════');
                     
                     console.log(`✅ 訂單保存成功！耗時: ${Date.now() - saveStart}ms`);

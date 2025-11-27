@@ -801,10 +801,8 @@ function renderOrdersTable(orders, pagination) {
         console.log('🔍 [後台前端] order.specialRequest (客人輸入):', order.specialRequest);
         console.log('🔍 [後台前端] order.notes (系統備註):', order.notes);
         
-        // 構建完整的備註顯示（包含商品特殊需求、客人備註和系統備註）
-        const buildNotesDisplay = () => {
-            const notesParts = [];
-            
+        // 構建特殊需求顯示（只顯示訂單級別的 specialRequest，不顯示系統備註）
+        const buildSpecialRequestDisplay = () => {
             // HTML 轉義函數（簡單版本）
             const escapeHtml = (text) => {
                 if (!text) return '';
@@ -816,28 +814,26 @@ function renderOrdersTable(orders, pagination) {
                     .replace(/'/g, '&#039;');
             };
             
+            const parts = [];
+            
             // 1. 商品級別的特殊需求（如果有）
             if (specialRequests.length > 0) {
                 const escapedItemRequests = specialRequests.map(req => escapeHtml(req)).join('; ');
-                notesParts.push(`<span style="color: #e74c3c; font-weight: 500;">${escapedItemRequests}</span>`);
+                parts.push(`<span style="color: #e74c3c; font-weight: 500;">${escapedItemRequests}</span>`);
             }
             
-            // 2. 訂單級別的客人備註（order.specialRequest）
-            const customerNote = order.specialRequest && order.specialRequest.trim() !== '' 
-                ? escapeHtml(order.specialRequest.trim())
-                : '無特殊需求';
-            notesParts.push(`<span style="color: #2196F3; font-weight: 500;">🗣️ 客人備註: ${customerNote}</span>`);
+            // 2. 訂單級別的特殊需求（order.specialRequest）
+            // ⚠️ 重要：如果有內容才顯示，如果為空則完全不顯示
+            if (order.specialRequest && order.specialRequest.trim() !== '') {
+                const escapedSpecialRequest = escapeHtml(order.specialRequest.trim());
+                parts.push(`<span style="color: #e74c3c; font-weight: bold;">${escapedSpecialRequest}</span>`);
+            }
             
-            // 3. 系統備註（order.notes）
-            const systemNote = order.notes && order.notes.trim() !== '' 
-                ? escapeHtml(order.notes.trim())
-                : '無';
-            notesParts.push(`<span style="color: #95a5a6; font-style: italic;">ℹ️ 系統備註: ${systemNote}</span>`);
-            
-            return notesParts.join('<br>');
+            // 如果沒有任何特殊需求，返回 null（不顯示）
+            return parts.length > 0 ? parts.join('<br>') : null;
         };
         
-        const notesDisplayHtml = buildNotesDisplay();
+        const specialRequestDisplayHtml = buildSpecialRequestDisplay();
         
         // 構建用戶/桌號/訂單號顯示
         let userDisplay = '';
@@ -861,9 +857,10 @@ function renderOrdersTable(orders, pagination) {
                 <td>${itemsText}</td>
                 <td>NT$ ${order.totalAmount}</td>
                 <td style="max-width: 300px; word-wrap: break-word; line-height: 1.5;">
-                    <div style="font-size: 13px; color: #2c3e50;">
-                        ${notesDisplayHtml}
-                    </div>
+                    ${specialRequestDisplayHtml 
+                        ? `<div style="font-size: 13px; color: #2c3e50;">${specialRequestDisplayHtml}</div>`
+                        : '<span style="color: #95a5a6; font-size: 13px;">—</span>'
+                    }
                 </td>
                 <td><span class="status-badge ${statusClass}">${getStatusText(order.status)}</span></td>
                 <td>${new Date(order.createdAt).toLocaleString()}</td>
