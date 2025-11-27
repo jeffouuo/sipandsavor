@@ -203,6 +203,17 @@
             </div>
         </div>
 
+        <div class="order-notes" style="margin-bottom: 30px;">
+            <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 1.2em;">訂單備註（選填）</h3>
+            <textarea 
+                id="orderSpecialRequest" 
+                placeholder="請輸入訂單備註或特殊需求（例如：多冰、少糖等）" 
+                style="width: 100%; min-height: 80px; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical;"
+                maxlength="200"
+            ></textarea>
+            <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">最多200個字符</small>
+        </div>
+
         <div class="payment-methods">
             <h3>支付方式</h3>
             <div class="payment-option" data-method="credit_card">
@@ -343,8 +354,16 @@
                 return;
             }
 
-            // 更新支付方式
+            // ⚠️ 關鍵修復 1：讀取訂單級別的備註輸入框
+            const noteInput = document.getElementById('orderSpecialRequest');
+            const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
+            
+            // 🔍 調試：記錄客人輸入的備註內容
+            console.log('客人輸入的備註內容:', specialRequestValue);
+            
+            // 更新訂單數據，包含 specialRequest
             orderData.paymentMethod = selectedMethod.value;
+            orderData.specialRequest = specialRequestValue || null; // 明確設置 specialRequest
 
             // 如果是現金支付，直接提交訂單
             if (selectedMethod.value === 'cash') {
@@ -370,6 +389,13 @@
         // 4. 成功標誌：瀏覽器整頁白屏並換頁，網址列變成 payment-stage.ecpay.com.tw
         async function handleEcpayPayment() {
             try {
+                // ⚠️ 關鍵修復 4：讀取訂單級別的備註輸入框（信用卡支付時也要讀取）
+                const noteInput = document.getElementById('orderSpecialRequest');
+                const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
+                
+                // 🔍 調試：記錄客人輸入的備註內容
+                console.log('客人輸入的備註內容 (信用卡支付):', specialRequestValue);
+                
                 // 步驟 1：從後端獲取 JSON 參數（不是 HTML）
                 const response = await fetch('/api/ecpay/get-params', {
                     method: 'POST',
@@ -381,7 +407,7 @@
                         totalAmount: orderData.totalAmount,
                         paymentMethod: 'Credit',
                         diningMode: localStorage.getItem('dineInTableNumber') ? 'dine-in' : 'takeout', // 傳遞用餐模式給後端
-                        specialRequest: orderData.specialRequest || null // 傳遞訂單級別的特殊需求（用戶輸入）
+                        specialRequest: specialRequestValue || null // ⚠️ 關鍵：使用讀取到的值，統一變數名稱為 specialRequest
                     })
                 });
 
@@ -432,6 +458,19 @@
             btn.disabled = true;
             btn.textContent = '處理中...';
 
+            // ⚠️ 關鍵修復 2：讀取訂單級別的備註輸入框（現金支付時也要讀取）
+            const noteInput = document.getElementById('orderSpecialRequest');
+            const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
+            
+            // 🔍 調試：記錄客人輸入的備註內容
+            console.log('客人輸入的備註內容:', specialRequestValue);
+            
+            // 更新訂單數據，包含 specialRequest
+            if (!orderData) {
+                orderData = {};
+            }
+            orderData.specialRequest = specialRequestValue || null; // 明確設置 specialRequest
+
             // 檢查是否為內用訂單
             const isDineIn = localStorage.getItem('dineInTableNumber');
             const url = isDineIn ? '/api/orders/dine-in' : '/api/orders/checkout';
@@ -446,19 +485,20 @@
                     orderType: 'dine-in',
                     status: 'pending',
                     orderTime: new Date().toISOString(),
-                    specialRequest: orderData.specialRequest || null // 確保傳遞訂單級別的特殊需求
+                    specialRequest: specialRequestValue || null // ⚠️ 關鍵：使用讀取到的值
                 };
             } else {
-                // 確保 orderData 包含 specialRequest 字段
+                // ⚠️ 關鍵修復 3：確保 requestData 包含 specialRequest 字段
                 requestData = {
                     ...orderData,
-                    specialRequest: orderData.specialRequest || null // 明確指定 specialRequest
+                    specialRequest: specialRequestValue || null // ⚠️ 關鍵：使用讀取到的值，統一變數名稱為 specialRequest
                 };
             }
             
             // 🔍 調試：記錄前端發送的數據
             console.log('[Debug] 前端發送的訂單數據:', JSON.stringify(requestData, null, 2));
             console.log('[Debug] 前端發送的 specialRequest:', requestData.specialRequest);
+            console.log('[Debug] 確認 specialRequest 是否正確包含在 payload 中:', requestData.hasOwnProperty('specialRequest'));
 
             fetch(url, {
                 method: 'POST',
