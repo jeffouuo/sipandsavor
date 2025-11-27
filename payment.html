@@ -207,7 +207,7 @@
             <h3 style="color: #2c3e50; margin-bottom: 10px; font-size: 1.1em;">內用桌號</h3>
             <input 
                 type="text"
-                id="orderTableNumber"
+                id="tableNumber"
                 placeholder="請輸入桌號（例如 B2）"
                 style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit;"
                 maxlength="8"
@@ -295,26 +295,36 @@ function buildAggregationLine(item = {}) {
     return `${name}: ${cleanNote}`;
 }
 
-function collectSpecialRequests(items = []) {
-    if (!Array.isArray(items)) return '';
+        function collectSpecialRequests(items = []) {
+            if (!Array.isArray(items)) return '';
 
-    const lines = [];
-    items.forEach(item => {
-        const line = buildAggregationLine(item);
-        if (line) {
-            lines.push(line);
+            const lines = [];
+            items.forEach(item => {
+                const line = buildAggregationLine(item);
+                if (line) {
+                    lines.push(line);
+                }
+            });
+
+            return lines.join('\n');
         }
-    });
 
-    return lines.join('\n');
-}
+        function getTableNumberInputElement() {
+            return document.getElementById('tableNumber') || document.getElementById('orderTableNumber');
+        }
 
-function normalizeTableNumber(value = '') {
+        function readTableNumberInputValue() {
+            const input = getTableNumberInputElement();
+            if (!input) return '';
+            return (input.value || '').trim();
+        }
+
+        function normalizeTableNumber(value = '') {
     return value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
 }
 
 function getCurrentTableNumber() {
-    const input = document.getElementById('orderTableNumber');
+            const input = getTableNumberInputElement();
     if (input && input.value.trim()) {
         return normalizeTableNumber(input.value.trim());
     }
@@ -325,22 +335,30 @@ function getCurrentTableNumber() {
     return stored ? normalizeTableNumber(stored) : '';
 }
 
-function syncTableNumberFromInput() {
-    const value = getCurrentTableNumber();
-    if (orderData) {
-        orderData.tableNumber = value || null;
-        if (value) {
-            orderData.diningMode = 'dine-in';
-            localStorage.setItem('dineInTableNumber', value);
-        }
+function resolveTableNumberForSubmission() {
+    const input = getTableNumberInputElement();
+    if (input && input.value && input.value.trim()) {
+        const normalized = normalizeTableNumber(input.value.trim());
+        input.value = normalized;
+        orderData = orderData || {};
+        orderData.tableNumber = normalized;
+        localStorage.setItem('dineInTableNumber', normalized);
+        return normalized;
     }
-    return value;
+    const current = getCurrentTableNumber();
+    if (current) {
+        orderData = orderData || {};
+        orderData.tableNumber = current;
+        localStorage.setItem('dineInTableNumber', current);
+        return current;
+    }
+    return '';
 }
 
-function initTableNumberSection() {
-    const section = document.getElementById('dineInTableSection');
-    const input = document.getElementById('orderTableNumber');
-    if (!section || !input) return;
+        function initTableNumberSection() {
+            const section = document.getElementById('dineInTableSection');
+            const input = getTableNumberInputElement();
+            if (!section || !input) return;
 
     const stored = localStorage.getItem('dineInTableNumber');
     const shouldShow = Boolean(
@@ -615,9 +633,13 @@ function initTableNumberSection() {
             // ⚠️ 關鍵修復 1：讀取訂單級別的備註輸入框
             const noteInput = document.getElementById('orderSpecialRequest');
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
-            const tableNumberValue = syncTableNumberFromInput();
-            const tableNumberInput = document.getElementById('orderTableNumber');
-            console.log('前端準備送出的桌號:', tableNumberValue || '(未填寫)');
+            const resolvedTableNumber = resolveTableNumberForSubmission();
+            const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
+            const finalTableNumber = expectsTableNumber ? resolvedTableNumber : '';
+            if (expectsTableNumber) {
+                alert('桌號是: ' + (finalTableNumber || '（未填寫）'));
+            }
+            console.log('前端準備送出的桌號:', expectsTableNumber ? (finalTableNumber || '(未填寫)') : '(非內用)');
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
@@ -625,14 +647,8 @@ function initTableNumberSection() {
             // 更新訂單數據，包含 specialRequest
             orderData.paymentMethod = selectedMethod.value;
             orderData.specialRequest = specialRequestValue || null; // 明確設置 specialRequest
-            const fallbackTableNumber = localStorage.getItem('dineInTableNumber');
-            const resolvedTableNumber = tableNumberValue || fallbackTableNumber || null;
-            if (resolvedTableNumber) {
-                orderData.tableNumber = resolvedTableNumber;
-                orderData.diningMode = 'dine-in';
-            } else {
-                orderData.diningMode = orderData.diningMode || 'takeout';
-            }
+            orderData.tableNumber = expectsTableNumber ? (finalTableNumber || null) : null;
+            orderData.diningMode = expectsTableNumber ? 'dine-in' : (orderData.diningMode || 'takeout');
 
             // 如果是現金支付，直接提交訂單
             if (selectedMethod.value === 'cash') {
@@ -661,14 +677,17 @@ function initTableNumberSection() {
                 // ⚠️ 關鍵修復 4：讀取訂單級別的備註輸入框（信用卡支付時也要讀取）
                 const noteInput = document.getElementById('orderSpecialRequest');
                 const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
-                const resolvedTableNumber = syncTableNumberFromInput();
+                const resolvedTableNumber = resolveTableNumberForSubmission();
+                const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
                 
                 // 🔍 調試：記錄客人輸入的備註內容
                 console.log('客人輸入的備註內容 (信用卡支付):', specialRequestValue);
                 
                 // 步驟 1：從後端獲取 JSON 參數（不是 HTML）
-                const tableNumber = resolvedTableNumber || localStorage.getItem('dineInTableNumber') || null;
-                const diningMode = orderData.diningMode || (tableNumber ? 'dine-in' : 'takeout');
+                const tableNumber = expectsTableNumber ? (resolvedTableNumber || null) : null;
+                orderData.tableNumber = tableNumber;
+                orderData.diningMode = expectsTableNumber ? 'dine-in' : (orderData.diningMode || 'takeout');
+                const diningMode = orderData.diningMode;
 
                 const payload = {
                     items: orderData.items,
@@ -680,6 +699,7 @@ function initTableNumberSection() {
                 };
 
                 console.log('送出的特殊需求:', payload.specialRequest);
+                console.log('準備送出的桌號:', payload.tableNumber || (expectsTableNumber ? '(未填寫)' : '(非內用)'));
 
                 const response = await fetch('/api/ecpay/get-params', {
                     method: 'POST',
@@ -739,9 +759,10 @@ function initTableNumberSection() {
             // ⚠️ 關鍵修復 2：讀取訂單級別的備註輸入框（現金支付時也要讀取）
             const noteInput = document.getElementById('orderSpecialRequest');
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
-            const tableNumberValue = syncTableNumberFromInput();
-            const tableNumberInput = document.getElementById('orderTableNumber');
-            console.log('前端準備送出的桌號:', tableNumberValue || '(未填寫)');
+            const resolvedTableNumber = resolveTableNumberForSubmission();
+            const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
+            const finalTableNumber = expectsTableNumber ? resolvedTableNumber : '';
+            console.log('前端準備送出的桌號:', expectsTableNumber ? (finalTableNumber || '(未填寫)') : '(非內用)');
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
@@ -751,17 +772,17 @@ function initTableNumberSection() {
                 orderData = {};
             }
             orderData.specialRequest = specialRequestValue || null; // 明確設置 specialRequest
+            orderData.tableNumber = expectsTableNumber ? (finalTableNumber || null) : null;
+            orderData.diningMode = expectsTableNumber ? 'dine-in' : (orderData.diningMode || 'takeout');
 
             // 檢查是否為內用訂單
-            const storedTableNumber = localStorage.getItem('dineInTableNumber');
-            const resolvedTableNumber = tableNumberValue || storedTableNumber || null;
-            const isDineIn = Boolean(resolvedTableNumber);
+            const isDineIn = orderData.diningMode === 'dine-in';
             const url = isDineIn ? '/api/orders/dine-in' : '/api/orders/checkout';
 
             const basePayload = {
                 specialRequest: specialRequestValue || null,
-                tableNumber: resolvedTableNumber || null,
-                diningMode: isDineIn ? 'dine-in' : (orderData.diningMode || (resolvedTableNumber ? 'dine-in' : 'takeout'))
+                tableNumber: orderData.tableNumber || null,
+                diningMode: orderData.diningMode || (isDineIn ? 'dine-in' : 'takeout')
             };
 
             let payload;
@@ -787,6 +808,7 @@ function initTableNumberSection() {
             console.log('[Debug] 前端發送的訂單數據:', JSON.stringify(payload, null, 2));
             console.log('[Debug] 前端發送的 specialRequest:', payload.specialRequest);
             console.log('送出的特殊需求:', payload.specialRequest);
+            console.log('準備送出的桌號:', payload.tableNumber || '(未填寫)');
             console.log('最終送出的 Payload:', payload);
             console.log('[Debug] 確認 specialRequest 是否正確包含在 payload 中:', payload.hasOwnProperty('specialRequest'));
 
