@@ -741,11 +741,11 @@ function buildAggregationLine(item = {}) {
             const noteInput = document.getElementById('orderSpecialRequest');
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
             const sessionContext = getSessionDiningContext();
-            const storageTableRaw = sessionContext.tableNumber ? sessionContext.tableNumber.trim() : '';
-            const savedSessionTable = storageTableRaw ? normalizeTableNumber(storageTableRaw) : '';
             const inputTableRaw = readTableNumberInputValue();
             const normalizedInputTable = inputTableRaw ? normalizeTableNumber(inputTableRaw) : '';
-            let resolvedTableNumber = savedSessionTable || normalizedInputTable;
+            const storageTableRaw = sessionContext.tableNumber ? sessionContext.tableNumber.trim() : '';
+            const savedSessionTable = storageTableRaw ? normalizeTableNumber(storageTableRaw) : '';
+            let resolvedTableNumber = normalizedInputTable || savedSessionTable;
             if (!resolvedTableNumber) {
                 resolvedTableNumber = resolveTableNumberForSubmission();
             }
@@ -837,11 +837,11 @@ function buildAggregationLine(item = {}) {
                 const noteInput = document.getElementById('orderSpecialRequest');
                 const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
                 const sessionContext = getSessionDiningContext();
-                const storageTableRaw = sessionContext.tableNumber ? sessionContext.tableNumber.trim() : '';
-                const savedSessionTable = storageTableRaw ? normalizeTableNumber(storageTableRaw) : '';
                 const inputTableRaw = readTableNumberInputValue();
                 const normalizedInputTable = inputTableRaw ? normalizeTableNumber(inputTableRaw) : '';
-                let resolvedTableNumber = savedSessionTable || normalizedInputTable;
+                const storageTableRaw = sessionContext.tableNumber ? sessionContext.tableNumber.trim() : '';
+                const savedSessionTable = storageTableRaw ? normalizeTableNumber(storageTableRaw) : '';
+                let resolvedTableNumber = normalizedInputTable || savedSessionTable;
                 if (!resolvedTableNumber) {
                     resolvedTableNumber = resolveTableNumberForSubmission();
                 }
@@ -902,8 +902,10 @@ function buildAggregationLine(item = {}) {
             console.log('送出的特殊需求:', payload.specialRequest);
             console.log('準備送出的桌號:', payload.tableNumber || '(未填寫)');
                 console.log('前端送出的 Payload:', payload);
+                console.log('🚀 最終送出的真實桌號:', payload.tableNumber || '(無)');
                 console.log('🚀 最終送出的 Payload:', payload);
             console.log('前端送出的 Payload:', payload);
+            console.log('🚀 最終送出的真實桌號:', payload.tableNumber || '(無)');
             console.log('🚀 最終送出的 Payload:', payload);
             console.log('[Debug] 確認 specialRequest 是否正確包含在 payload 中:', payload.hasOwnProperty('specialRequest'));
 
