@@ -138,12 +138,16 @@ router.post('/checkout', [
     body('deliveryMethod').optional().isIn(['pickup', 'delivery']).withMessage('無效的取餐方式'),
     body('notes').optional().isLength({ max: 200 }).withMessage('備註不能超過200個字符')
 ], async (req, res) => {
-    // 🔍 全鏈路調試：記錄前端傳來的完整 Body
+    // 🔍 全鏈路調試：記錄前端傳來的完整 Body（第一行，關鍵除錯）
     console.log('═══════════════════════════════════════════════════════════');
+    console.log('前端送來的完整 Body:', JSON.stringify(req.body, null, 2));
     console.log('API收到:', JSON.stringify(req.body, null, 2));
     console.log('📥 前端傳來的 Body:', JSON.stringify(req.body, null, 2));
     console.log('📥 req.body.notes:', req.body.notes);
     console.log('📥 req.body.note:', req.body.note);
+    console.log('📥 req.body.specialRequest:', req.body.specialRequest);
+    console.log('📥 req.body.message:', req.body.message);
+    console.log('📥 req.body.remarks:', req.body.remarks);
     console.log('[Debug] 接收到的特殊需求 (req.body.specialRequest):', req.body.specialRequest);
     console.log('[Debug] 接收到的特殊需求 (req.body.note):', req.body.note);
     console.log('═══════════════════════════════════════════════════════════');
@@ -187,22 +191,30 @@ router.post('/checkout', [
         // notes: 系統/金流備註（例如 "綠界金流支付"、"前台結帳"）
         // specialRequest: 用戶前台輸入的特殊需求（例如 "多冰"）
         const systemNotes = notesFromBody || noteFromBody || '前台結帳';
-        // ⚠️ 重要：優先使用 specialRequest，如果沒有則嘗試 note（向後兼容）
-        // 如果 specialRequest 是空字串，轉換為 null
-        const userSpecialRequest = (specialRequestFromBody && specialRequestFromBody.trim() !== '') 
-            ? specialRequestFromBody.trim() 
-            : (noteFromBody && noteFromBody.trim() !== '') 
-                ? noteFromBody.trim() 
-                : null;
+        
+        // ⚠️ 關鍵修復：寬容接收邏輯，同時檢查多個可能的名稱
+        // 為了避免變數名稱不一致，檢查所有可能的字段名
+        const userSpecialRequest = (
+            (req.body.specialRequest && req.body.specialRequest.trim() !== '') ? req.body.specialRequest.trim() :
+            (req.body.note && req.body.note.trim() !== '') ? req.body.note.trim() :
+            (req.body.notes && req.body.notes.trim() !== '') ? req.body.notes.trim() :
+            (req.body.remarks && req.body.remarks.trim() !== '') ? req.body.remarks.trim() :
+            (req.body.message && req.body.message.trim() !== '') ? req.body.message.trim() :
+            null
+        );
         
         console.log('[Debug] 接收到的特殊需求 (req.body.specialRequest):', req.body.specialRequest);
         console.log('[Debug] 接收到的特殊需求 (req.body.note):', req.body.note);
+        console.log('[Debug] 接收到的特殊需求 (req.body.notes):', req.body.notes);
+        console.log('[Debug] 接收到的特殊需求 (req.body.remarks):', req.body.remarks);
+        console.log('[Debug] 接收到的特殊需求 (req.body.message):', req.body.message);
         console.log('🔍 處理後的字段值:');
         console.log('  - systemNotes (notes):', systemNotes);
         console.log('  - userSpecialRequest (specialRequest):', userSpecialRequest);
         console.log('  - notesFromBody:', notesFromBody);
         console.log('  - noteFromBody:', noteFromBody);
         console.log('  - specialRequestFromBody:', specialRequestFromBody);
+        console.log('  - 最終使用的 specialRequest:', userSpecialRequest);
 
         // 快速驗證產品並更新庫存 - 優先使用內存數據
         const orderItems = [];
