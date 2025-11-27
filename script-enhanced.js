@@ -964,14 +964,6 @@ const initCheckout = () => {
             const orderDeliveryMethod = isDineInOrder ? 'dine-in' : 'pickup';
             const diningMode = isDineInOrder ? 'dine-in' : 'takeout';
             persistDiningContextToSession(dineInTableNumber || '', diningMode);
-            try {
-                if (typeof sessionStorage !== 'undefined') {
-                    sessionStorage.setItem('diningMode', diningMode);
-                    sessionStorage.setItem('diningModeLocked', 'true');
-                }
-            } catch (storageError) {
-                console.warn('⚠️ 無法寫入結帳模式到 sessionStorage:', storageError);
-            }
 
             // 準備訂單數據
             let orderData = {

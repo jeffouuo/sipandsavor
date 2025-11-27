@@ -809,13 +809,6 @@
             try {
                 sessionStorage.setItem('tableNumber', tableNumber);
                 sessionStorage.setItem('diningMode', 'dine-in');
-                sessionStorage.setItem('diningModeLocked', 'true');
-            } catch (error) {
-                console.warn('⚠️ 無法寫入 sessionStorage:', error);
-            }
-            try {
-                sessionStorage.setItem('tableNumber', tableNumber);
-                sessionStorage.setItem('diningMode', 'dine-in');
             } catch (error) {
                 console.warn('無法寫入 sessionStorage:', error);
             }
