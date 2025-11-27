@@ -101,8 +101,8 @@ const orderSchema = new mongoose.Schema({
     // 內用訂單相關字段
     tableNumber: {
         type: String,
-        required: false,
-        trim: true
+        trim: true,
+        default: ''
     },
     area: {
         type: String,

@@ -636,9 +636,6 @@ function resolveTableNumberForSubmission() {
             const resolvedTableNumber = resolveTableNumberForSubmission();
             const expectsTableNumber = (orderData && orderData.diningMode === 'dine-in') || Boolean(resolvedTableNumber);
             const finalTableNumber = expectsTableNumber ? resolvedTableNumber : '';
-            if (expectsTableNumber) {
-                alert('桌號是: ' + (finalTableNumber || '（未填寫）'));
-            }
             console.log('前端準備送出的桌號:', expectsTableNumber ? (finalTableNumber || '(未填寫)') : '(非內用)');
             
             // 🔍 調試：記錄客人輸入的備註內容

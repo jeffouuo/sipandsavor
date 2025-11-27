@@ -231,7 +231,7 @@ router.post('/checkout', [
             totalAmount,
             paymentMethod = 'cash',
             deliveryMethod = 'pickup',
-            tableNumber: tableNumberFromBody = null,
+            tableNumber: tableNumberFromBody = '',
             diningMode: diningModeFromBody = null,
             notes: notesFromBody = null,
             note: noteFromBody = null, // 兼容 note 字段
@@ -268,9 +268,11 @@ router.post('/checkout', [
         console.log('  - specialRequestFromBody:', specialRequestFromBody);
         console.log('  - 最終使用的 specialRequest:', userSpecialRequest);
 
-        const resolvedTableNumber = tableNumberFromBody ? String(tableNumberFromBody).trim() : null;
-        console.log('API 接收到的桌號:', req.body.tableNumber, '→', resolvedTableNumber);
-        console.log('API 接收到的桌號:', req.body.tableNumber, '→', resolvedTableNumber);
+        const tableNumberFromRequest = typeof tableNumberFromBody === 'string'
+            ? tableNumberFromBody.trim()
+            : '';
+        console.log('[API Debug] checkout tableNumber:', tableNumberFromRequest || '(空值)');
+        const resolvedTableNumber = tableNumberFromRequest || null;
         const resolvedDiningMode = diningModeFromBody || (resolvedTableNumber ? 'dine-in' : (deliveryMethod === 'dine-in' ? 'dine-in' : 'takeout'));
         const resolvedDeliveryMethod = resolvedDiningMode === 'dine-in' ? 'dine-in' : deliveryMethod;
         const resolvedOrderType = resolvedDiningMode === 'dine-in' ? 'dine-in' : 'regular';
@@ -758,7 +760,7 @@ router.post('/', auth, [
             pickupTime: pickupTime ? new Date(pickupTime) : undefined,
             deliveryAddress,
             notes,
-            tableNumber: resolvedTableNumber || undefined,
+            tableNumber: resolvedTableNumber || '',
             diningMode: resolvedDiningMode,
             orderType: resolvedOrderType
         });
