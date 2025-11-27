@@ -127,6 +127,56 @@ const memoryProducts = [
     }
 ];
 
+const STANDARD_SUGAR_LEVELS = ['無糖', '微糖', '半糖', '少糖', '全糖', '正常糖'];
+const STANDARD_ICE_LEVELS = ['去冰', '微冰', '少冰', '正常冰', '熱飲'];
+
+const normalizeString = (value) => typeof value === 'string' ? value.trim() : '';
+
+const normalizeToppings = (toppings) => Array.isArray(toppings)
+    ? toppings
+        .map(t => normalizeString(t))
+        .filter(Boolean)
+    : [];
+
+const extractCustomizationMeta = (item = {}) => {
+    const meta = {
+        sugarLevel: normalizeString(item.sugarLevel),
+        iceLevel: normalizeString(item.iceLevel),
+        toppings: normalizeToppings(item.toppings)
+    };
+
+    const shouldParseLegacy = (!meta.sugarLevel || !meta.iceLevel || meta.toppings.length === 0) && item.customizations;
+    if (!shouldParseLegacy) {
+        return meta;
+    }
+
+    const customText = String(item.customizations).trim();
+    if (!customText) {
+        return meta;
+    }
+
+    let baseText = customText;
+    const plusIndex = customText.indexOf('+');
+    if (plusIndex >= 0 && meta.toppings.length === 0) {
+        const toppingsText = customText.slice(plusIndex + 1);
+        meta.toppings = normalizeToppings(toppingsText.split(/[,，]/));
+        baseText = customText.slice(0, plusIndex);
+    }
+
+    baseText.split(',').forEach(token => {
+        const clean = token.trim();
+        if (!clean) return;
+
+        if (!meta.sugarLevel && STANDARD_SUGAR_LEVELS.includes(clean)) {
+            meta.sugarLevel = clean;
+        } else if (!meta.iceLevel && STANDARD_ICE_LEVELS.includes(clean)) {
+            meta.iceLevel = clean;
+        }
+    });
+
+    return meta;
+};
+
 // 前台結帳（無需登入） - 高優先級路由
 router.post('/checkout', [
     body('items').isArray({ min: 1 }).withMessage('訂單必須包含至少一個商品'),
@@ -181,6 +231,8 @@ router.post('/checkout', [
             totalAmount,
             paymentMethod = 'cash',
             deliveryMethod = 'pickup',
+            tableNumber: tableNumberFromBody = null,
+            diningMode: diningModeFromBody = null,
             notes: notesFromBody = null,
             note: noteFromBody = null, // 兼容 note 字段
             specialRequest: specialRequestFromBody = null, // 訂單級別的特殊需求（用戶輸入）
@@ -215,6 +267,11 @@ router.post('/checkout', [
         console.log('  - noteFromBody:', noteFromBody);
         console.log('  - specialRequestFromBody:', specialRequestFromBody);
         console.log('  - 最終使用的 specialRequest:', userSpecialRequest);
+
+        const resolvedTableNumber = tableNumberFromBody ? String(tableNumberFromBody).trim() : null;
+        const resolvedDiningMode = diningModeFromBody || (resolvedTableNumber ? 'dine-in' : (deliveryMethod === 'dine-in' ? 'dine-in' : 'takeout'));
+        const resolvedDeliveryMethod = resolvedDiningMode === 'dine-in' ? 'dine-in' : deliveryMethod;
+        const resolvedOrderType = resolvedDiningMode === 'dine-in' ? 'dine-in' : 'regular';
 
         // 快速驗證產品並更新庫存 - 優先使用內存數據
         const orderItems = [];
@@ -302,13 +359,17 @@ router.post('/checkout', [
             calculatedTotal += subtotal;
 
             // 處理產品ID - 如果是內存產品（字符串ID），則不設置product字段
+            const customizationMeta = extractCustomizationMeta(item);
             const orderItem = {
                 name: item.name, // 保留原始名称（包含客制化信息）
                 price: item.price, // 使用前端发送的价格（可能包含加料费用）
                 quantity: item.quantity,
                 subtotal,
                 customizations: item.customizations || '', // 保存客制化信息
-                specialRequest: item.specialRequest || '' // 保存特殊需求
+                specialRequest: item.specialRequest || '', // 保存特殊需求
+                sugarLevel: customizationMeta.sugarLevel || '',
+                iceLevel: customizationMeta.iceLevel || '',
+                toppings: customizationMeta.toppings || []
             };
             
             // 只有當產品有有效的ObjectId時才設置product字段
@@ -690,11 +751,14 @@ router.post('/', auth, [
             user: req.user.userId,
             items: orderItems,
             totalAmount,
-            deliveryMethod,
+            deliveryMethod: resolvedDeliveryMethod,
             paymentMethod,
             pickupTime: pickupTime ? new Date(pickupTime) : undefined,
             deliveryAddress,
-            notes
+            notes,
+            tableNumber: resolvedTableNumber || undefined,
+            diningMode: resolvedDiningMode,
+            orderType: resolvedOrderType
         });
 
         await order.save();
@@ -758,7 +822,8 @@ router.post('/dine-in', [
             status = 'pending',
             orderTime
         } = req.body;
-        console.log('🟢 後端收到桌號:', tableNumber);
+        const tableNumberValue = String(tableNumber).trim();
+        console.log('🟢 後端收到桌號:', tableNumberValue);
 
         // 驗證總金額
         const calculatedTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -807,6 +872,11 @@ router.post('/dine-in', [
                 customizations: item.customizations || '', // 保存客制化信息
                 specialRequest: item.specialRequest || '' // 保存特殊需求
             };
+            
+            const customizationMeta = extractCustomizationMeta(item);
+            orderItem.sugarLevel = customizationMeta.sugarLevel || '';
+            orderItem.iceLevel = customizationMeta.iceLevel || '';
+            orderItem.toppings = customizationMeta.toppings || [];
             
             // 只有當產品有有效的ObjectId時才設置product字段
             if (product && product._id && typeof product._id === 'object' && product._id.toString().length === 24) {
@@ -907,10 +977,10 @@ router.post('/dine-in', [
         }
 
         // 創建內用訂單 - 使用智能保存機制
-        console.log('🍽️ 開始創建內用訂單，桌號:', tableNumber);
+        console.log('🍽️ 開始創建內用訂單，桌號:', tableNumberValue);
         
         const orderData = {
-            tableNumber,
+            tableNumber: tableNumberValue,
             area,
             items: orderItems,
             totalAmount: parseFloat(total) || 0,
@@ -919,6 +989,7 @@ router.post('/dine-in', [
             deliveryMethod: 'dine-in',
             paymentMethod: 'cash',
             notes: '前台結帳',
+            diningMode: 'dine-in',
             orderTime: orderTime ? new Date(orderTime) : new Date()
         };
         

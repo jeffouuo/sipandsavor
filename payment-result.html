@@ -172,27 +172,35 @@
                 const orderData = JSON.parse(pendingOrder);
                 
                 // 檢查是否為內用訂單
-                const isDineIn = localStorage.getItem('dineInTableNumber');
+                const storedTableNumber = localStorage.getItem('dineInTableNumber');
+                const tableNumberValue = orderData.tableNumber || storedTableNumber || null;
+                const isDineIn = Boolean(tableNumberValue);
                 const url = isDineIn ? '/api/orders/dine-in' : '/api/orders/checkout';
 
                 let requestData;
                 if (isDineIn) {
                     requestData = {
-                        tableNumber: localStorage.getItem('dineInTableNumber'),
+                        tableNumber: tableNumberValue,
                         area: '內用區',
                         items: orderData.items,
                         total: orderData.totalAmount,
                         orderType: 'dine-in',
                         status: 'pending',
                         orderTime: new Date().toISOString(),
-                        paymentMethod: 'credit_card'
+                        paymentMethod: 'credit_card',
+                        specialRequest: orderData.specialRequest || null,
+                        diningMode: 'dine-in'
                     };
                 } else {
                     requestData = {
                         ...orderData,
-                        paymentMethod: 'credit_card'
+                        paymentMethod: 'credit_card',
+                        tableNumber: tableNumberValue,
+                        diningMode: orderData.diningMode || (tableNumberValue ? 'dine-in' : 'takeout')
                     };
                 }
+
+                console.log('送出的特殊需求:', requestData.specialRequest);
 
                 fetch(url, {
                     method: 'POST',
@@ -207,7 +215,7 @@
                         console.log('✅ 訂單已提交到後端');
                         // 清除待處理訂單
                         localStorage.removeItem('pendingOrder');
-                        if (isDineIn) {
+                        if (isDineIn && storedTableNumber) {
                             localStorage.removeItem('dineInTableNumber');
                         }
                     }

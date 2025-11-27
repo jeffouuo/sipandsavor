@@ -18,6 +18,107 @@ const cache = {
     lastUpdate: {}
 };
 
+const ADMIN_STANDARD_SUGAR_LEVELS = ['無糖', '微糖', '半糖', '少糖', '全糖', '正常糖'];
+const ADMIN_STANDARD_ICE_LEVELS = ['去冰', '微冰', '少冰', '正常冰', '熱飲'];
+
+const normalizeAdminString = (value) => typeof value === 'string' ? value.trim() : '';
+
+function parseAdminLegacyCustomizations(customizations = '') {
+    const result = {
+        sugarLevel: '',
+        iceLevel: '',
+        toppings: [],
+        extras: []
+    };
+
+    if (!customizations || typeof customizations !== 'string') {
+        return result;
+    }
+
+    const trimmed = customizations.trim();
+    if (!trimmed) {
+        return result;
+    }
+
+    let baseText = trimmed;
+    const plusIndex = trimmed.indexOf('+');
+    if (plusIndex >= 0) {
+        const toppingsText = trimmed.slice(plusIndex + 1);
+        toppingsText.split(/[,，]/).forEach(topping => {
+            const clean = topping.trim();
+            if (clean) {
+                result.toppings.push(clean);
+            }
+        });
+        baseText = trimmed.slice(0, plusIndex);
+    }
+
+    baseText.split(',').forEach(token => {
+        const clean = token.trim();
+        if (!clean) return;
+
+        if (!result.sugarLevel && ADMIN_STANDARD_SUGAR_LEVELS.includes(clean)) {
+            result.sugarLevel = clean;
+        } else if (!result.iceLevel && ADMIN_STANDARD_ICE_LEVELS.includes(clean)) {
+            result.iceLevel = clean;
+        } else {
+            result.extras.push(clean);
+        }
+    });
+
+    return result;
+}
+
+function getAdminItemMeta(item = {}) {
+    const meta = {
+        sugarLevel: normalizeAdminString(item.sugarLevel),
+        iceLevel: normalizeAdminString(item.iceLevel),
+        toppings: Array.isArray(item.toppings) ? item.toppings.map(t => normalizeAdminString(t)).filter(Boolean) : [],
+        extras: []
+    };
+
+    if (Array.isArray(item.extras)) {
+        meta.extras = item.extras.map(extra => normalizeAdminString(extra)).filter(Boolean);
+    }
+
+    const needsLegacy = (!meta.sugarLevel || !meta.iceLevel || meta.toppings.length === 0) && item.customizations;
+    if ((needsLegacy || meta.extras.length === 0) && item.customizations) {
+        const legacy = parseAdminLegacyCustomizations(item.customizations);
+        if (!meta.sugarLevel && legacy.sugarLevel) meta.sugarLevel = legacy.sugarLevel;
+        if (!meta.iceLevel && legacy.iceLevel) meta.iceLevel = legacy.iceLevel;
+        if (meta.toppings.length === 0 && legacy.toppings.length > 0) meta.toppings = legacy.toppings;
+        if (meta.extras.length === 0 && legacy.extras.length > 0) meta.extras = legacy.extras;
+    }
+
+    return meta;
+}
+
+function formatOrderItemDisplay(item = {}) {
+    const meta = getAdminItemMeta(item);
+    const baseParts = [];
+    if (meta.sugarLevel) baseParts.push(meta.sugarLevel);
+    if (meta.iceLevel) baseParts.push(meta.iceLevel);
+
+    let display = item?.name ? String(item.name) : '未知商品';
+    if (baseParts.length) {
+        display += ` (${baseParts.join(', ')})`;
+    }
+
+    const extras = [];
+    if (meta.toppings.length) {
+        extras.push(meta.toppings.join(', '));
+    }
+    if (meta.extras.length) {
+        extras.push(meta.extras.join(', '));
+    }
+
+    if (extras.length) {
+        display += ` + ${extras.join(', ')}`;
+    }
+
+    return display;
+}
+
 // SSE 連接管理
 let sseConnection = null;
 let sseReconnectAttempts = 0;
@@ -744,11 +845,12 @@ function renderOrdersTable(orders, pagination) {
         console.log('🟢 後台渲染訂單:', order._id);
         console.log('🟢 訂單項目:', order.items);
         
-        // 正確顯示商品和數量
-        const itemsText = order.items.map(item => {
+        // 正確顯示商品和數量（包含甜度/冰塊與加料）
+        const itemsHtml = (order.items || []).map(item => {
             const quantity = item.quantity || 1;
-            return `${item.name} x${quantity}`;
-        }).join(', ');
+            const displayName = formatOrderItemDisplay(item);
+            return `<div class="order-item-line">${displayName} x${quantity}</div>`;
+        }).join('');
         
         const statusClass = `status-${order.status}`;
         
@@ -837,8 +939,10 @@ function renderOrdersTable(orders, pagination) {
         
         // 構建用戶/桌號/訂單號顯示
         let userDisplay = '';
-        if (order.orderType === 'dine-in') {
-            userDisplay = `<span style="color: #4CAF50; font-weight: bold; background: #e8f5e8; padding: 4px 8px; border-radius: 4px;">桌號: ${order.tableNumber || 'N/A'}</span>`;
+        const isDineInDisplay = order.diningMode === 'dine-in' || order.orderType === 'dine-in' || order.deliveryMethod === 'dine-in';
+        if (isDineInDisplay) {
+            const tableLabel = order.tableNumber ? `內用: ${order.tableNumber}` : '內用';
+            userDisplay = `<span style="color: #4CAF50; font-weight: bold; background: #e8f5e8; padding: 4px 8px; border-radius: 4px;">${tableLabel}</span>`;
         } else if (order.pickupNumber && order.pickupNumber.trim()) {
             // 優先顯示 pickupNumber（與ECPay付款完成後顯示的號碼一致）
             userDisplay = `<span style="color: #2196F3; font-weight: bold; background: #e3f2fd; padding: 4px 8px; border-radius: 4px;">外帶: ${order.pickupNumber}</span>`;
@@ -854,7 +958,7 @@ function renderOrdersTable(orders, pagination) {
             <tr>
                 <td>${order._id}</td>
                 <td>${userDisplay}</td>
-                <td>${itemsText}</td>
+                <td>${itemsHtml}</td>
                 <td>NT$ ${order.totalAmount}</td>
                 <td style="max-width: 300px; word-wrap: break-word; line-height: 1.5;">
                     ${specialRequestDisplayHtml 

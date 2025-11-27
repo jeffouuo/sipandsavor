@@ -252,6 +252,16 @@
 
             try {
                 orderData = JSON.parse(storedData);
+                const fallbackTableNumber = localStorage.getItem('dineInTableNumber');
+                if (fallbackTableNumber && !orderData.tableNumber) {
+                    orderData.tableNumber = fallbackTableNumber;
+                }
+                if (!orderData.diningMode) {
+                    orderData.diningMode = fallbackTableNumber ? 'dine-in' : 'takeout';
+                }
+                if (!orderData.deliveryMethod) {
+                    orderData.deliveryMethod = fallbackTableNumber ? 'dine-in' : 'pickup';
+                }
                 displayOrderSummary();
                 prefillSpecialRequest();
             } catch (error) {
@@ -276,6 +286,105 @@
             });
 
             return notes.join('; ');
+        }
+
+        const STANDARD_SUGAR_LEVELS = ['無糖', '微糖', '半糖', '少糖', '全糖', '正常糖'];
+        const STANDARD_ICE_LEVELS = ['去冰', '微冰', '少冰', '正常冰', '熱飲'];
+
+        function parseLegacyCustomizations(customizations = '') {
+            const result = {
+                sugarLevel: '',
+                iceLevel: '',
+                toppings: [],
+                extras: []
+            };
+
+            if (!customizations || typeof customizations !== 'string') {
+                return result;
+            }
+
+            const trimmed = customizations.trim();
+            if (!trimmed) {
+                return result;
+            }
+
+            let baseText = trimmed;
+            const plusIndex = trimmed.indexOf('+');
+            if (plusIndex >= 0) {
+                const toppingsText = trimmed.slice(plusIndex + 1);
+                toppingsText.split(/[,，]/).forEach(topping => {
+                    const clean = topping.trim();
+                    if (clean) {
+                        result.toppings.push(clean);
+                    }
+                });
+                baseText = trimmed.slice(0, plusIndex);
+            }
+
+            baseText.split(',').forEach(token => {
+                const clean = token.trim();
+                if (!clean) return;
+
+                if (!result.sugarLevel && STANDARD_SUGAR_LEVELS.includes(clean)) {
+                    result.sugarLevel = clean;
+                } else if (!result.iceLevel && STANDARD_ICE_LEVELS.includes(clean)) {
+                    result.iceLevel = clean;
+                } else {
+                    result.extras.push(clean);
+                }
+            });
+
+            return result;
+        }
+
+        function getItemCustomizationMeta(item = {}) {
+            const meta = {
+                sugarLevel: item?.sugarLevel ? String(item.sugarLevel).trim() : '',
+                iceLevel: item?.iceLevel ? String(item.iceLevel).trim() : '',
+                toppings: Array.isArray(item?.toppings) ? item.toppings.filter(Boolean).map(t => String(t).trim()) : [],
+                extras: []
+            };
+
+            if (Array.isArray(item?.extras)) {
+                meta.extras = item.extras.filter(Boolean).map(extra => String(extra).trim());
+            }
+
+            const needsLegacy = !meta.sugarLevel || !meta.iceLevel || meta.toppings.length === 0;
+            if ((needsLegacy || meta.extras.length === 0) && item?.customizations) {
+                const legacy = parseLegacyCustomizations(item.customizations);
+                if (!meta.sugarLevel && legacy.sugarLevel) meta.sugarLevel = legacy.sugarLevel;
+                if (!meta.iceLevel && legacy.iceLevel) meta.iceLevel = legacy.iceLevel;
+                if (meta.toppings.length === 0 && legacy.toppings.length > 0) meta.toppings = legacy.toppings;
+                if (meta.extras.length === 0 && legacy.extras.length > 0) meta.extras = legacy.extras;
+            }
+
+            return meta;
+        }
+
+        function formatItemDisplayName(item = {}) {
+            const meta = getItemCustomizationMeta(item);
+            const baseParts = [];
+            if (meta.sugarLevel) baseParts.push(meta.sugarLevel);
+            if (meta.iceLevel) baseParts.push(meta.iceLevel);
+
+            let display = item?.name ? String(item.name) : '未知商品';
+            if (baseParts.length) {
+                display += ` (${baseParts.join(', ')})`;
+            }
+
+            const extraSegments = [];
+            if (meta.toppings.length) {
+                extraSegments.push(meta.toppings.join(', '));
+            }
+            if (meta.extras.length) {
+                extraSegments.push(meta.extras.join(', '));
+            }
+
+            if (extraSegments.length) {
+                display += ` + ${extraSegments.join(', ')}`;
+            }
+
+            return display;
         }
 
         // ⚠️ 關鍵修復：自動帶入購物車商品的特殊需求
@@ -330,26 +439,7 @@
                 const subtotal = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
                 total += subtotal;
 
-                // ⚠️ 重要：分離甜度冰塊（customizations）和特殊需求（specialRequest）
-                // 1. 清理 customizations，確保不包含 specialRequest 的內容
-                let cleanCustomizations = item.customizations || '';
-                if (item.specialRequest && item.specialRequest.trim() && cleanCustomizations) {
-                    // 從 customizations 中移除 specialRequest 的內容
-                    const specialRequestText = item.specialRequest.trim();
-                    cleanCustomizations = cleanCustomizations
-                        .replace(new RegExp(`,\\s*${specialRequestText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g'), '') // 移除 ", 特殊需求"
-                        .replace(new RegExp(`${specialRequestText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*,`, 'g'), '') // 移除 "特殊需求, "
-                        .replace(new RegExp(specialRequestText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '') // 移除單獨的 "特殊需求"
-                        .replace(/,\s*,/g, ',') // 清理多餘的逗號
-                        .replace(/^,\s*|\s*,$/g, '') // 清理開頭和結尾的逗號
-                        .trim();
-                }
-                
-                // 2. 商品名稱 + 甜度冰塊（在括號內，只顯示清理後的 customizations）
-                let displayName = item.name;
-                if (cleanCustomizations && cleanCustomizations.trim()) {
-                    displayName += ` (${cleanCustomizations.trim()})`;
-                }
+                const displayName = formatItemDisplayName(item);
                 
                 // 構建商品顯示內容
                 let itemHTML = `
@@ -418,6 +508,11 @@
             // 更新訂單數據，包含 specialRequest
             orderData.paymentMethod = selectedMethod.value;
             orderData.specialRequest = specialRequestValue || null; // 明確設置 specialRequest
+            const fallbackTableNumber = localStorage.getItem('dineInTableNumber');
+            if (fallbackTableNumber && !orderData.tableNumber) {
+                orderData.tableNumber = fallbackTableNumber;
+            }
+            orderData.diningMode = orderData.diningMode || (fallbackTableNumber ? 'dine-in' : 'takeout');
 
             // 如果是現金支付，直接提交訂單
             if (selectedMethod.value === 'cash') {
@@ -451,12 +546,16 @@
                 console.log('客人輸入的備註內容 (信用卡支付):', specialRequestValue);
                 
                 // 步驟 1：從後端獲取 JSON 參數（不是 HTML）
+                const tableNumber = orderData.tableNumber || localStorage.getItem('dineInTableNumber') || null;
+                const diningMode = orderData.diningMode || (tableNumber ? 'dine-in' : 'takeout');
+
                 const payload = {
                     items: orderData.items,
                     totalAmount: orderData.totalAmount,
                     paymentMethod: 'Credit',
-                    diningMode: localStorage.getItem('dineInTableNumber') ? 'dine-in' : 'takeout', // 傳遞用餐模式給後端
-                    specialRequest: specialRequestValue || null // ⚠️ 關鍵：使用讀取到的值，統一變數名稱為 specialRequest
+                    diningMode,
+                    specialRequest: specialRequestValue || null, // ⚠️ 關鍵：使用讀取到的值，統一變數名稱為 specialRequest
+                    tableNumber
                 };
 
                 console.log('送出的特殊需求:', payload.specialRequest);
@@ -530,26 +629,31 @@
             orderData.specialRequest = specialRequestValue || null; // 明確設置 specialRequest
 
             // 檢查是否為內用訂單
-            const isDineIn = localStorage.getItem('dineInTableNumber');
+            const storedTableNumber = localStorage.getItem('dineInTableNumber');
+            const tableNumberValue = orderData.tableNumber || storedTableNumber || null;
+            const isDineIn = Boolean(tableNumberValue);
             const url = isDineIn ? '/api/orders/dine-in' : '/api/orders/checkout';
 
             let payload;
             if (isDineIn) {
                 payload = {
-                    tableNumber: localStorage.getItem('dineInTableNumber'),
+                    tableNumber: tableNumberValue,
                     area: '內用區',
                     items: orderData.items,
                     total: orderData.totalAmount,
                     orderType: 'dine-in',
                     status: 'pending',
                     orderTime: new Date().toISOString(),
-                    specialRequest: specialRequestValue || null // ⚠️ 關鍵：使用讀取到的值
+                    specialRequest: specialRequestValue || null, // ⚠️ 關鍵：使用讀取到的值
+                    diningMode: 'dine-in'
                 };
             } else {
                 // ⚠️ 關鍵修復 3：確保 requestData 包含 specialRequest 字段
                 payload = {
                     ...orderData,
-                    specialRequest: specialRequestValue || null // ⚠️ 關鍵：使用讀取到的值，統一變數名稱為 specialRequest
+                    specialRequest: specialRequestValue || null, // ⚠️ 關鍵：使用讀取到的值，統一變數名稱為 specialRequest
+                    tableNumber: tableNumberValue,
+                    diningMode: orderData.diningMode || (tableNumberValue ? 'dine-in' : 'takeout')
                 };
             }
             
@@ -571,7 +675,7 @@
                 if (data.success) {
                     // 清除待處理訂單
                     localStorage.removeItem('pendingOrder');
-                    if (isDineIn) {
+                    if (isDineIn && storedTableNumber) {
                         localStorage.removeItem('dineInTableNumber');
                     }
                     

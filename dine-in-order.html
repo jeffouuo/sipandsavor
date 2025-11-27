@@ -1113,18 +1113,18 @@
         }
 
         // 加入購物車
-        function addToCartLocal(itemName, price, customizations = '', specialRequest = '') {
+        function addToCartLocal(itemName, price, customizations = '', specialRequest = '', options = {}) {
             // 直接調用全局購物車系統
             if (typeof window.addToCart === 'function') {
                 try {
-                    window.addToCart(itemName, price, customizations, specialRequest, true);
+                    window.addToCart(itemName, price, customizations, specialRequest, true, options);
                     showSuccessMessage(`${itemName} 已加入購物車`);
                 } catch (error) {
                     showSuccessMessage(`${itemName} 已加入購物車`);
                 }
             } else {
                 // 如果全局系統不可用，延遲重試
-                setTimeout(() => addToCartLocal(itemName, price, customizations, specialRequest), 100);
+                setTimeout(() => addToCartLocal(itemName, price, customizations, specialRequest, options), 100);
             }
         }
         
@@ -1344,7 +1344,18 @@
                 customizations = parts.join(', ');
                 
                 // 添加到購物車
-                addToCartLocal(displayName, parseFloat(totalPrice), customizations, specialRequest && specialRequest.trim() ? specialRequest.trim() : '');
+                const normalizedSpecialRequest = specialRequest && specialRequest.trim() ? specialRequest.trim() : '';
+                addToCartLocal(
+                    displayName,
+                    parseFloat(totalPrice),
+                    customizations,
+                    normalizedSpecialRequest,
+                    {
+                        sugarLevel: sugar || '',
+                        iceLevel: ice || '',
+                        toppings: selectedToppings
+                    }
+                );
                 
                 // 構建完整的顯示訊息
                 let displayMessage = `${displayName}`;

@@ -362,66 +362,28 @@ window.renderCartItems = () => {
             const cartHTML = window.cart.map((item, index) => {
         const price = parseFloat(item.price) || 0;
         const quantity = parseInt(item.quantity) || 0;
-        const name = String(item.name || '未知商品');
+        const specialRequest = item.specialRequest || (item.originalItem?.specialRequest) || '';
+        const displayName = formatItemDisplayName({
+            ...item,
+            specialRequest
+        });
         
-                        // 從 originalItem 中提取 customizations
-                let customizations = item.customizations || '';
-                if (!customizations && item.originalItem && item.originalItem.customizations) {
-                    customizations = item.originalItem.customizations;
-                }
-                
-                // 確保 customizations 不是 undefined
-                if (customizations === undefined || customizations === null) {
-                    customizations = '';
-                }
-                
-                // 獲取特殊需求（從 item.specialRequest，不要從 customizations 中提取）
-                let specialRequest = item.specialRequest || '';
-                if (!specialRequest && item.originalItem && item.originalItem.specialRequest) {
-                    specialRequest = item.originalItem.specialRequest;
-                }
-                
-                // ⚠️ 重要：清理 customizations，確保不包含 specialRequest 的內容
-                // 如果 customizations 中包含了 specialRequest，則從 customizations 中移除
-                let cleanCustomizations = customizations || '';
-                if (specialRequest && specialRequest.trim() && cleanCustomizations) {
-                    // 從 customizations 中移除 specialRequest 的內容
-                    const specialRequestText = specialRequest.trim();
-                    // 移除整個 specialRequest 文本（包括前後的逗號和空格）
-                    cleanCustomizations = cleanCustomizations
-                        .replace(new RegExp(`,\\s*${specialRequestText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g'), '') // 移除 ", 特殊需求"
-                        .replace(new RegExp(`${specialRequestText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*,`, 'g'), '') // 移除 "特殊需求, "
-                        .replace(new RegExp(specialRequestText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '') // 移除單獨的 "特殊需求"
-                        .replace(/,\s*,/g, ',') // 清理多餘的逗號
-                        .replace(/^,\s*|\s*,$/g, '') // 清理開頭和結尾的逗號
-                        .trim();
-                }
-                
-                console.log(`渲染購物車項目 ${index}:`, { 
-                    name, 
-                    price, 
-                    quantity, 
-                    customizations: cleanCustomizations, 
-                    specialRequest,
-                    originalItem: item 
-                });
+        console.log(`渲染購物車項目 ${index}:`, { 
+            name: item.name,
+            price, 
+            quantity, 
+            displayName,
+            specialRequest,
+            originalItem: item 
+        });
         
-        // ⚠️ 重要：分離甜度冰塊（customizations）和特殊需求（specialRequest）
-        // 1. 商品名稱 + 甜度冰塊（在括號內，只顯示清理後的 customizations）
-        let displayName = name;
-        if (cleanCustomizations && cleanCustomizations.trim()) {
-            displayName += ` (${cleanCustomizations.trim()})`;
-        }
-        
-        // 2. 特殊需求（獨立顯示在下方，紅色小字）
-        let specialRequestHtml = '';
-        if (specialRequest && specialRequest.trim()) {
-            specialRequestHtml = `
+        const specialRequestHtml = specialRequest && specialRequest.trim()
+            ? `
                 <div class="cart-item-special-request" style="color: #e74c3c; font-size: 12px; margin-top: 4px; font-weight: 500;">
                     備註：${specialRequest.trim()}
                 </div>
-            `;
-        }
+            `
+            : '';
         
         return `
             <div class="cart-item" data-index="${index}">
@@ -481,7 +443,7 @@ window.updateQuantity = (index, change) => {
 
 // 添加商品到購物車
 // 全局購物車函數
-window.addToCart = (name, price, customizations = '', specialRequest = '', showNotificationFlag = true) => {
+window.addToCart = (name, price, customizations = '', specialRequest = '', showNotificationFlag = true, options = {}) => {
     console.log('🔍 全局購物車 - 添加商品:', { name, price, customizations, showNotificationFlag });
     console.log('🔍 參數類型:', { 
         nameType: typeof name, 
@@ -511,9 +473,20 @@ window.addToCart = (name, price, customizations = '', specialRequest = '', showN
         item.name === itemName && item.customizations === customizations
     );
     
+    const normalizedOptions = {
+        sugarLevel: options?.sugarLevel ? String(options.sugarLevel).trim() : '',
+        iceLevel: options?.iceLevel ? String(options.iceLevel).trim() : '',
+        toppings: Array.isArray(options?.toppings) ? options.toppings.map(t => String(t).trim()).filter(Boolean) : []
+    };
+
     if (existingItem) {
         const currentQuantity = parseInt(existingItem.quantity) || 0;
         existingItem.quantity = currentQuantity + 1;
+        if (!existingItem.sugarLevel && normalizedOptions.sugarLevel) existingItem.sugarLevel = normalizedOptions.sugarLevel;
+        if (!existingItem.iceLevel && normalizedOptions.iceLevel) existingItem.iceLevel = normalizedOptions.iceLevel;
+        if ((!existingItem.toppings || existingItem.toppings.length === 0) && normalizedOptions.toppings.length > 0) {
+            existingItem.toppings = normalizedOptions.toppings;
+        }
         console.log('更新現有商品數量:', existingItem.quantity);
     } else {
         window.cart.push({
@@ -521,7 +494,10 @@ window.addToCart = (name, price, customizations = '', specialRequest = '', showN
             price: parseFloat(price) || 0,
             quantity: 1,
             customizations: customizations,
-            specialRequest: specialRequest && specialRequest.trim() ? specialRequest.trim() : ''
+            specialRequest: specialRequest && specialRequest.trim() ? specialRequest.trim() : '',
+            sugarLevel: normalizedOptions.sugarLevel,
+            iceLevel: normalizedOptions.iceLevel,
+            toppings: normalizedOptions.toppings
         });
         console.log('添加新商品到購物車:', itemName);
         console.log('🔍 商品客制化信息:', customizations);
@@ -657,7 +633,29 @@ const showProductDetailModal = (name, price) => {
         if (ice !== 'normal') customizations.push(ice === 'less' ? '少冰' : '去冰');
         if (sugar !== 'normal') customizations.push(sugar === 'less' ? '少糖' : '無糖');
         
-        addToCart(name, finalPrice, customizations.join(', '), false);
+        const sugarLabelMap = {
+            normal: '正常糖',
+            less: '少糖',
+            no: '無糖'
+        };
+        const iceLabelMap = {
+            normal: '正常冰',
+            less: '少冰',
+            no: '去冰'
+        };
+        
+        addToCart(
+            name,
+            finalPrice,
+            customizations.join(', '),
+            '',
+            false,
+            {
+                sugarLevel: sugarLabelMap[sugar] || '',
+                iceLevel: iceLabelMap[ice] || '',
+                toppings: []
+            }
+        );
         showNotification(`${name} 已加入購物車`);
         closeModal();
     });
@@ -802,6 +800,105 @@ const buildSpecialRequestSummary = (items = []) => {
     return segments.join('; ');
 };
 
+const STANDARD_SUGAR_LEVELS = ['無糖', '微糖', '半糖', '少糖', '全糖', '正常糖'];
+const STANDARD_ICE_LEVELS = ['去冰', '微冰', '少冰', '正常冰', '熱飲'];
+
+const parseLegacyCustomizations = (customizations = '') => {
+    const result = {
+        sugarLevel: '',
+        iceLevel: '',
+        toppings: [],
+        extras: []
+    };
+
+    if (!customizations || typeof customizations !== 'string') {
+        return result;
+    }
+
+    const trimmed = customizations.trim();
+    if (!trimmed) {
+        return result;
+    }
+
+    let baseText = trimmed;
+    const plusIndex = trimmed.indexOf('+');
+    if (plusIndex >= 0) {
+        const toppingsText = trimmed.slice(plusIndex + 1);
+        toppingsText.split(/[,，]/).forEach(topping => {
+            const clean = topping.trim();
+            if (clean) {
+                result.toppings.push(clean);
+            }
+        });
+        baseText = trimmed.slice(0, plusIndex);
+    }
+
+    baseText.split(',').forEach(token => {
+        const clean = token.trim();
+        if (!clean) return;
+
+        if (!result.sugarLevel && STANDARD_SUGAR_LEVELS.includes(clean)) {
+            result.sugarLevel = clean;
+        } else if (!result.iceLevel && STANDARD_ICE_LEVELS.includes(clean)) {
+            result.iceLevel = clean;
+        } else {
+            result.extras.push(clean);
+        }
+    });
+
+    return result;
+};
+
+const getItemCustomizationMeta = (item = {}) => {
+    const meta = {
+        sugarLevel: item?.sugarLevel ? String(item.sugarLevel).trim() : '',
+        iceLevel: item?.iceLevel ? String(item.iceLevel).trim() : '',
+        toppings: Array.isArray(item?.toppings) ? item.toppings.filter(Boolean).map(t => String(t).trim()) : [],
+        extras: []
+    };
+
+    if (Array.isArray(item?.extras)) {
+        meta.extras = item.extras.filter(Boolean).map(extra => String(extra).trim());
+    }
+
+    const needLegacyParse = !meta.sugarLevel || !meta.iceLevel || meta.toppings.length === 0;
+    if ((needLegacyParse || meta.extras.length === 0) && item?.customizations) {
+        const legacy = parseLegacyCustomizations(item.customizations);
+        if (!meta.sugarLevel && legacy.sugarLevel) meta.sugarLevel = legacy.sugarLevel;
+        if (!meta.iceLevel && legacy.iceLevel) meta.iceLevel = legacy.iceLevel;
+        if (meta.toppings.length === 0 && legacy.toppings.length > 0) meta.toppings = legacy.toppings;
+        if (meta.extras.length === 0 && legacy.extras.length > 0) meta.extras = legacy.extras;
+    }
+
+    return meta;
+};
+
+const formatItemDisplayName = (item = {}) => {
+    const meta = getItemCustomizationMeta(item);
+    const baseParts = [];
+    if (meta.sugarLevel) baseParts.push(meta.sugarLevel);
+    if (meta.iceLevel) baseParts.push(meta.iceLevel);
+
+    let display = item?.name ? String(item.name) : '未知商品';
+    if (baseParts.length) {
+        display += ` (${baseParts.join(', ')})`;
+    }
+
+    const extraSegments = [];
+    if (meta.toppings.length) {
+        extraSegments.push(meta.toppings.join(', '));
+    }
+    if (meta.extras.length) {
+        extraSegments.push(meta.extras.join(', '));
+    }
+
+    if (extraSegments.length) {
+        display += ` + ${extraSegments.join(', ')}`;
+    }
+
+    return display;
+};
+
 const initCheckout = () => {
     const checkoutBtn = document.querySelector('.checkout-btn');
     if (checkoutBtn) {
@@ -823,6 +920,10 @@ const initCheckout = () => {
             checkoutBtn.textContent = '處理中...';
             checkoutBtn.style.opacity = '0.6';
             const orderLevelSpecialRequest = buildSpecialRequestSummary(window.cart || []);
+            const dineInTableNumber = localStorage.getItem('dineInTableNumber');
+            const isDineInOrder = Boolean(dineInTableNumber);
+            const orderDeliveryMethod = isDineInOrder ? 'dine-in' : 'pickup';
+            const diningMode = isDineInOrder ? 'dine-in' : 'takeout';
 
             // 準備訂單數據
             let orderData = {
@@ -843,13 +944,18 @@ const initCheckout = () => {
                                 : ''
                         );
                     
+                    const meta = getItemCustomizationMeta(item);
+
                     console.log('🔍 結帳時的商品客制化信息:', customizations);
                     return {
                         name: item.name,
                         price: parseFloat(item.price) || 0,
                         quantity: parseInt(item.quantity) || 1,
                         customizations: customizations, // 添加客制化信息
-                        specialRequest: itemSpecialRequest
+                        specialRequest: itemSpecialRequest,
+                        sugarLevel: meta.sugarLevel || '',
+                        iceLevel: meta.iceLevel || '',
+                        toppings: meta.toppings || []
                     };
                 }),
                 totalAmount: parseFloat(window.cart.reduce((sum, item) => {
@@ -858,10 +964,13 @@ const initCheckout = () => {
                     return sum + (price * quantity);
                 }, 0)) || 0,
                     paymentMethod: 'cash',
-                    deliveryMethod: 'pickup',
+                    deliveryMethod: orderDeliveryMethod,
                     notes: '前台結帳', // 系統備註
-                    specialRequest: orderLevelSpecialRequest || null // 訂單級別的特殊需求（用戶輸入，目前為空，可擴展）
-                };
+                    specialRequest: orderLevelSpecialRequest || null, // 訂單級別的特殊需求（用戶輸入，目前為空，可擴展）
+                    tableNumber: dineInTableNumber || null,
+                    diningMode,
+                    orderType: isDineInOrder ? 'dine-in' : 'regular'
+            };
             
             // 驗證數據格式
             console.log('🔍 購物車原始數據:', window.cart);
@@ -922,6 +1031,8 @@ const initCheckout = () => {
                         if (customizations === undefined || customizations === null) {
                             customizations = '';
                         }
+
+                        const meta = getItemCustomizationMeta(item);
                         
                         console.log('🔍 結帳時的商品客制化信息:', customizations);
                         console.log('🔍 結帳時的商品特殊需求:', item.specialRequest);
@@ -931,7 +1042,10 @@ const initCheckout = () => {
                             price: parseFloat(item.price) || 0,
                             quantity: parseInt(item.quantity) || 1,
                             customizations: customizations, // 添加客制化信息
-                            specialRequest: item.specialRequest || '' // 添加特殊需求
+                            specialRequest: item.specialRequest || '', // 添加特殊需求
+                            sugarLevel: meta.sugarLevel || '',
+                            iceLevel: meta.iceLevel || '',
+                            toppings: meta.toppings || []
                         };
                     }),
                     totalAmount: parseFloat(window.cart.reduce((sum, item) => {
@@ -940,9 +1054,12 @@ const initCheckout = () => {
                         return sum + (price * quantity);
                     }, 0)) || 0,
                     paymentMethod: 'cash',
-                    deliveryMethod: 'pickup',
+                    deliveryMethod: orderDeliveryMethod,
                     notes: '前台結帳', // 系統備註
-                    specialRequest: orderLevelSpecialRequest || null // 訂單級別的特殊需求（用戶輸入，目前為空，可擴展）
+                    specialRequest: orderLevelSpecialRequest || null, // 訂單級別的特殊需求（用戶輸入，目前為空，可擴展）
+                    tableNumber: dineInTableNumber || null,
+                    diningMode,
+                    orderType: isDineInOrder ? 'dine-in' : 'regular'
                 };
                 
                 console.log('🔧 修復後的訂單數據:', orderData);

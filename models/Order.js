@@ -27,6 +27,20 @@ const orderItemSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    sugarLevel: {
+        type: String,
+        required: false,
+        trim: true
+    },
+    iceLevel: {
+        type: String,
+        required: false,
+        trim: true
+    },
+    toppings: {
+        type: [String],
+        default: []
+    },
     specialRequest: {
         type: String,
         required: false
@@ -87,7 +101,8 @@ const orderSchema = new mongoose.Schema({
     // 內用訂單相關字段
     tableNumber: {
         type: String,
-        required: false
+        required: false,
+        trim: true
     },
     area: {
         type: String,
