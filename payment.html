@@ -785,6 +785,7 @@ function initTableNumberSection() {
             console.log('[Debug] 前端發送的訂單數據:', JSON.stringify(payload, null, 2));
             console.log('[Debug] 前端發送的 specialRequest:', payload.specialRequest);
             console.log('送出的特殊需求:', payload.specialRequest);
+            console.log('最終送出的 Payload:', payload);
             console.log('[Debug] 確認 specialRequest 是否正確包含在 payload 中:', payload.hasOwnProperty('specialRequest'));
 
             fetch(url, {
