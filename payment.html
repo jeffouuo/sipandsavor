@@ -1082,20 +1082,47 @@ function buildAggregationLine(item = {}) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // 清除待處理訂單
                     localStorage.removeItem('pendingOrder');
                     clearDiningContextStorage();
-                    
-                    // 清空購物車
                     localStorage.removeItem('cart');
-                    // 如果 window.cart 存在（在其他頁面），也清空它
                     if (typeof window.cart !== 'undefined') {
                         window.cart = [];
                     }
                     console.log('✅ 購物車已清空');
-                    
-                    alert('訂單已成功提交！');
-                    window.location.href = 'menu.html';
+
+                    const redirectParams = new URLSearchParams();
+                    redirectParams.set('status', 'success');
+                    const responseOrder = data?.data?.order || null;
+                    const responseData = data?.data || {};
+                    if (responseOrder?.orderNumber || responseData?.orderNumber) {
+                        redirectParams.set('orderNo', responseOrder?.orderNumber || responseData.orderNumber);
+                    }
+                    if (orderData?.totalAmount) {
+                        redirectParams.set('amount', String(orderData.totalAmount));
+                    }
+
+                    if (isDineIn) {
+                        redirectParams.set('type', 'dinein');
+                        const tableParam = finalTableNumber ||
+                            orderData?.tableNumber ||
+                            responseOrder?.tableNumber ||
+                            responseData?.tableNumber ||
+                            '';
+                        if (tableParam) {
+                            redirectParams.set('tableNumber', tableParam);
+                        }
+                    } else {
+                        redirectParams.set('type', 'takeout');
+                        const pickupParam = responseOrder?.pickupNumber ||
+                            responseData?.pickupNumber ||
+                            '';
+                        if (pickupParam) {
+                            redirectParams.set('pickupNumber', pickupParam);
+                        }
+                    }
+
+                    const targetUrl = `index.html?${redirectParams.toString()}`;
+                    window.location.href = targetUrl;
                 } else {
                     alert(data.message || '訂單提交失敗，請重試');
                     btn.disabled = false;
