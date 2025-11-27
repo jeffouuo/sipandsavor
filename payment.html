@@ -1033,8 +1033,7 @@ function buildAggregationLine(item = {}) {
             if (!orderData) {
                 orderData = {};
             }
-            const effectiveSpecialRequest = (selectedMethod.value === 'cash') ? '櫃台結帳' : (specialRequestValue || null);
-            orderData.specialRequest = effectiveSpecialRequest;
+            orderData.specialRequest = (selectedMethod.value === 'cash') ? '櫃台結帳' : (specialRequestValue || null); // 明確設置 specialRequest
             orderData.tableNumber = expectsTableNumber ? (finalTableNumber || null) : null;
             orderData.diningMode = expectsTableNumber ? 'dine-in' : 'takeout';
             orderData.deliveryMethod = expectsTableNumber ? 'dine-in' : 'pickup';
@@ -1044,8 +1043,7 @@ function buildAggregationLine(item = {}) {
             const url = isDineIn ? '/api/orders/dine-in' : '/api/orders/checkout';
 
             const basePayload = {
-                specialRequest: effectiveSpecialRequest,
-                paymentMethod: selectedMethod.value,
+                specialRequest: (selectedMethod.value === 'cash') ? '櫃台結帳' : (specialRequestValue || null),
                 tableNumber: expectsTableNumber ? (finalTableNumber || null) : null,
                 diningMode: orderData.diningMode || (isDineIn ? 'dine-in' : 'takeout')
             };
@@ -1057,7 +1055,6 @@ function buildAggregationLine(item = {}) {
                     area: '內用區',
                     items: orderData.items,
                     total: orderData.totalAmount,
-                    paymentMethod: selectedMethod.value,
                     orderType: 'dine-in',
                     status: 'pending',
                     orderTime: new Date().toISOString()
