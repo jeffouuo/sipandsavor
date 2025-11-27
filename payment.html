@@ -617,7 +617,7 @@ function initTableNumberSection() {
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
             const tableNumberValue = syncTableNumberFromInput();
             const tableNumberInput = document.getElementById('orderTableNumber');
-            console.log('送出的桌號:', tableNumberInput ? tableNumberInput.value : '(無輸入)');
+            console.log('前端準備送出的桌號:', tableNumberValue || '(未填寫)');
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
@@ -741,7 +741,7 @@ function initTableNumberSection() {
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
             const tableNumberValue = syncTableNumberFromInput();
             const tableNumberInput = document.getElementById('orderTableNumber');
-            console.log('送出的桌號:', tableNumberInput ? tableNumberInput.value : '(無輸入)');
+            console.log('前端準備送出的桌號:', tableNumberValue || '(未填寫)');
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
@@ -758,26 +758,28 @@ function initTableNumberSection() {
             const isDineIn = Boolean(resolvedTableNumber);
             const url = isDineIn ? '/api/orders/dine-in' : '/api/orders/checkout';
 
+            const basePayload = {
+                specialRequest: specialRequestValue || null,
+                tableNumber: resolvedTableNumber || null,
+                diningMode: isDineIn ? 'dine-in' : (orderData.diningMode || (resolvedTableNumber ? 'dine-in' : 'takeout'))
+            };
+
             let payload;
             if (isDineIn) {
                 payload = {
-                    tableNumber: resolvedTableNumber,
+                    ...basePayload,
                     area: '內用區',
                     items: orderData.items,
                     total: orderData.totalAmount,
                     orderType: 'dine-in',
                     status: 'pending',
-                    orderTime: new Date().toISOString(),
-                    specialRequest: specialRequestValue || null, // ⚠️ 關鍵：使用讀取到的值
-                    diningMode: 'dine-in'
+                    orderTime: new Date().toISOString()
                 };
             } else {
                 // ⚠️ 關鍵修復 3：確保 requestData 包含 specialRequest 字段
                 payload = {
                     ...orderData,
-                    specialRequest: specialRequestValue || null, // ⚠️ 關鍵：使用讀取到的值，統一變數名稱為 specialRequest
-                    tableNumber: resolvedTableNumber,
-                    diningMode: orderData.diningMode || (resolvedTableNumber ? 'dine-in' : 'takeout')
+                    ...basePayload
                 };
             }
             
