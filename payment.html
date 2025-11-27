@@ -203,6 +203,18 @@
             </div>
         </div>
 
+        <div class="order-table-number" id="dineInTableSection" style="display: none; margin-bottom: 30px;">
+            <h3 style="color: #2c3e50; margin-bottom: 10px; font-size: 1.1em;">內用桌號</h3>
+            <input 
+                type="text"
+                id="orderTableNumber"
+                placeholder="請輸入桌號（例如 B2）"
+                style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit;"
+                maxlength="8"
+            />
+            <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">僅限輸入英數字，例如：5、A1、B2</small>
+        </div>
+
         <div class="order-notes" style="margin-bottom: 30px;">
             <h3 style="color: #2c3e50; margin-bottom: 15px; font-size: 1.2em;">訂單備註（選填）</h3>
             <textarea 
@@ -264,6 +276,7 @@
                 }
                 displayOrderSummary();
                 prefillSpecialRequest();
+                initTableNumberSection();
             } catch (error) {
                 console.error('解析訂單數據失敗:', error);
                 alert('訂單數據格式錯誤，將返回菜單頁面');
@@ -271,22 +284,100 @@
             }
         }
 
-        function collectSpecialRequests(items = []) {
-            if (!Array.isArray(items)) return '';
+function buildAggregationLine(item = {}) {
+    const name = item?.name ? String(item.name).trim() : '';
+    if (!name) return '';
 
-            const notes = [];
-            items.forEach(item => {
-                const name = item?.name ? String(item.name).trim() : '';
-                const note = item?.specialRequest || item?.note || item?.notes || '';
-                const cleanNote = String(note).trim();
+    const noteText = buildItemNoteText(item);
+    const cleanNote = noteText.replace(/^備註：\s*/, '').trim();
+    if (!cleanNote) return '';
 
-                if (name && cleanNote) {
-                    notes.push(`${name}: ${cleanNote}`);
-                }
-            });
+    return `${name}: ${cleanNote}`;
+}
 
-            return notes.join('; ');
+function collectSpecialRequests(items = []) {
+    if (!Array.isArray(items)) return '';
+
+    const lines = [];
+    items.forEach(item => {
+        const line = buildAggregationLine(item);
+        if (line) {
+            lines.push(line);
         }
+    });
+
+    return lines.join('\n');
+}
+
+function normalizeTableNumber(value = '') {
+    return value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+}
+
+function getCurrentTableNumber() {
+    const input = document.getElementById('orderTableNumber');
+    if (input && input.value.trim()) {
+        return normalizeTableNumber(input.value.trim());
+    }
+    if (orderData && orderData.tableNumber && orderData.tableNumber.trim()) {
+        return normalizeTableNumber(orderData.tableNumber.trim());
+    }
+    const stored = localStorage.getItem('dineInTableNumber');
+    return stored ? normalizeTableNumber(stored) : '';
+}
+
+function syncTableNumberFromInput() {
+    const value = getCurrentTableNumber();
+    if (orderData) {
+        orderData.tableNumber = value || null;
+        if (value) {
+            orderData.diningMode = 'dine-in';
+            localStorage.setItem('dineInTableNumber', value);
+        }
+    }
+    return value;
+}
+
+function initTableNumberSection() {
+    const section = document.getElementById('dineInTableSection');
+    const input = document.getElementById('orderTableNumber');
+    if (!section || !input) return;
+
+    const stored = localStorage.getItem('dineInTableNumber');
+    const shouldShow = Boolean(
+        (orderData && (orderData.diningMode === 'dine-in' || orderData.deliveryMethod === 'dine-in')) ||
+        (stored && stored.trim())
+    );
+
+    if (!shouldShow) {
+        section.style.display = 'none';
+        input.value = '';
+        return;
+    }
+
+    section.style.display = 'block';
+    const initialValue = normalizeTableNumber(
+        (orderData && orderData.tableNumber) ||
+        stored ||
+        ''
+    );
+    if (initialValue) {
+        input.value = initialValue;
+        orderData.tableNumber = initialValue;
+        orderData.diningMode = 'dine-in';
+    }
+
+    input.addEventListener('input', () => {
+        const normalized = normalizeTableNumber(input.value);
+        if (input.value !== normalized) {
+            input.value = normalized;
+        }
+        orderData.tableNumber = normalized || null;
+        if (normalized) {
+            orderData.diningMode = 'dine-in';
+            localStorage.setItem('dineInTableNumber', normalized);
+        }
+    });
+}
 
         const STANDARD_SUGAR_LEVELS = ['無糖', '微糖', '半糖', '少糖', '全糖', '正常糖'];
         const STANDARD_ICE_LEVELS = ['去冰', '微冰', '少冰', '正常冰', '熱飲'];
@@ -524,6 +615,7 @@
             // ⚠️ 關鍵修復 1：讀取訂單級別的備註輸入框
             const noteInput = document.getElementById('orderSpecialRequest');
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
+            const tableNumberValue = syncTableNumberFromInput();
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
@@ -532,10 +624,13 @@
             orderData.paymentMethod = selectedMethod.value;
             orderData.specialRequest = specialRequestValue || null; // 明確設置 specialRequest
             const fallbackTableNumber = localStorage.getItem('dineInTableNumber');
-            if (fallbackTableNumber && !orderData.tableNumber) {
-                orderData.tableNumber = fallbackTableNumber;
+            const resolvedTableNumber = tableNumberValue || fallbackTableNumber || null;
+            if (resolvedTableNumber) {
+                orderData.tableNumber = resolvedTableNumber;
+                orderData.diningMode = 'dine-in';
+            } else {
+                orderData.diningMode = orderData.diningMode || 'takeout';
             }
-            orderData.diningMode = orderData.diningMode || (fallbackTableNumber ? 'dine-in' : 'takeout');
 
             // 如果是現金支付，直接提交訂單
             if (selectedMethod.value === 'cash') {
@@ -564,12 +659,13 @@
                 // ⚠️ 關鍵修復 4：讀取訂單級別的備註輸入框（信用卡支付時也要讀取）
                 const noteInput = document.getElementById('orderSpecialRequest');
                 const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
+                const resolvedTableNumber = syncTableNumberFromInput();
                 
                 // 🔍 調試：記錄客人輸入的備註內容
                 console.log('客人輸入的備註內容 (信用卡支付):', specialRequestValue);
                 
                 // 步驟 1：從後端獲取 JSON 參數（不是 HTML）
-                const tableNumber = orderData.tableNumber || localStorage.getItem('dineInTableNumber') || null;
+                const tableNumber = resolvedTableNumber || localStorage.getItem('dineInTableNumber') || null;
                 const diningMode = orderData.diningMode || (tableNumber ? 'dine-in' : 'takeout');
 
                 const payload = {
@@ -641,6 +737,7 @@
             // ⚠️ 關鍵修復 2：讀取訂單級別的備註輸入框（現金支付時也要讀取）
             const noteInput = document.getElementById('orderSpecialRequest');
             const specialRequestValue = noteInput ? (noteInput.value || '').trim() : '';
+            const tableNumberValue = syncTableNumberFromInput();
             
             // 🔍 調試：記錄客人輸入的備註內容
             console.log('客人輸入的備註內容:', specialRequestValue);
@@ -653,14 +750,14 @@
 
             // 檢查是否為內用訂單
             const storedTableNumber = localStorage.getItem('dineInTableNumber');
-            const tableNumberValue = orderData.tableNumber || storedTableNumber || null;
-            const isDineIn = Boolean(tableNumberValue);
+            const resolvedTableNumber = tableNumberValue || storedTableNumber || null;
+            const isDineIn = Boolean(resolvedTableNumber);
             const url = isDineIn ? '/api/orders/dine-in' : '/api/orders/checkout';
 
             let payload;
             if (isDineIn) {
                 payload = {
-                    tableNumber: tableNumberValue,
+                    tableNumber: resolvedTableNumber,
                     area: '內用區',
                     items: orderData.items,
                     total: orderData.totalAmount,
@@ -675,8 +772,8 @@
                 payload = {
                     ...orderData,
                     specialRequest: specialRequestValue || null, // ⚠️ 關鍵：使用讀取到的值，統一變數名稱為 specialRequest
-                    tableNumber: tableNumberValue,
-                    diningMode: orderData.diningMode || (tableNumberValue ? 'dine-in' : 'takeout')
+                    tableNumber: resolvedTableNumber,
+                    diningMode: orderData.diningMode || (resolvedTableNumber ? 'dine-in' : 'takeout')
                 };
             }
             

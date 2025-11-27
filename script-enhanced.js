@@ -778,25 +778,6 @@ window.goToDineIn = function() {
 // 結帳功能
 let isCheckingOut = false; // 防止重複點擊的標誌
 
-// 聚合購物車特殊需求字串
-const buildSpecialRequestSummary = (items = []) => {
-    if (!Array.isArray(items)) {
-        return '';
-    }
-
-    const segments = [];
-    items.forEach(item => {
-        const name = (item && item.name ? String(item.name).trim() : '');
-        const note = (item && item.specialRequest ? String(item.specialRequest).trim() : '');
-
-        if (name && note) {
-            segments.push(`${name}: ${note}`);
-        }
-    });
-
-    return segments.join('; ');
-};
-
 const STANDARD_SUGAR_LEVELS = ['無糖', '微糖', '半糖', '少糖', '全糖', '正常糖'];
 const STANDARD_ICE_LEVELS = ['去冰', '微冰', '少冰', '正常冰', '熱飲'];
 
@@ -912,6 +893,26 @@ const buildItemNoteText = (item = {}) => {
 
     const noteContent = noteSegments.join(' ').trim();
     return noteContent ? `備註：${noteContent}` : '';
+};
+
+// 聚合購物車特殊需求字串
+const buildSpecialRequestSummary = (items = []) => {
+    if (!Array.isArray(items)) {
+        return '';
+    }
+
+    const segments = [];
+    items.forEach(item => {
+        const name = (item && item.name ? String(item.name).trim() : '');
+        const noteText = buildItemNoteText(item);
+        const cleanNote = noteText.replace(/^備註：\s*/, '').trim();
+
+        if (name && cleanNote) {
+            segments.push(`${name}: ${cleanNote}`);
+        }
+    });
+
+    return segments.join('\n');
 };
 
 const initCheckout = () => {
