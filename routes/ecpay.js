@@ -899,10 +899,14 @@ router.post('/result', async (req, res) => {
             // 確認訂單狀態（訂單應該已經在 /callback 中更新為 Paid）
             // 查詢訂單的 pickupNumber
             let pickupNumber = null;
+            let redirectDiningMode = null;
+            let redirectTableNumber = null;
             try {
                 const order = await Order.findOne({ orderNumber: merchantTradeNo });
                 if (order) {
                     pickupNumber = order.pickupNumber || null;
+                    redirectDiningMode = order.diningMode || null;
+                    redirectTableNumber = order.tableNumber || null;
                     console.log('📋 訂單狀態確認:', {
                         orderId: order._id,
                         orderNumber: merchantTradeNo,
@@ -920,11 +924,28 @@ router.post('/result', async (req, res) => {
             
             // 重定向到首頁並帶上訂單參數
             // 如果有 pickupNumber，則帶在 URL 參數中
-            let redirectUrl = `/?status=success&orderNo=${merchantTradeNo}&amount=${totalAmount}`;
-            if (pickupNumber) {
-                redirectUrl += `&pickupNumber=${pickupNumber}`;
+            const redirectParams = new URLSearchParams();
+            redirectParams.set('status', 'success');
+            if (merchantTradeNo) {
+                redirectParams.set('orderNo', merchantTradeNo);
             }
-            return res.status(200).redirect(redirectUrl);
+            if (totalAmount) {
+                redirectParams.set('amount', totalAmount);
+            }
+
+            if (redirectDiningMode === 'dine-in') {
+                redirectParams.set('type', 'dinein');
+                if (redirectTableNumber) {
+                    redirectParams.set('tableNumber', redirectTableNumber);
+                }
+            } else {
+                redirectParams.set('type', 'takeout');
+                if (pickupNumber) {
+                    redirectParams.set('pickupNumber', pickupNumber);
+                }
+            }
+
+            return res.status(200).redirect(`/?${redirectParams.toString()}`);
         } else {
             // 交易失敗，重定向到首頁並帶上錯誤訊息
             console.log('❌ 交易失敗:', params.RtnMsg || 'Unknown error');

@@ -13,6 +13,10 @@ function generateOrderNumber() {
     return `${timestamp}${random}`;
 }
 
+function generatePickupNumber() {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
 // 產品查詢緩存
 const productCache = new Map();
 const PRODUCT_CACHE_DURATION = 5 * 60 * 1000; // 5分鐘緩存
@@ -276,8 +280,15 @@ router.post('/checkout', [
         console.log('[Create Order Debug] 準備存入的桌號:', tableNumberFromRequest || '(空值)');
         const resolvedTableNumber = tableNumberFromRequest || null;
         const resolvedDiningMode = diningModeFromBody || (resolvedTableNumber ? 'dine-in' : (deliveryMethod === 'dine-in' ? 'dine-in' : 'takeout'));
+        if (resolvedDiningMode === 'dine-in' && !resolvedTableNumber) {
+            return res.status(400).json({
+                success: false,
+                message: '內用訂單必須提供桌號'
+            });
+        }
         const resolvedDeliveryMethod = resolvedDiningMode === 'dine-in' ? 'dine-in' : deliveryMethod;
         const resolvedOrderType = resolvedDiningMode === 'dine-in' ? 'dine-in' : 'regular';
+        const pickupNumber = resolvedDiningMode === 'dine-in' ? null : generatePickupNumber();
 
         // 快速驗證產品並更新庫存 - 優先使用內存數據
         const orderItems = [];
@@ -511,7 +522,8 @@ router.post('/checkout', [
             status: 'pending',
             paymentStatus: 'pending',
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            pickupNumber
         };
 
         orderData.tableNumber = resolvedTableNumber || '';

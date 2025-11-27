@@ -203,6 +203,20 @@
             </div>
         </div>
 
+        <div class="order-dining-mode" id="diningModeSection" style="margin-bottom: 30px;">
+            <h3 style="color: #2c3e50; margin-bottom: 10px; font-size: 1.1em;">取餐方式</h3>
+            <div class="dining-mode-options" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="radio" name="diningModeOption" value="takeout" checked>
+                    <span>外帶（櫃檯取餐）</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="radio" name="diningModeOption" value="dine-in">
+                    <span>內用（送餐到桌）</span>
+                </label>
+            </div>
+        </div>
+
         <div class="order-table-number" id="dineInTableSection" style="display: none; margin-bottom: 30px;">
             <h3 style="color: #2c3e50; margin-bottom: 10px; font-size: 1.1em;">內用桌號</h3>
             <input 
@@ -259,6 +273,86 @@
             return data.diningMode === 'dine-in' || data.deliveryMethod === 'dine-in';
         }
 
+        function getDiningModeInputs() {
+            return Array.from(document.querySelectorAll('input[name="diningModeOption"]'));
+        }
+
+        function syncDiningModeRadios(mode) {
+            getDiningModeInputs().forEach(input => {
+                input.checked = input.value === mode;
+            });
+        }
+
+        function refreshTableNumberSection() {
+            const section = document.getElementById('dineInTableSection');
+            const input = getTableNumberInputElement();
+            if (!section || !input) return;
+
+            if (!isDineInOrder()) {
+                section.style.display = 'none';
+                input.value = '';
+                return;
+            }
+
+            section.style.display = 'block';
+            if (orderData && !orderData.tableNumber) {
+                const stored = getCurrentTableNumber();
+                if (stored) {
+                    orderData.tableNumber = stored;
+                }
+            }
+            if (orderData && orderData.tableNumber) {
+                input.value = normalizeTableNumber(orderData.tableNumber);
+            }
+        }
+
+        function applyDiningMode(mode, options = {}) {
+            if (!orderData) {
+                orderData = {};
+            }
+            const normalizedMode = mode === 'dine-in' ? 'dine-in' : 'takeout';
+            orderData.diningMode = normalizedMode;
+            orderData.deliveryMethod = normalizedMode === 'dine-in' ? 'dine-in' : 'pickup';
+
+            if (normalizedMode === 'dine-in') {
+                const existing = getCurrentTableNumber();
+                if (existing) {
+                    orderData.tableNumber = existing;
+                }
+                saveSessionDiningContext(orderData.tableNumber || '', 'dine-in');
+            } else {
+                orderData.tableNumber = null;
+                saveSessionDiningContext('', 'takeout');
+            }
+
+            if (!options.skipRadioSync) {
+                syncDiningModeRadios(normalizedMode);
+            }
+
+            refreshTableNumberSection();
+        }
+
+        function initDiningModeControls() {
+            const inputs = getDiningModeInputs();
+
+            if (!inputs.length) {
+                return;
+            }
+
+            const initialMode = isDineInOrder() ? 'dine-in' : 'takeout';
+            syncDiningModeRadios(initialMode);
+
+            inputs.forEach(input => {
+                input.addEventListener('change', () => {
+                    if (input.checked) {
+                        applyDiningMode(input.value);
+                    }
+                });
+            });
+
+            applyDiningMode(initialMode, { skipRadioSync: true });
+        }
+
         function loadOrderData() {
             const storedData = localStorage.getItem('pendingOrder');
             if (!storedData) {
@@ -295,6 +389,7 @@
                 displayOrderSummary();
                 prefillSpecialRequest();
                 initTableNumberSection();
+                initDiningModeControls();
             } catch (error) {
                 console.error('解析訂單數據失敗:', error);
                 alert('訂單數據格式錯誤，將返回菜單頁面');

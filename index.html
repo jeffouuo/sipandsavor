@@ -163,11 +163,14 @@
             const orderNo = urlParams.get('orderNo');
             const amount = urlParams.get('amount');
             const message = urlParams.get('message');
+            const orderType = urlParams.get('type');
+            const pickupNumber = urlParams.get('pickupNumber');
+            const tableNumber = urlParams.get('tableNumber');
 
             // 如果 status=success，執行訂單完成邏輯
             if (status === 'success') {
                 console.log('🎉 付款成功，開始處理訂單完成邏輯...');
-                handleOrderSuccess(orderNo, amount);
+                handleOrderSuccess(orderNo, amount, orderType, pickupNumber, tableNumber);
             } else if (status === 'failed' || status === 'error') {
                 // 處理失敗情況
                 console.log('❌ 付款失敗或發生錯誤');
@@ -181,25 +184,38 @@
             /**
              * 處理訂單成功邏輯
              */
-            function handleOrderSuccess(orderNo, amount) {
+            function handleOrderSuccess(orderNo, amount, orderType, pickupNumberParam, tableNumberParam) {
                 try {
                     // 執行動作 1: 清空購物車
                     console.log('🛒 清空購物車...');
                     clearCart();
         
-                    // 執行動作 2: 讀取 URL 參數中的 pickupNumber（由後端傳回）
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const pickupNumber = urlParams.get('pickupNumber');
-        
-                    if (pickupNumber) {
-                        // 外帶：顯示後端傳回的取餐號
-                        console.log('🥤 外帶訂單，取餐號:', pickupNumber);
-                        showSuccessModal(`付款成功！您的取餐號碼是 ${pickupNumber}`, orderNo, amount, pickupNumber);
-                    } else {
-                        // 內用：顯示送餐訊息
-                        console.log('🍽️ 內用訂單');
-                        showSuccessModal('付款成功！請回座稍候，我們將為您送餐', orderNo, amount);
+                    const normalizedType = orderType === 'dinein' ? 'dinein' : 'takeout';
+                    let successMessage = '付款成功！';
+
+                    if (normalizedType === 'takeout' && pickupNumberParam) {
+                        successMessage = `付款成功！您的取餐號碼：${pickupNumberParam}`;
+                    } else if (normalizedType === 'dinein' && tableNumberParam) {
+                        successMessage = `付款成功！餐點將送至桌號：${tableNumberParam}`;
+                    } else if (pickupNumberParam) {
+                        successMessage = `付款成功！您的取餐號碼：${pickupNumberParam}`;
+                    } else if (tableNumberParam) {
+                        successMessage = `付款成功！餐點將送至桌號：${tableNumberParam}`;
                     }
+
+                    if (normalizedType === 'takeout') {
+                        console.log('🥤 外帶訂單，取餐號:', pickupNumberParam || '(無)');
+                    } else {
+                        console.log('🍽️ 內用訂單，桌號:', tableNumberParam || '(無)');
+                    }
+
+                    showSuccessModal(
+                        successMessage,
+                        orderNo,
+                        amount,
+                        normalizedType === 'takeout' ? pickupNumberParam : null,
+                        normalizedType === 'dinein' ? tableNumberParam : null
+                    );
         
                     // 執行動作 3: 清理 URL 參數和 localStorage
                     cleanupAfterOrder();
@@ -249,7 +265,7 @@
         /**
          * 顯示成功視窗
          */
-        function showSuccessModal(message, orderNo, amount, pickupCode) {
+        function showSuccessModal(message, orderNo, amount, pickupCode, dineInTable) {
             // 創建 Modal 元素
             const modal = document.createElement('div');
             modal.className = 'order-success-modal';
@@ -299,6 +315,13 @@
                     <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
                         <p style="color: #2c3e50; font-size: 16px; margin-bottom: 10px;">取餐號碼</p>
                         <p style="color: #2ed573; font-size: 48px; font-weight: bold; letter-spacing: 5px;">${pickupCode}</p>
+                    </div>
+                `;
+            } else if (dineInTable) {
+                html += `
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                        <p style="color: #2c3e50; font-size: 16px; margin-bottom: 10px;">內用桌號</p>
+                        <p style="color: #2ed573; font-size: 36px; font-weight: bold; letter-spacing: 3px;">${dineInTable}</p>
                     </div>
                 `;
             }
