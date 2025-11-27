@@ -783,6 +783,25 @@ window.goToDineIn = function() {
 // 結帳功能
 let isCheckingOut = false; // 防止重複點擊的標誌
 
+// 聚合購物車特殊需求字串
+const buildSpecialRequestSummary = (items = []) => {
+    if (!Array.isArray(items)) {
+        return '';
+    }
+
+    const segments = [];
+    items.forEach(item => {
+        const name = (item && item.name ? String(item.name).trim() : '');
+        const note = (item && item.specialRequest ? String(item.specialRequest).trim() : '');
+
+        if (name && note) {
+            segments.push(`${name}: ${note}`);
+        }
+    });
+
+    return segments.join('; ');
+};
+
 const initCheckout = () => {
     const checkoutBtn = document.querySelector('.checkout-btn');
     if (checkoutBtn) {
@@ -803,9 +822,8 @@ const initCheckout = () => {
             checkoutBtn.disabled = true;
             checkoutBtn.textContent = '處理中...';
             checkoutBtn.style.opacity = '0.6';
-            
+            const orderLevelSpecialRequest = buildSpecialRequestSummary(window.cart || []);
 
-            
             // 準備訂單數據
             let orderData = {
                 items: window.cart.map(item => {
@@ -814,13 +832,24 @@ const initCheckout = () => {
                     if (!customizations && item.originalItem && item.originalItem.customizations) {
                         customizations = item.originalItem.customizations;
                     }
+
+                    const itemSpecialRequest = (item.specialRequest && item.specialRequest.trim())
+                        ? item.specialRequest.trim()
+                        : (
+                            item.originalItem &&
+                            item.originalItem.specialRequest &&
+                            item.originalItem.specialRequest.trim()
+                                ? item.originalItem.specialRequest.trim()
+                                : ''
+                        );
                     
                     console.log('🔍 結帳時的商品客制化信息:', customizations);
                     return {
                         name: item.name,
                         price: parseFloat(item.price) || 0,
                         quantity: parseInt(item.quantity) || 1,
-                        customizations: customizations // 添加客制化信息
+                        customizations: customizations, // 添加客制化信息
+                        specialRequest: itemSpecialRequest
                     };
                 }),
                 totalAmount: parseFloat(window.cart.reduce((sum, item) => {
@@ -831,7 +860,7 @@ const initCheckout = () => {
                     paymentMethod: 'cash',
                     deliveryMethod: 'pickup',
                     notes: '前台結帳', // 系統備註
-                    specialRequest: null // 訂單級別的特殊需求（用戶輸入，目前為空，可擴展）
+                    specialRequest: orderLevelSpecialRequest || null // 訂單級別的特殊需求（用戶輸入，目前為空，可擴展）
                 };
             
             // 驗證數據格式
@@ -913,7 +942,7 @@ const initCheckout = () => {
                     paymentMethod: 'cash',
                     deliveryMethod: 'pickup',
                     notes: '前台結帳', // 系統備註
-                    specialRequest: null // 訂單級別的特殊需求（用戶輸入，目前為空，可擴展）
+                    specialRequest: orderLevelSpecialRequest || null // 訂單級別的特殊需求（用戶輸入，目前為空，可擴展）
                 };
                 
                 console.log('🔧 修復後的訂單數據:', orderData);

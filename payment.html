@@ -253,10 +253,64 @@
             try {
                 orderData = JSON.parse(storedData);
                 displayOrderSummary();
+                prefillSpecialRequest();
             } catch (error) {
                 console.error('解析訂單數據失敗:', error);
                 alert('訂單數據格式錯誤，將返回菜單頁面');
                 window.location.href = 'menu.html';
+            }
+        }
+
+        function collectSpecialRequests(items = []) {
+            if (!Array.isArray(items)) return '';
+
+            const notes = [];
+            items.forEach(item => {
+                const name = item?.name ? String(item.name).trim() : '';
+                const note = item?.specialRequest || item?.note || item?.notes || '';
+                const cleanNote = String(note).trim();
+
+                if (name && cleanNote) {
+                    notes.push(`${name}: ${cleanNote}`);
+                }
+            });
+
+            return notes.join('; ');
+        }
+
+        // ⚠️ 關鍵修復：自動帶入購物車商品的特殊需求
+        function prefillSpecialRequest() {
+            const noteInput = document.getElementById('orderSpecialRequest');
+            if (!noteInput) return;
+
+            let prefValue = '';
+
+            if (orderData && Array.isArray(orderData.items)) {
+                prefValue = collectSpecialRequests(orderData.items);
+            }
+
+            if (!prefValue) {
+                try {
+                    const cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
+                    prefValue = collectSpecialRequests(cartItems);
+                } catch (error) {
+                    console.warn('⚠️ 無法解析購物車資料用於備註自動填入:', error);
+                }
+            }
+
+            if (!prefValue && orderData && orderData.specialRequest) {
+                prefValue = orderData.specialRequest.trim();
+            }
+
+            noteInput.value = prefValue || '';
+            if (orderData) {
+                orderData.specialRequest = prefValue || '';
+            }
+
+            if (prefValue) {
+                console.log('🔄 自動填入訂單備註:', prefValue);
+            } else {
+                console.log('ℹ️ 沒有可自動填入的備註');
             }
         }
 
@@ -397,18 +451,22 @@
                 console.log('客人輸入的備註內容 (信用卡支付):', specialRequestValue);
                 
                 // 步驟 1：從後端獲取 JSON 參數（不是 HTML）
+                const payload = {
+                    items: orderData.items,
+                    totalAmount: orderData.totalAmount,
+                    paymentMethod: 'Credit',
+                    diningMode: localStorage.getItem('dineInTableNumber') ? 'dine-in' : 'takeout', // 傳遞用餐模式給後端
+                    specialRequest: specialRequestValue || null // ⚠️ 關鍵：使用讀取到的值，統一變數名稱為 specialRequest
+                };
+
+                console.log('送出的特殊需求:', payload.specialRequest);
+
                 const response = await fetch('/api/ecpay/get-params', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        items: orderData.items,
-                        totalAmount: orderData.totalAmount,
-                        paymentMethod: 'Credit',
-                        diningMode: localStorage.getItem('dineInTableNumber') ? 'dine-in' : 'takeout', // 傳遞用餐模式給後端
-                        specialRequest: specialRequestValue || null // ⚠️ 關鍵：使用讀取到的值，統一變數名稱為 specialRequest
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 if (!response.ok) {
@@ -475,9 +533,9 @@
             const isDineIn = localStorage.getItem('dineInTableNumber');
             const url = isDineIn ? '/api/orders/dine-in' : '/api/orders/checkout';
 
-            let requestData;
+            let payload;
             if (isDineIn) {
-                requestData = {
+                payload = {
                     tableNumber: localStorage.getItem('dineInTableNumber'),
                     area: '內用區',
                     items: orderData.items,
@@ -489,23 +547,24 @@
                 };
             } else {
                 // ⚠️ 關鍵修復 3：確保 requestData 包含 specialRequest 字段
-                requestData = {
+                payload = {
                     ...orderData,
                     specialRequest: specialRequestValue || null // ⚠️ 關鍵：使用讀取到的值，統一變數名稱為 specialRequest
                 };
             }
             
             // 🔍 調試：記錄前端發送的數據
-            console.log('[Debug] 前端發送的訂單數據:', JSON.stringify(requestData, null, 2));
-            console.log('[Debug] 前端發送的 specialRequest:', requestData.specialRequest);
-            console.log('[Debug] 確認 specialRequest 是否正確包含在 payload 中:', requestData.hasOwnProperty('specialRequest'));
+            console.log('[Debug] 前端發送的訂單數據:', JSON.stringify(payload, null, 2));
+            console.log('[Debug] 前端發送的 specialRequest:', payload.specialRequest);
+            console.log('送出的特殊需求:', payload.specialRequest);
+            console.log('[Debug] 確認 specialRequest 是否正確包含在 payload 中:', payload.hasOwnProperty('specialRequest'));
 
             fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(requestData)
+                body: JSON.stringify(payload)
             })
             .then(response => response.json())
             .then(data => {
