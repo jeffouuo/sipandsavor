@@ -866,7 +866,7 @@ function buildAggregationLine(item = {}) {
             
             // 更新訂單數據，包含 specialRequest
             orderData.paymentMethod = selectedMethod.value;
-            orderData.specialRequest = specialRequestValue || null; // 明確設置 specialRequest
+            orderData.specialRequest = (selectedMethod?.value === 'cash') ? '櫃台結帳' : (specialRequestValue || null); // 現金統一為櫃台結帳
             orderData.tableNumber = expectsTableNumber ? (finalTableNumber || null) : null;
             orderData.diningMode = expectsTableNumber ? 'dine-in' : 'takeout';
             orderData.deliveryMethod = expectsTableNumber ? 'dine-in' : 'pickup';
@@ -1035,7 +1035,7 @@ function buildAggregationLine(item = {}) {
             const url = isDineIn ? '/api/orders/dine-in' : '/api/orders/checkout';
 
             const basePayload = {
-                specialRequest: specialRequestValue || null,
+                specialRequest: (selectedMethod?.value === 'cash') ? '櫃台結帳' : (specialRequestValue || null),
                 tableNumber: expectsTableNumber ? (finalTableNumber || null) : null,
                 diningMode: orderData.diningMode || (isDineIn ? 'dine-in' : 'takeout')
             };
