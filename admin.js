@@ -863,50 +863,40 @@ function renderOrdersTable(orders, pagination) {
             const itemName = item?.name ? String(item.name) : '未知商品';
             const mainLine = `<div class="order-item-line" style="font-weight: 500;">${itemName} x${quantity}</div>`;
             
-            // 備註行：組合甜度、冰塊、加料、特殊需求
+            // 備註行：組合甜度、冰塊、加料
             const noteParts = [];
             if (meta.sugarLevel) noteParts.push(meta.sugarLevel);
             if (meta.iceLevel) noteParts.push(meta.iceLevel);
             if (meta.toppings.length) noteParts.push(`+ ${meta.toppings.join(', ')}`);
             if (meta.extras.length) noteParts.push(meta.extras.join(', '));
             
-            const special = normalizeAdminString(item?.specialRequest || item?.note || item?.notes);
-            if (special) noteParts.push(special);
+            // ⚠️ 關鍵：每杯飲料的特殊需求顯示在該飲料下方（紅色標示）
+            const itemSpecialRequest = normalizeAdminString(item?.specialRequest || item?.note || item?.notes);
             
-            const noteContent = noteParts.join(' ').trim();
-            const noteHtml = noteContent
-                ? `<div class="order-item-note" style="color: #666; font-size: 12px; margin-top: 2px; padding-left: 8px;">${noteContent}</div>`
-                : '';
+            let noteHtml = '';
+            if (noteParts.length > 0 || itemSpecialRequest) {
+                let noteContent = noteParts.join(' ').trim();
+                // 如果有特殊需求，用紅色標示並換行顯示
+                if (itemSpecialRequest) {
+                    noteContent = noteContent 
+                        ? `${noteContent}<br><span style="color: #e74c3c; font-weight: 500;">${itemSpecialRequest}</span>`
+                        : `<span style="color: #e74c3c; font-weight: 500;">${itemSpecialRequest}</span>`;
+                }
+                noteHtml = `<div class="order-item-note" style="color: #666; font-size: 12px; margin-top: 2px; padding-left: 8px;">${noteContent}</div>`;
+            }
             
             return mainLine + noteHtml;
         }).join('');
         
         const statusClass = `status-${order.status}`;
         
-        // 簡化特殊需求顯示邏輯
-        const getSpecialRequests = () => {
-            const specialRequests = [];
-            
-            (order.items || []).forEach(item => {
-                const noteText = buildAdminItemNoteText(item);
-                if (noteText) {
-                    const plainText = noteText.replace(/^備註：\s*/, '').trim();
-                    specialRequests.push(`${item.name}: ${plainText}`);
-                }
-            });
-            
-            // 注意：訂單級別的 specialRequest 將在下面單獨顯示，這裡只處理商品級別的特殊需求
-            return specialRequests;
-        };
-        
-        const specialRequests = getSpecialRequests();
-        
         // 🔍 調試：檢查訂單級別的字段
         console.log('🔍 [後台前端] 訂單 ID:', order._id);
         console.log('🔍 [後台前端] order.specialRequest (客人輸入):', order.specialRequest);
         console.log('🔍 [後台前端] order.notes (系統備註):', order.notes);
         
-        // 構建特殊需求顯示（只顯示訂單級別的 specialRequest，不顯示系統備註）
+        // 構建特殊需求顯示（只顯示訂單級別的 specialRequest）
+        // ⚠️ 重要：商品級別的特殊需求已經在 itemsHtml 中顯示，這裡只顯示訂單級別的特殊需求
         const buildSpecialRequestDisplay = () => {
             // HTML 轉義函數（簡單版本）
             const escapeHtml = (text) => {
@@ -919,23 +909,15 @@ function renderOrdersTable(orders, pagination) {
                     .replace(/'/g, '&#039;');
             };
             
-            const parts = [];
-            
-            // 1. 商品級別的特殊需求（如果有）
-            if (specialRequests.length > 0) {
-                const escapedItemRequests = specialRequests.map(req => escapeHtml(req)).join('; ');
-                parts.push(`<span style="color: #e74c3c; font-weight: 500;">${escapedItemRequests}</span>`);
-            }
-            
-            // 2. 訂單級別的特殊需求（order.specialRequest）
-            // ⚠️ 重要：如果有內容才顯示，如果為空則完全不顯示
+            // ⚠️ 關鍵：只顯示訂單級別的特殊需求（order.specialRequest）
+            // 商品級別的特殊需求已經在 itemsHtml 中顯示，避免重複
             if (order.specialRequest && order.specialRequest.trim() !== '') {
                 const escapedSpecialRequest = escapeHtml(order.specialRequest.trim());
-                parts.push(`<span style="color: #e74c3c; font-weight: bold;">${escapedSpecialRequest}</span>`);
+                return `<span style="color: #e74c3c; font-weight: bold;">${escapedSpecialRequest}</span>`;
             }
             
-            // 如果沒有任何特殊需求，返回 null（不顯示）
-            return parts.length > 0 ? parts.join('<br>') : null;
+            // 如果沒有訂單級別的特殊需求，返回 null（不顯示）
+            return null;
         };
         
         const specialRequestDisplayHtml = buildSpecialRequestDisplay();
@@ -944,12 +926,12 @@ function renderOrdersTable(orders, pagination) {
         let userDisplay = '';
         const isDineInDisplay = order.diningMode === 'dine-in' || order.orderType === 'dine-in' || order.deliveryMethod === 'dine-in';
         
-        // 判斷付款方式標籤
+        // 判斷付款方式標籤（使用外框樣式：紅色外框用於櫃台結帳，綠色外框用於ECPay）
         const paymentMethod = order.paymentMethod || 'cash';
         const paymentTag = paymentMethod === 'cash' 
-            ? '<span class="payment-tag cash-tag" style="background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px;">[櫃台結帳]</span>'
+            ? '<span class="payment-tag cash-tag" style="color: #e74c3c; border: 2px solid #e74c3c; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px;">[櫃台結帳]</span>'
             : (paymentMethod === 'credit_card' 
-                ? '<span class="payment-tag card-tag" style="background: #3498db; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px;">[ECPay]</span>'
+                ? '<span class="payment-tag card-tag" style="color: #27ae60; border: 2px solid #27ae60; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px;">[ECPay]</span>'
                 : '');
         
         if (isDineInDisplay) {
