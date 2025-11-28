@@ -854,7 +854,7 @@ function renderOrdersTable(orders, pagination) {
         console.log('🟢 訂單項目:', order.items);
         console.log('檢查桌號:', order.tableNumber, '用餐模式:', order.diningMode);
         
-        // 正確顯示商品和數量（格式：主行顯示飲料名稱 x 數量，備註行顯示甜度/冰塊/加料/特殊需求）
+        // 正確顯示商品和數量（格式：主行顯示飲料名稱 x 數量，備註行只顯示甜度/冰塊/加料，不顯示特殊需求）
         const itemsHtml = (order.items || []).map(item => {
             const quantity = item.quantity || 1;
             const meta = getAdminItemMeta(item);
@@ -863,27 +863,17 @@ function renderOrdersTable(orders, pagination) {
             const itemName = item?.name ? String(item.name) : '未知商品';
             const mainLine = `<div class="order-item-line" style="font-weight: 500;">${itemName} x${quantity}</div>`;
             
-            // 備註行：組合甜度、冰塊、加料
+            // 備註行：只顯示甜度、冰塊、加料（不顯示特殊需求，特殊需求統一顯示在「特殊需求」欄位）
             const noteParts = [];
             if (meta.sugarLevel) noteParts.push(meta.sugarLevel);
             if (meta.iceLevel) noteParts.push(meta.iceLevel);
             if (meta.toppings.length) noteParts.push(`+ ${meta.toppings.join(', ')}`);
             if (meta.extras.length) noteParts.push(meta.extras.join(', '));
             
-            // ⚠️ 關鍵：每杯飲料的特殊需求顯示在該飲料下方（紅色標示）
-            const itemSpecialRequest = normalizeAdminString(item?.specialRequest || item?.note || item?.notes);
-            
-            let noteHtml = '';
-            if (noteParts.length > 0 || itemSpecialRequest) {
-                let noteContent = noteParts.join(' ').trim();
-                // 如果有特殊需求，用紅色標示並換行顯示
-                if (itemSpecialRequest) {
-                    noteContent = noteContent 
-                        ? `${noteContent}<br><span style="color: #e74c3c; font-weight: 500;">${itemSpecialRequest}</span>`
-                        : `<span style="color: #e74c3c; font-weight: 500;">${itemSpecialRequest}</span>`;
-                }
-                noteHtml = `<div class="order-item-note" style="color: #666; font-size: 12px; margin-top: 2px; padding-left: 8px;">${noteContent}</div>`;
-            }
+            const noteContent = noteParts.join(' ').trim();
+            const noteHtml = noteContent
+                ? `<div class="order-item-note" style="color: #666; font-size: 12px; margin-top: 2px; padding-left: 8px;">${noteContent}</div>`
+                : '';
             
             return mainLine + noteHtml;
         }).join('');
@@ -895,8 +885,8 @@ function renderOrdersTable(orders, pagination) {
         console.log('🔍 [後台前端] order.specialRequest (客人輸入):', order.specialRequest);
         console.log('🔍 [後台前端] order.notes (系統備註):', order.notes);
         
-        // 構建特殊需求顯示（只顯示訂單級別的 specialRequest）
-        // ⚠️ 重要：商品級別的特殊需求已經在 itemsHtml 中顯示，這裡只顯示訂單級別的特殊需求
+        // 構建特殊需求顯示（統一收集所有特殊需求，只顯示一次）
+        // ⚠️ 重要：所有特殊需求（商品級別 + 訂單級別）統一顯示在「特殊需求」欄位
         const buildSpecialRequestDisplay = () => {
             // HTML 轉義函數（簡單版本）
             const escapeHtml = (text) => {
@@ -909,15 +899,38 @@ function renderOrdersTable(orders, pagination) {
                     .replace(/'/g, '&#039;');
             };
             
-            // ⚠️ 關鍵：只顯示訂單級別的特殊需求（order.specialRequest）
-            // 商品級別的特殊需求已經在 itemsHtml 中顯示，避免重複
+            // 系統備註關鍵字（不應該顯示在特殊需求欄位）
+            const systemNotes = ['櫃台結帳', '綠界金流支付', '前台結帳', 'ECPay'];
+            const isSystemNote = (text) => {
+                if (!text) return false;
+                return systemNotes.some(note => text.includes(note));
+            };
+            
+            const parts = [];
+            
+            // 1. 收集所有商品級別的特殊需求
+            (order.items || []).forEach(item => {
+                const itemSpecialRequest = normalizeAdminString(item?.specialRequest || item?.note || item?.notes);
+                // 過濾掉系統備註和空值
+                if (itemSpecialRequest && !isSystemNote(itemSpecialRequest)) {
+                    const escaped = escapeHtml(itemSpecialRequest);
+                    parts.push(`<span style="color: #e74c3c; font-weight: 500;">${item.name}: ${escaped}</span>`);
+                }
+            });
+            
+            // 2. 訂單級別的特殊需求（order.specialRequest）
+            // ⚠️ 關鍵：過濾掉系統備註（如「櫃台結帳」）
             if (order.specialRequest && order.specialRequest.trim() !== '') {
-                const escapedSpecialRequest = escapeHtml(order.specialRequest.trim());
-                return `<span style="color: #e74c3c; font-weight: bold;">${escapedSpecialRequest}</span>`;
+                const trimmed = order.specialRequest.trim();
+                // 只顯示非系統備註的特殊需求
+                if (!isSystemNote(trimmed)) {
+                    const escapedSpecialRequest = escapeHtml(trimmed);
+                    parts.push(`<span style="color: #e74c3c; font-weight: bold;">${escapedSpecialRequest}</span>`);
+                }
             }
             
-            // 如果沒有訂單級別的特殊需求，返回 null（不顯示）
-            return null;
+            // 如果沒有任何特殊需求，返回 null（不顯示）
+            return parts.length > 0 ? parts.join('<br>') : null;
         };
         
         const specialRequestDisplayHtml = buildSpecialRequestDisplay();
