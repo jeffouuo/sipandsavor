@@ -859,6 +859,28 @@ function renderOrdersTable(orders, pagination) {
             return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         };
         
+        // 清洗商品級別特殊需求內容，只保留客人手打的文字
+        const cleanItemSpecialRequest = (item) => {
+            let specialRequest = normalizeAdminString(item?.specialRequest);
+            if (!specialRequest) {
+                return '';
+            }
+            
+            // 移除飲料名稱（例如 "星辰奶茶: 多冰" -> "多冰"）
+            const itemName = item?.name ? String(item.name).trim() : '';
+            if (itemName) {
+                const itemNamePattern = new RegExp(`^${escapeRegex(itemName)}\\s*[:：]\\s*`, 'i');
+                specialRequest = specialRequest.replace(itemNamePattern, '');
+            }
+            
+            // 移除加料資訊（例如 "+ 寒天", "+ 珍珠, 寒天"）
+            specialRequest = specialRequest.replace(/\+\s*[^，,\s]+(?:\s*[，,]\s*[^，,\s]+)*/g, '');
+            
+            // 清除多餘空白
+            specialRequest = specialRequest.replace(/\s{2,}/g, ' ').trim();
+            return specialRequest;
+        };
+        
         // 正確顯示商品和數量（三行格式：名稱+價格 / 規格+加料 / 特殊需求）
         const itemsHtml = (order.items || []).map(item => {
             const quantity = item.quantity || 1;
@@ -927,23 +949,12 @@ function renderOrdersTable(orders, pagination) {
             
             // 收集所有商品級別的特殊需求
             (order.items || []).forEach(item => {
-                const itemName = item?.name ? String(item.name) : '未知商品';
-                let itemSpecialRequest = normalizeAdminString(item?.specialRequest);
+                let itemSpecialRequest = cleanItemSpecialRequest(item);
                 
                 // 過濾掉系統備註和空值
                 if (itemSpecialRequest && !isSystemNote(itemSpecialRequest)) {
-                    // 過濾掉加料資訊（以「+」開頭的部分）
-                    itemSpecialRequest = itemSpecialRequest.replace(/\+\s*[^，,\s]+(?:\s*[，,]\s*[^，,\s]+)*/g, '').trim();
-                    
-                    // 過濾掉重複的飲料名稱（例如 "星辰奶茶: 多冰" -> "多冰"）
-                    const itemNamePattern = new RegExp(`^${escapeRegex(itemName)}\\s*[:：]\\s*`, 'i');
-                    itemSpecialRequest = itemSpecialRequest.replace(itemNamePattern, '').trim();
-                    
-                    // 如果過濾後還有內容，才顯示
-                    if (itemSpecialRequest) {
-                        const escaped = escapeHtml(itemSpecialRequest);
-                        parts.push(`<span style="color: #e74c3c; font-weight: 500;">${escapeHtml(itemName)}: ${escaped}</span>`);
-                    }
+                    const escaped = escapeHtml(itemSpecialRequest);
+                    parts.push(`<span style="color: #e74c3c; font-weight: 500;">${escaped}</span>`);
                 }
             });
             
