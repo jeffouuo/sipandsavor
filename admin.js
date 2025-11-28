@@ -854,33 +854,6 @@ function renderOrdersTable(orders, pagination) {
         console.log('🟢 訂單項目:', order.items);
         console.log('檢查桌號:', order.tableNumber, '用餐模式:', order.diningMode);
         
-        // 輔助函數：轉義正則表達式特殊字符
-        const escapeRegex = (str) => {
-            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        };
-        
-        // 清洗商品級別特殊需求內容，只保留客人手打的文字
-        const cleanItemSpecialRequest = (item) => {
-            let specialRequest = normalizeAdminString(item?.specialRequest);
-            if (!specialRequest) {
-                return '';
-            }
-            
-            // 移除飲料名稱（例如 "星辰奶茶: 多冰" -> "多冰"）
-            const itemName = item?.name ? String(item.name).trim() : '';
-            if (itemName) {
-                const itemNamePattern = new RegExp(`^${escapeRegex(itemName)}\\s*[:：]\\s*`, 'i');
-                specialRequest = specialRequest.replace(itemNamePattern, '');
-            }
-            
-            // 移除加料資訊（例如 "+ 寒天", "+ 珍珠, 寒天"）
-            specialRequest = specialRequest.replace(/\+\s*[^，,\s]+(?:\s*[，,]\s*[^，,\s]+)*/g, '');
-            
-            // 清除多餘空白
-            specialRequest = specialRequest.replace(/\s{2,}/g, ' ').trim();
-            return specialRequest;
-        };
-        
         // 正確顯示商品和數量（三行格式：名稱+價格 / 規格+加料 / 特殊需求）
         const itemsHtml = (order.items || []).map(item => {
             const quantity = item.quantity || 1;
@@ -947,13 +920,12 @@ function renderOrdersTable(orders, pagination) {
             
             const parts = [];
             
-            // 收集所有商品級別的特殊需求
+            // 收集所有商品級別的特殊需求（顯示原始字串）
             (order.items || []).forEach(item => {
-                let itemSpecialRequest = cleanItemSpecialRequest(item);
+                const rawSpecialRequest = normalizeAdminString(item?.specialRequest);
                 
-                // 過濾掉系統備註和空值
-                if (itemSpecialRequest && !isSystemNote(itemSpecialRequest)) {
-                    const escaped = escapeHtml(itemSpecialRequest);
+                if (rawSpecialRequest && !isSystemNote(rawSpecialRequest)) {
+                    const escaped = escapeHtml(rawSpecialRequest);
                     parts.push(`<span style="color: #e74c3c; font-weight: 500;">${escaped}</span>`);
                 }
             });
