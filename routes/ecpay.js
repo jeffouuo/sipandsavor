@@ -257,7 +257,7 @@ router.post('/callback', async (req, res) => {
                     const originalSpecialRequest = order.specialRequest;
                     
                     order.paymentStatus = 'paid';
-                    order.status = 'pending'; // 保持 pending，等待處理
+                    order.status = 'completed'; // 信用卡付款完成後，狀態更新為已完成
                     order.notes = '綠界金流支付'; // 更新系統備註
                     // ⚠️ 絕對不要動 specialRequest，保持用戶輸入的原始值
                     order.updatedAt = new Date();
