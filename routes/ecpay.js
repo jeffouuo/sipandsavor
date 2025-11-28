@@ -418,15 +418,30 @@ router.post('/get-params', async (req, res) => {
         console.log('💾 開始在資料庫建立訂單（狀態：Unpaid）...');
         
         // 準備訂單項目
+        // ⚠️ 關鍵：必須完整保存所有商品資訊（甜度、冰塊、加料等），與現金付款保持一致
         const orderItems = [];
         for (const item of items) {
-            orderItems.push({
-                name: item.name,
+            // 提取客製化資訊（甜度、冰塊、加料）
+            const customizationMeta = getEcpayItemMeta(item);
+            
+            const orderItem = {
+                name: item.name, // 保留原始名稱（包含客製化資訊）
                 price: parseFloat(item.price) || 0,
                 quantity: parseInt(item.quantity) || 1,
-                subtotal: (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1)
-            });
+                subtotal: (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1),
+                // ⚠️ 關鍵：保存完整的客製化資訊
+                customizations: item.customizations || '',
+                specialRequest: item.specialRequest || '',
+                sugarLevel: customizationMeta.sugarLevel || '',
+                iceLevel: customizationMeta.iceLevel || '',
+                toppings: customizationMeta.toppings || []
+            };
+            
+            orderItems.push(orderItem);
         }
+        
+        // 🔍 除錯：在存入資料庫前，確認所有商品資訊完整
+        console.log('[Debug] [ECPay] 準備存入 DB 的 Items:', JSON.stringify(orderItems, null, 2));
         
         // ⚠️ 如果是外帶 (takeout)，生成 4 碼隨機取餐號
         let pickupNumber = null;
@@ -466,6 +481,9 @@ router.post('/get-params', async (req, res) => {
         });
         console.log('[Debug] [ECPay] 確認 specialRequest 是否正確賦值:', orderData.specialRequest);
         console.log('[Debug] [ECPay] orderData 完整內容:', JSON.stringify(orderData, null, 2));
+        
+        // 🔍 除錯：在存入資料庫前，確認所有商品資訊完整（包含甜度、冰塊）
+        console.log('[Debug] 準備存入 DB 的 Items:', JSON.stringify(orderData.items, null, 2));
         
         let order = null;
         try {
