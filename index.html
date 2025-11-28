@@ -166,11 +166,12 @@
             const orderType = urlParams.get('type');
             const pickupNumber = urlParams.get('pickupNumber');
             const tableNumber = urlParams.get('tableNumber');
+            const paymentMethod = urlParams.get('method'); // ⚠️ 新增：讀取付款方式參數
 
             // 如果 status=success，執行訂單完成邏輯
             if (status === 'success') {
                 console.log('🎉 付款成功，開始處理訂單完成邏輯...');
-                handleOrderSuccess(orderNo, amount, orderType, pickupNumber, tableNumber);
+                handleOrderSuccess(orderNo, amount, orderType, pickupNumber, tableNumber, paymentMethod);
             } else if (status === 'failed' || status === 'error') {
                 // 處理失敗情況
                 console.log('❌ 付款失敗或發生錯誤');
@@ -184,23 +185,43 @@
             /**
              * 處理訂單成功邏輯
              */
-            function handleOrderSuccess(orderNo, amount, orderType, pickupNumberParam, tableNumberParam) {
+            function handleOrderSuccess(orderNo, amount, orderType, pickupNumberParam, tableNumberParam, paymentMethodParam) {
                 try {
                     // 執行動作 1: 清空購物車
                     console.log('🛒 清空購物車...');
                     clearCart();
         
                     const normalizedType = orderType === 'dinein' ? 'dinein' : 'takeout';
-                    let successMessage = '付款成功！';
+                    const isCashPayment = paymentMethodParam === 'cash'; // ⚠️ 判斷是否為現金付款
+                    let successMessage = '';
 
-                    if (normalizedType === 'takeout' && pickupNumberParam) {
-                        successMessage = `付款成功！您的取餐號碼：${pickupNumberParam}`;
-                    } else if (normalizedType === 'dinein' && tableNumberParam) {
-                        successMessage = `付款成功！餐點將送至桌號：${tableNumberParam}`;
-                    } else if (pickupNumberParam) {
-                        successMessage = `付款成功！您的取餐號碼：${pickupNumberParam}`;
-                    } else if (tableNumberParam) {
-                        successMessage = `付款成功！餐點將送至桌號：${tableNumberParam}`;
+                    // ⚠️ 關鍵：根據付款方式顯示不同訊息
+                    if (isCashPayment) {
+                        // 現金付款：顯示「請到櫃台結帳」
+                        if (normalizedType === 'takeout' && pickupNumberParam) {
+                            successMessage = `請到櫃台結帳 您的取餐號碼：${pickupNumberParam}`;
+                        } else if (normalizedType === 'dinein' && tableNumberParam) {
+                            successMessage = `請到櫃台結帳 餐點將送至桌號：${tableNumberParam}`;
+                        } else if (pickupNumberParam) {
+                            successMessage = `請到櫃台結帳 您的取餐號碼：${pickupNumberParam}`;
+                        } else if (tableNumberParam) {
+                            successMessage = `請到櫃台結帳 餐點將送至桌號：${tableNumberParam}`;
+                        } else {
+                            successMessage = '請到櫃台結帳';
+                        }
+                    } else {
+                        // 刷卡付款（或預設）：顯示「付款成功」
+                        if (normalizedType === 'takeout' && pickupNumberParam) {
+                            successMessage = `付款成功！您的取餐號碼：${pickupNumberParam}`;
+                        } else if (normalizedType === 'dinein' && tableNumberParam) {
+                            successMessage = `付款成功！餐點將送至桌號：${tableNumberParam}`;
+                        } else if (pickupNumberParam) {
+                            successMessage = `付款成功！您的取餐號碼：${pickupNumberParam}`;
+                        } else if (tableNumberParam) {
+                            successMessage = `付款成功！餐點將送至桌號：${tableNumberParam}`;
+                        } else {
+                            successMessage = '付款成功！';
+                        }
                     }
 
                     if (normalizedType === 'takeout') {

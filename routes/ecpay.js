@@ -944,6 +944,8 @@ router.post('/result', async (req, res) => {
             // 如果有 pickupNumber，則帶在 URL 參數中
             const redirectParams = new URLSearchParams();
             redirectParams.set('status', 'success');
+            // ⚠️ 關鍵：刷卡付款添加 method=credit 參數
+            redirectParams.set('method', 'credit');
             if (merchantTradeNo) {
                 redirectParams.set('orderNo', merchantTradeNo);
             }

@@ -950,11 +950,12 @@ function renderOrdersTable(orders, pagination) {
         const isDineInDisplay = order.diningMode === 'dine-in' || order.orderType === 'dine-in' || order.deliveryMethod === 'dine-in';
         
         // 判斷付款方式標籤（使用外框樣式：紅色外框用於櫃台結帳，綠色外框用於ECPay）
+        // ⚠️ 關鍵：添加 white-space: nowrap 確保標籤不換行
         const paymentMethod = order.paymentMethod || 'cash';
         const paymentTag = paymentMethod === 'cash' 
-            ? '<span class="payment-tag cash-tag" style="color: #e74c3c; border: 2px solid #e74c3c; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px;">[櫃台結帳]</span>'
+            ? '<span class="payment-tag cash-tag" style="color: #e74c3c; border: 2px solid #e74c3c; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px; white-space: nowrap;">[櫃台結帳]</span>'
             : (paymentMethod === 'credit_card' 
-                ? '<span class="payment-tag card-tag" style="color: #27ae60; border: 2px solid #27ae60; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px;">[ECPay]</span>'
+                ? '<span class="payment-tag card-tag" style="color: #27ae60; border: 2px solid #27ae60; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-left: 8px; white-space: nowrap;">[ECPay]</span>'
                 : '');
         
         if (isDineInDisplay) {

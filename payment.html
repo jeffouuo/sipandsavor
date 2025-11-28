@@ -1100,6 +1100,8 @@ function buildAggregationLine(item = {}) {
 
                     const redirectParams = new URLSearchParams();
                     redirectParams.set('status', 'success');
+                    // ⚠️ 關鍵：現金付款添加 method=cash 參數
+                    redirectParams.set('method', 'cash');
                     const responseOrder = data?.data?.order || null;
                     const responseData = data?.data || {};
                     if (responseOrder?.orderNumber || responseData?.orderNumber) {
