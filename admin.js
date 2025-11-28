@@ -854,41 +854,19 @@ function renderOrdersTable(orders, pagination) {
         console.log('🟢 訂單項目:', order.items);
         console.log('檢查桌號:', order.tableNumber, '用餐模式:', order.diningMode);
         
-        // 正確顯示商品和數量（格式：主行顯示飲料名稱 x 數量，備註行只顯示甜度/冰塊/加料，不顯示特殊需求）
+        // 輔助函數：轉義正則表達式特殊字符
+        const escapeRegex = (str) => {
+            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        };
+        
+        // 正確顯示商品和數量（三行格式：名稱+價格 / 規格+加料 / 特殊需求）
         const itemsHtml = (order.items || []).map(item => {
             const quantity = item.quantity || 1;
             const meta = getAdminItemMeta(item);
-            
-            // 主行：只顯示飲料名稱和數量
             const itemName = item?.name ? String(item.name) : '未知商品';
-            const mainLine = `<div class="order-item-line" style="font-weight: 500;">${itemName} x${quantity}</div>`;
+            const subtotal = item.subtotal || (item.price || 0) * quantity;
             
-            // 備註行：只顯示甜度、冰塊、加料（不顯示特殊需求，特殊需求統一顯示在「特殊需求」欄位）
-            const noteParts = [];
-            if (meta.sugarLevel) noteParts.push(meta.sugarLevel);
-            if (meta.iceLevel) noteParts.push(meta.iceLevel);
-            if (meta.toppings.length) noteParts.push(`+ ${meta.toppings.join(', ')}`);
-            if (meta.extras.length) noteParts.push(meta.extras.join(', '));
-            
-            const noteContent = noteParts.join(' ').trim();
-            const noteHtml = noteContent
-                ? `<div class="order-item-note" style="color: #666; font-size: 12px; margin-top: 2px; padding-left: 8px;">${noteContent}</div>`
-                : '';
-            
-            return mainLine + noteHtml;
-        }).join('');
-        
-        const statusClass = `status-${order.status}`;
-        
-        // 🔍 調試：檢查訂單級別的字段
-        console.log('🔍 [後台前端] 訂單 ID:', order._id);
-        console.log('🔍 [後台前端] order.specialRequest (客人輸入):', order.specialRequest);
-        console.log('🔍 [後台前端] order.notes (系統備註):', order.notes);
-        
-        // 構建特殊需求顯示（統一收集所有特殊需求，只顯示一次）
-        // ⚠️ 重要：所有特殊需求（商品級別 + 訂單級別）統一顯示在「特殊需求」欄位
-        const buildSpecialRequestDisplay = () => {
-            // HTML 轉義函數（簡單版本）
+            // HTML 轉義函數
             const escapeHtml = (text) => {
                 if (!text) return '';
                 return String(text)
@@ -899,59 +877,47 @@ function renderOrdersTable(orders, pagination) {
                     .replace(/'/g, '&#039;');
             };
             
-            // 系統備註關鍵字（不應該顯示在特殊需求欄位）
-            const systemNotes = ['櫃台結帳', '綠界金流支付', '前台結帳', 'ECPay'];
-            const isSystemNote = (text) => {
-                if (!text) return false;
-                return systemNotes.some(note => text.includes(note));
-            };
+            // 第一行：商品名稱 x 數量（靠左）和價格（靠右），加粗黑色
+            const firstLine = `<div style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: #000; margin-bottom: 4px;">
+                <span>${escapeHtml(itemName)} x${quantity}</span>
+                <span>NT$ ${subtotal.toFixed(0)}</span>
+            </div>`;
             
-            const parts = [];
+            // 第二行：甜度、冰塊、加料，灰色小字
+            const specParts = [];
+            if (meta.sugarLevel) specParts.push(meta.sugarLevel);
+            if (meta.iceLevel) specParts.push(meta.iceLevel);
+            const specText = specParts.join(', ');
+            const toppingsText = meta.toppings.length > 0 ? `+ ${meta.toppings.join(', ')}` : '';
+            const secondLineContent = [specText, toppingsText].filter(Boolean).join(' ');
+            const secondLine = secondLineContent
+                ? `<div style="color: #666; font-size: 12px; margin-bottom: 4px; padding-left: 8px;">${escapeHtml(secondLineContent)}</div>`
+                : '';
             
-            // 1. 收集所有商品級別的特殊需求
-            (order.items || []).forEach(item => {
-                // ⚠️ 關鍵：只使用 item.specialRequest，不使用 item.note 或 item.notes（可能包含加料資訊）
-                const itemSpecialRequest = normalizeAdminString(item?.specialRequest);
+            // 第三行：特殊需求，紅色，過濾掉重複的飲料名稱
+            let specialRequest = normalizeAdminString(item?.specialRequest);
+            if (specialRequest) {
+                // 過濾掉加料資訊（以「+」開頭的部分）
+                specialRequest = specialRequest.replace(/\+\s*[^，,\s]+(?:\s*[，,]\s*[^，,\s]+)*/g, '').trim();
                 
-                // 過濾掉系統備註和空值
-                if (itemSpecialRequest && !isSystemNote(itemSpecialRequest)) {
-                    // ⚠️ 關鍵：過濾掉加料資訊（以「+」開頭的部分），加料已經在商品欄位顯示了
-                    // 例如：「+ 珍珠, 愛玉 多冰」應該只保留「多冰」
-                    let cleanSpecialRequest = itemSpecialRequest;
-                    
-                    // 獲取該商品的加料資訊（用於比對和過濾）
-                    const meta = getAdminItemMeta(item);
-                    const toppingsText = meta.toppings.length > 0 ? `+ ${meta.toppings.join(', ')}` : '';
-                    
-                    // 移除加料資訊（以「+」開頭，後面跟著加料名稱的部分）
-                    // 匹配模式：+ 珍珠, 愛玉 或 +珍珠,愛玉 等
-                    cleanSpecialRequest = cleanSpecialRequest.replace(/\+\s*[^，,\s]+(?:\s*[，,]\s*[^，,\s]+)*/g, '').trim();
-                    
-                    // 如果特殊需求只包含加料資訊（移除加料後為空），則不顯示
-                    // 如果過濾後還有內容，才顯示（這才是真正的特殊需求，如「多冰」）
-                    if (cleanSpecialRequest) {
-                        const escaped = escapeHtml(cleanSpecialRequest);
-                        parts.push(`<span style="color: #e74c3c; font-weight: 500;">${item.name}: ${escaped}</span>`);
-                    }
-                }
-            });
-            
-            // 2. 訂單級別的特殊需求（order.specialRequest）
-            // ⚠️ 關鍵：過濾掉系統備註（如「櫃台結帳」）
-            if (order.specialRequest && order.specialRequest.trim() !== '') {
-                const trimmed = order.specialRequest.trim();
-                // 只顯示非系統備註的特殊需求
-                if (!isSystemNote(trimmed)) {
-                    const escapedSpecialRequest = escapeHtml(trimmed);
-                    parts.push(`<span style="color: #e74c3c; font-weight: bold;">${escapedSpecialRequest}</span>`);
+                // 過濾掉重複的飲料名稱（例如 "星辰奶茶: 多冰" -> "多冰"）
+                // 匹配模式：飲料名稱 + 冒號 + 空格（可選）+ 實際需求
+                const itemNamePattern = new RegExp(`^${escapeRegex(itemName)}\\s*[:：]\\s*`, 'i');
+                specialRequest = specialRequest.replace(itemNamePattern, '').trim();
+                
+                // 如果過濾後還有內容，才顯示
+                if (specialRequest) {
+                    const thirdLine = `<div style="color: #e74c3c; font-size: 12px; padding-left: 8px;">${escapeHtml(specialRequest)}</div>`;
+                    return firstLine + secondLine + thirdLine;
                 }
             }
             
-            // 如果沒有任何特殊需求，返回 null（不顯示）
-            return parts.length > 0 ? parts.join('<br>') : null;
-        };
+            return firstLine + secondLine;
+        }).join('<div style="margin-bottom: 12px;"></div>'); // 商品之間的分隔
         
-        const specialRequestDisplayHtml = buildSpecialRequestDisplay();
+        const statusClass = `status-${order.status}`;
+        
+        // ⚠️ 重要：移除整單備註顯示，因為特殊需求已經在每個商品下面顯示了
         
         // 構建用戶/桌號/訂單號顯示（統一格式：[模式]: [號碼] [付款狀態標籤]）
         let userDisplay = '';
@@ -981,13 +947,10 @@ function renderOrdersTable(orders, pagination) {
             <tr>
                 <td>${order._id}</td>
                 <td>${userDisplay}</td>
-                <td>${itemsHtml}</td>
+                <td style="min-width: 300px;">${itemsHtml}</td>
                 <td>NT$ ${order.totalAmount}</td>
                 <td style="max-width: 300px; word-wrap: break-word; line-height: 1.5;">
-                    ${specialRequestDisplayHtml 
-                        ? `<div style="font-size: 13px; color: #2c3e50;">${specialRequestDisplayHtml}</div>`
-                        : '<span style="color: #95a5a6; font-size: 13px;">—</span>'
-                    }
+                    <span style="color: #95a5a6; font-size: 13px;">—</span>
                 </td>
                 <td><span class="status-badge ${statusClass}">${getStatusText(order.status)}</span></td>
                 <td>${new Date(order.createdAt).toLocaleString()}</td>
