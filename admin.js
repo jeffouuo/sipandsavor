@@ -878,7 +878,7 @@ function renderOrdersTable(orders, pagination) {
             };
             
             // 第一行：商品名稱 x 數量（靠左）和價格（靠右），加粗黑色
-            const firstLine = `<div style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: #000; margin-bottom: 4px;">
+            const firstLine = `<div style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: #000;">
                 <span>${escapeHtml(itemName)} x${quantity}</span>
                 <span>NT$ ${subtotal.toFixed(0)}</span>
             </div>`;
@@ -891,11 +891,12 @@ function renderOrdersTable(orders, pagination) {
             const toppingsText = meta.toppings.length > 0 ? `+ ${meta.toppings.join(', ')}` : '';
             const secondLineContent = [specText, toppingsText].filter(Boolean).join(' ');
             const secondLine = secondLineContent
-                ? `<div style="color: #666; font-size: 12px; margin-bottom: 4px; padding-left: 8px;">${escapeHtml(secondLineContent)}</div>`
+                ? `<div style="color: #666; font-size: 12px; padding-left: 8px; margin-top: 4px;">${escapeHtml(secondLineContent)}</div>`
                 : '';
             
             // 第三行：特殊需求，紅色，過濾掉重複的飲料名稱
             let specialRequest = normalizeAdminString(item?.specialRequest);
+            let thirdLine = '';
             if (specialRequest) {
                 // 過濾掉加料資訊（以「+」開頭的部分）
                 specialRequest = specialRequest.replace(/\+\s*[^，,\s]+(?:\s*[，,]\s*[^，,\s]+)*/g, '').trim();
@@ -907,13 +908,18 @@ function renderOrdersTable(orders, pagination) {
                 
                 // 如果過濾後還有內容，才顯示
                 if (specialRequest) {
-                    const thirdLine = `<div style="color: #e74c3c; font-size: 12px; padding-left: 8px;">${escapeHtml(specialRequest)}</div>`;
-                    return firstLine + secondLine + thirdLine;
+                    thirdLine = `<div style="color: #e74c3c; font-size: 12px; padding-left: 8px; margin-top: 4px;">${escapeHtml(specialRequest)}</div>`;
                 }
             }
             
-            return firstLine + secondLine;
-        }).join('<div style="margin-bottom: 12px;"></div>'); // 商品之間的分隔
+            return `
+                <div style="margin-bottom: 12px;">
+                    ${firstLine}
+                    ${secondLine || ''}
+                    ${thirdLine || ''}
+                </div>
+            `;
+        }).join(''); // 商品之間的分隔
         
         const statusClass = `status-${order.status}`;
         
