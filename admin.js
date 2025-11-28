@@ -910,11 +910,29 @@ function renderOrdersTable(orders, pagination) {
             
             // 1. 收集所有商品級別的特殊需求
             (order.items || []).forEach(item => {
-                const itemSpecialRequest = normalizeAdminString(item?.specialRequest || item?.note || item?.notes);
+                // ⚠️ 關鍵：只使用 item.specialRequest，不使用 item.note 或 item.notes（可能包含加料資訊）
+                const itemSpecialRequest = normalizeAdminString(item?.specialRequest);
+                
                 // 過濾掉系統備註和空值
                 if (itemSpecialRequest && !isSystemNote(itemSpecialRequest)) {
-                    const escaped = escapeHtml(itemSpecialRequest);
-                    parts.push(`<span style="color: #e74c3c; font-weight: 500;">${item.name}: ${escaped}</span>`);
+                    // ⚠️ 關鍵：過濾掉加料資訊（以「+」開頭的部分），加料已經在商品欄位顯示了
+                    // 例如：「+ 珍珠, 愛玉 多冰」應該只保留「多冰」
+                    let cleanSpecialRequest = itemSpecialRequest;
+                    
+                    // 獲取該商品的加料資訊（用於比對和過濾）
+                    const meta = getAdminItemMeta(item);
+                    const toppingsText = meta.toppings.length > 0 ? `+ ${meta.toppings.join(', ')}` : '';
+                    
+                    // 移除加料資訊（以「+」開頭，後面跟著加料名稱的部分）
+                    // 匹配模式：+ 珍珠, 愛玉 或 +珍珠,愛玉 等
+                    cleanSpecialRequest = cleanSpecialRequest.replace(/\+\s*[^，,\s]+(?:\s*[，,]\s*[^，,\s]+)*/g, '').trim();
+                    
+                    // 如果特殊需求只包含加料資訊（移除加料後為空），則不顯示
+                    // 如果過濾後還有內容，才顯示（這才是真正的特殊需求，如「多冰」）
+                    if (cleanSpecialRequest) {
+                        const escaped = escapeHtml(cleanSpecialRequest);
+                        parts.push(`<span style="color: #e74c3c; font-weight: 500;">${item.name}: ${escaped}</span>`);
+                    }
                 }
             });
             
