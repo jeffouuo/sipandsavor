@@ -877,10 +877,9 @@ function renderOrdersTable(orders, pagination) {
                     .replace(/'/g, '&#039;');
             };
             
-            // 第一行：商品名稱 x 數量（靠左）和價格（靠右），加粗黑色
-            const firstLine = `<div style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: #000;">
+            // 第一行：商品名稱 x 數量（靠左），加粗黑色（不顯示單品價格，只顯示整單總金額）
+            const firstLine = `<div style="font-weight: bold; color: #000; margin-bottom: 4px;">
                 <span>${escapeHtml(itemName)} x${quantity}</span>
-                <span>NT$ ${subtotal.toFixed(0)}</span>
             </div>`;
             
             // 第二行：甜度、冰塊、加料，灰色小字
@@ -894,36 +893,74 @@ function renderOrdersTable(orders, pagination) {
                 ? `<div style="color: #666; font-size: 12px; padding-left: 8px; margin-top: 4px;">${escapeHtml(secondLineContent)}</div>`
                 : '';
             
-            // 第三行：特殊需求，紅色，過濾掉重複的飲料名稱
-            let specialRequest = normalizeAdminString(item?.specialRequest);
-            let thirdLine = '';
-            if (specialRequest) {
-                // 過濾掉加料資訊（以「+」開頭的部分）
-                specialRequest = specialRequest.replace(/\+\s*[^，,\s]+(?:\s*[，,]\s*[^，,\s]+)*/g, '').trim();
-                
-                // 過濾掉重複的飲料名稱（例如 "星辰奶茶: 多冰" -> "多冰"）
-                // 匹配模式：飲料名稱 + 冒號 + 空格（可選）+ 實際需求
-                const itemNamePattern = new RegExp(`^${escapeRegex(itemName)}\\s*[:：]\\s*`, 'i');
-                specialRequest = specialRequest.replace(itemNamePattern, '').trim();
-                
-                // 如果過濾後還有內容，才顯示
-                if (specialRequest) {
-                    thirdLine = `<div style="color: #e74c3c; font-size: 12px; padding-left: 8px; margin-top: 4px;">${escapeHtml(specialRequest)}</div>`;
-                }
-            }
-            
             return `
                 <div style="margin-bottom: 12px;">
                     ${firstLine}
                     ${secondLine || ''}
-                    ${thirdLine || ''}
                 </div>
             `;
         }).join(''); // 商品之間的分隔
         
         const statusClass = `status-${order.status}`;
         
-        // ⚠️ 重要：移除整單備註顯示，因為特殊需求已經在每個商品下面顯示了
+        // 構建特殊需求顯示（收集所有商品級別的特殊需求，顯示在「特殊需求」欄位）
+        const buildSpecialRequestDisplay = () => {
+            // HTML 轉義函數
+            const escapeHtml = (text) => {
+                if (!text) return '';
+                return String(text)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            };
+            
+            // 系統備註關鍵字（不應該顯示在特殊需求欄位）
+            const systemNotes = ['櫃台結帳', '綠界金流支付', '前台結帳', 'ECPay'];
+            const isSystemNote = (text) => {
+                if (!text) return false;
+                return systemNotes.some(note => text.includes(note));
+            };
+            
+            const parts = [];
+            
+            // 收集所有商品級別的特殊需求
+            (order.items || []).forEach(item => {
+                const itemName = item?.name ? String(item.name) : '未知商品';
+                let itemSpecialRequest = normalizeAdminString(item?.specialRequest);
+                
+                // 過濾掉系統備註和空值
+                if (itemSpecialRequest && !isSystemNote(itemSpecialRequest)) {
+                    // 過濾掉加料資訊（以「+」開頭的部分）
+                    itemSpecialRequest = itemSpecialRequest.replace(/\+\s*[^，,\s]+(?:\s*[，,]\s*[^，,\s]+)*/g, '').trim();
+                    
+                    // 過濾掉重複的飲料名稱（例如 "星辰奶茶: 多冰" -> "多冰"）
+                    const itemNamePattern = new RegExp(`^${escapeRegex(itemName)}\\s*[:：]\\s*`, 'i');
+                    itemSpecialRequest = itemSpecialRequest.replace(itemNamePattern, '').trim();
+                    
+                    // 如果過濾後還有內容，才顯示
+                    if (itemSpecialRequest) {
+                        const escaped = escapeHtml(itemSpecialRequest);
+                        parts.push(`<span style="color: #e74c3c; font-weight: 500;">${escapeHtml(itemName)}: ${escaped}</span>`);
+                    }
+                }
+            });
+            
+            // 訂單級別的特殊需求（order.specialRequest）
+            if (order.specialRequest && order.specialRequest.trim() !== '') {
+                const trimmed = order.specialRequest.trim();
+                if (!isSystemNote(trimmed)) {
+                    const escapedSpecialRequest = escapeHtml(trimmed);
+                    parts.push(`<span style="color: #e74c3c; font-weight: bold;">${escapedSpecialRequest}</span>`);
+                }
+            }
+            
+            // 如果沒有任何特殊需求，返回 null（不顯示）
+            return parts.length > 0 ? parts.join('<br>') : null;
+        };
+        
+        const specialRequestDisplayHtml = buildSpecialRequestDisplay();
         
         // 構建用戶/桌號/訂單號顯示（統一格式：[模式]: [號碼] [付款狀態標籤]）
         let userDisplay = '';
@@ -956,7 +993,10 @@ function renderOrdersTable(orders, pagination) {
                 <td style="min-width: 300px;">${itemsHtml}</td>
                 <td>NT$ ${order.totalAmount}</td>
                 <td style="max-width: 300px; word-wrap: break-word; line-height: 1.5;">
-                    <span style="color: #95a5a6; font-size: 13px;">—</span>
+                    ${specialRequestDisplayHtml 
+                        ? `<div style="font-size: 13px; color: #2c3e50;">${specialRequestDisplayHtml}</div>`
+                        : '<span style="color: #95a5a6; font-size: 13px;">—</span>'
+                    }
                 </td>
                 <td><span class="status-badge ${statusClass}">${getStatusText(order.status)}</span></td>
                 <td>${new Date(order.createdAt).toLocaleString()}</td>
